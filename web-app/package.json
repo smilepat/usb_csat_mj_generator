@@ -1,0 +1,27 @@
+{
+  "name": "csat-item-generator",
+  "version": "1.0.0",
+  "description": "수능 영어 문항 생성 및 검증 시스템",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js",
+    "client": "cd client && npm start",
+    "install:all": "npm install && cd client && npm install"
+  },
+  "keywords": ["csat", "ksat", "test-item-generator", "llm"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^9.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
