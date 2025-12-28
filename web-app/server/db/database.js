@@ -1,40 +1,55 @@
 /**
  * server/db/database.js
- * SQLite 데이터베이스 초기화 및 관리
+ * SQL.js 데이터베이스 초기화 및 관리 (순수 JavaScript, 네이티브 모듈 불필요)
  */
 
-const Database = require('better-sqlite3');
+const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
 
 const DB_PATH = path.join(__dirname, '../../data/csat.db');
 
 let db = null;
+let SQL = null;
 
 /**
- * 데이터베이스 연결 가져오기
+ * DB를 파일로 저장
  */
-function getDb() {
-  if (!db) {
-    // data 폴더가 없으면 생성
+function saveDatabase() {
+  if (db) {
+    const data = db.export();
+    const buffer = Buffer.from(data);
     const dataDir = path.dirname(DB_PATH);
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
-    db = new Database(DB_PATH);
-    db.pragma('journal_mode = WAL');
+    fs.writeFileSync(DB_PATH, buffer);
   }
-  return db;
 }
 
 /**
  * 데이터베이스 초기화
  */
 async function initDatabase() {
-  const database = getDb();
+  // SQL.js 초기화
+  SQL = await initSqlJs();
+
+  // data 폴더가 없으면 생성
+  const dataDir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+
+  // 기존 DB 파일이 있으면 로드, 없으면 새로 생성
+  if (fs.existsSync(DB_PATH)) {
+    const fileBuffer = fs.readFileSync(DB_PATH);
+    db = new SQL.Database(fileBuffer);
+  } else {
+    db = new SQL.Database();
+  }
 
   // CONFIG 테이블
-  database.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS config (
       key TEXT PRIMARY KEY,
       value TEXT,
@@ -44,7 +59,7 @@ async function initDatabase() {
   `);
 
   // PROMPT_DB 테이블
-  database.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS prompts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       prompt_key TEXT UNIQUE NOT NULL,
@@ -57,7 +72,7 @@ async function initDatabase() {
   `);
 
   // ITEM_REQUEST 테이블
-  database.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS item_requests (
       request_id TEXT PRIMARY KEY,
       status TEXT DEFAULT 'PENDING',
@@ -75,7 +90,7 @@ async function initDatabase() {
   `);
 
   // ITEM_JSON 테이블
-  database.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS item_json (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       request_id TEXT NOT NULL,
@@ -93,7 +108,7 @@ async function initDatabase() {
   `);
 
   // ITEM_OUTPUT 테이블
-  database.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS item_output (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       request_id TEXT NOT NULL,
@@ -115,7 +130,7 @@ async function initDatabase() {
   `);
 
   // ITEM_SET 테이블
-  database.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS item_sets (
       set_id TEXT PRIMARY KEY,
       set_name TEXT,
@@ -127,7 +142,7 @@ async function initDatabase() {
   `);
 
   // CHART_DB 테이블
-  database.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS charts (
       chart_id TEXT PRIMARY KEY,
       chart_name TEXT,
@@ -138,7 +153,7 @@ async function initDatabase() {
   `);
 
   // LOG 테이블
-  database.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -150,7 +165,7 @@ async function initDatabase() {
   `);
 
   // ERROR 테이블
-  database.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS errors (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -162,19 +177,13 @@ async function initDatabase() {
   `);
 
   // 인덱스 생성
-  database.exec(`
-    CREATE INDEX IF NOT EXISTS idx_item_requests_status ON item_requests(status);
-    CREATE INDEX IF NOT EXISTS idx_item_requests_set_id ON item_requests(set_id);
-    CREATE INDEX IF NOT EXISTS idx_item_json_request_id ON item_json(request_id);
-    CREATE INDEX IF NOT EXISTS idx_logs_level ON logs(level);
-    CREATE INDEX IF NOT EXISTS idx_logs_request_id ON logs(request_id);
-  `);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_item_requests_status ON item_requests(status)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_item_requests_set_id ON item_requests(set_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_item_json_request_id ON item_json(request_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_logs_level ON logs(level)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_logs_request_id ON logs(request_id)`);
 
   // 기본 설정 삽입
-  const insertConfig = database.prepare(`
-    INSERT OR IGNORE INTO config (key, value, description) VALUES (?, ?, ?)
-  `);
-
   const defaultConfigs = [
     ['PROVIDER', 'gemini', 'LLM 제공자 (gemini 또는 openai)'],
     ['GEMINI_MODEL', 'gemini-2.5-pro', 'Gemini 모델명'],
@@ -185,14 +194,10 @@ async function initDatabase() {
   ];
 
   for (const [key, value, desc] of defaultConfigs) {
-    insertConfig.run(key, value, desc);
+    db.run(`INSERT OR IGNORE INTO config (key, value, description) VALUES (?, ?, ?)`, [key, value, desc]);
   }
 
   // 기본 프롬프트 삽입
-  const insertPrompt = database.prepare(`
-    INSERT OR IGNORE INTO prompts (prompt_key, title, prompt_text, active) VALUES (?, ?, ?, ?)
-  `);
-
   const defaultPrompts = [
     ['MASTER_PROMPT', '마스터 프롬프트', getMasterPromptTemplate(), 1],
     ['PASSAGE_MASTER', '지문 생성 마스터', getPassageMasterTemplate(), 1],
@@ -206,11 +211,15 @@ async function initDatabase() {
   ];
 
   for (const [key, title, text, active] of defaultPrompts) {
-    insertPrompt.run(key, title, text, active);
+    db.run(`INSERT OR IGNORE INTO prompts (prompt_key, title, prompt_text, active) VALUES (?, ?, ?, ?)`,
+      [key, title, text, active]);
   }
 
+  // DB 저장
+  saveDatabase();
+
   console.log('데이터베이스 테이블 및 기본 데이터 초기화 완료');
-  return database;
+  return db;
 }
 
 // 마스터 프롬프트 템플릿
@@ -321,13 +330,73 @@ function getPassageItemTemplate(itemNo) {
  */
 function closeDatabase() {
   if (db) {
+    saveDatabase();
     db.close();
     db = null;
   }
 }
 
+/**
+ * SQL.js용 래퍼 - better-sqlite3 호환 인터페이스 제공
+ */
+function getDb() {
+  if (!db) {
+    throw new Error('데이터베이스가 초기화되지 않았습니다. initDatabase()를 먼저 호출하세요.');
+  }
+
+  return {
+    prepare: (sql) => ({
+      run: (...params) => {
+        db.run(sql, params);
+        saveDatabase();
+        return { changes: db.getRowsModified() };
+      },
+      get: (...params) => {
+        const stmt = db.prepare(sql);
+        stmt.bind(params);
+        if (stmt.step()) {
+          const row = stmt.getAsObject();
+          stmt.free();
+          return row;
+        }
+        stmt.free();
+        return undefined;
+      },
+      all: (...params) => {
+        const results = [];
+        const stmt = db.prepare(sql);
+        stmt.bind(params);
+        while (stmt.step()) {
+          results.push(stmt.getAsObject());
+        }
+        stmt.free();
+        return results;
+      }
+    }),
+    exec: (sql) => {
+      db.exec(sql);
+      saveDatabase();
+    },
+    transaction: (fn) => {
+      return (...args) => {
+        db.run('BEGIN TRANSACTION');
+        try {
+          const result = fn(...args);
+          db.run('COMMIT');
+          saveDatabase();
+          return result;
+        } catch (e) {
+          db.run('ROLLBACK');
+          throw e;
+        }
+      };
+    }
+  };
+}
+
 module.exports = {
   getDb,
   initDatabase,
-  closeDatabase
+  closeDatabase,
+  saveDatabase
 };
