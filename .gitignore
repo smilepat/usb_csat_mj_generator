@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+web-app/node_modules/
+web-app/client/node_modules/
+
+# Environment files (API keys)
+.env
+.env.local
+.env.production
+web-app/.env
+web-app/.env.local
+
+# Database
+*.db
+web-app/data/*.db
+
+# Build outputs
+web-app/client/build/
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
