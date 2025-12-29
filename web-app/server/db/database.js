@@ -183,13 +183,15 @@ async function initDatabase() {
   db.run(`CREATE INDEX IF NOT EXISTS idx_logs_level ON logs(level)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_logs_request_id ON logs(request_id)`);
 
-  // 기본 설정 삽입
+  // 기본 설정 삽입 (Google Sheets CONFIG 시트 기준)
   const defaultConfigs = [
-    ['PROVIDER', 'gemini', 'LLM 제공자 (gemini 또는 openai)'],
-    ['GEMINI_MODEL', 'gemini-2.5-pro', 'Gemini 모델명'],
-    ['OPENAI_MODEL', 'gpt-4.1-mini', 'OpenAI 모델명'],
-    ['TEMP_BASE', '0.4', '기본 Temperature'],
-    ['MAX_RETRY', '3', '최대 재시도 횟수'],
+    ['PROVIDER', 'gemini', 'gemini / openai 선택 (기본값: gemini)'],
+    ['GEMINI_MODEL', 'gemini-2.5-pro', 'Gemini 모델 ID (v1beta 기준 models/… 중 뒷부분만)'],
+    ['OPENAI_MODEL', 'gpt-4.1-mini', 'OpenAI 모델 이름'],
+    ['TEMP_BASE', '0.4', '공통 temperature'],
+    ['TEMP_HIGH', '0.7', '높은 temperature (창의적 생성용)'],
+    ['MAX_RETRY', '3', 'retry 횟수'],
+    ['TIMEOUT_MS', '60000', 'API 타임아웃 (밀리초)'],
     ['LOG_LEVEL', 'INFO', '로그 레벨 (INFO, WARN, ERROR)']
   ];
 
