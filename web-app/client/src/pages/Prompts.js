@@ -22,7 +22,18 @@ function Prompts() {
     try {
       setLoading(true);
       const res = await promptsApi.getAll();
-      setPrompts(res.data || []);
+      // 마스터 프롬프트를 상단에 표시하도록 정렬
+      const sorted = (res.data || []).sort((a, b) => {
+        // 1순위: MASTER_PROMPT
+        if (a.prompt_key === 'MASTER_PROMPT') return -1;
+        if (b.prompt_key === 'MASTER_PROMPT') return 1;
+        // 2순위: PASSAGE_MASTER
+        if (a.prompt_key === 'PASSAGE_MASTER') return -1;
+        if (b.prompt_key === 'PASSAGE_MASTER') return 1;
+        // 3순위: 기존 알파벳 순서
+        return a.prompt_key.localeCompare(b.prompt_key);
+      });
+      setPrompts(sorted);
     } catch (error) {
       setMessage({ type: 'error', text: error.message });
     } finally {
