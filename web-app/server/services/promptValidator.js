@@ -86,11 +86,28 @@ function validatePromptStructure(promptKey, promptText) {
 
 /**
  * 문항 유형별 권장 키워드 반환
- * @param {number} itemNo - 문항 번호
+ * @param {number|string} itemNo - 문항 번호 또는 세트 문항 키
  * @returns {string[]} 권장 키워드 목록
  */
 function getTypeKeywords(itemNo) {
   const keywordMap = {
+    // LC (듣기)
+    1: ['대화', 'dialogue', 'listen'],
+    2: ['대화', 'dialogue', 'listen'],
+    3: ['목적', 'purpose', 'listen'],
+    4: ['의견', 'opinion', 'listen'],
+    5: ['관계', 'relationship', 'listen'],
+    6: ['그림', 'picture', 'listen'],
+    7: ['할 일', 'task', 'listen'],
+    8: ['이유', 'reason', 'listen'],
+    9: ['숫자', 'number', 'listen'],
+    10: ['언급', 'mention', 'listen'],
+    11: ['일치', 'match', 'listen'],
+    12: ['도표', 'chart', 'listen'],
+    13: ['대화', 'dialogue', 'listen'],
+    14: ['대화', 'dialogue', 'listen'],
+    15: ['상황', 'situation', 'listen'],
+    // RC (독해)
     18: ['목적', 'purpose'],
     19: ['심경', '변화', 'feeling', 'mood'],
     20: ['주장', 'claim', 'argue'],
@@ -116,7 +133,18 @@ function getTypeKeywords(itemNo) {
     40: ['요약', 'summary', 'summarize']
   };
 
-  return keywordMap[itemNo] || [];
+  // 세트 문항 키워드
+  const setKeywords = {
+    '16-17': ['담화', 'lecture', 'listen', '세트'],
+    '41-42': ['장문', 'long passage', '세트'],
+    '43-45': ['장문', 'long passage', '세트']
+  };
+
+  if (typeof itemNo === 'string' && setKeywords[itemNo]) {
+    return setKeywords[itemNo];
+  }
+
+  return keywordMap[parseInt(itemNo)] || [];
 }
 
 /**
@@ -128,9 +156,20 @@ function validateUserContext(req) {
   const errors = [];
   const warnings = [];
 
-  // 1. 문항 번호 유효성
-  if (!req.itemNo || req.itemNo < 18 || req.itemNo > 45) {
-    errors.push('문항 번호가 유효하지 않습니다. (18-45 범위)');
+  // 1. 문항 번호 유효성 (LC 1-17, RC 18-45, 세트 문항 포함)
+  const itemNo = req.itemNo;
+  const validSetItems = ['16-17', '41-42', '43-45'];
+
+  // 세트 문항 (문자열)
+  if (typeof itemNo === 'string' && validSetItems.includes(itemNo)) {
+    // 유효한 세트 문항
+  }
+  // 숫자형 문항 번호
+  else {
+    const numItemNo = parseInt(itemNo);
+    if (isNaN(numItemNo) || numItemNo < 1 || numItemNo > 45) {
+      errors.push('문항 번호가 유효하지 않습니다. (LC 1-17, RC 18-45 또는 세트 문항)');
+    }
   }
 
   // 2. 난이도 유효성
@@ -159,13 +198,16 @@ function validateUserContext(req) {
   }
 
   // 4. RC25(도표) 전용 체크
-  if (req.itemNo === 25 && !req.chartId && !req.passage) {
+  const numItemNo = parseInt(req.itemNo);
+  if (numItemNo === 25 && !req.chartId && !req.passage) {
     warnings.push('RC25(도표) 문항은 차트 데이터가 필요합니다.');
   }
 
   // 5. 세트 문항 체크
-  if (req.itemNo >= 41 && req.itemNo <= 45 && !req.setId) {
-    warnings.push('41-45번 문항은 세트 문항입니다. 세트 ID를 지정하는 것이 좋습니다.');
+  const isSetItem = ['16-17', '41-42', '43-45'].includes(String(req.itemNo)) ||
+                    (numItemNo >= 41 && numItemNo <= 45);
+  if (isSetItem && !req.setId) {
+    warnings.push('세트 문항입니다. 세트 ID를 지정하는 것이 좋습니다.');
   }
 
   // 6. 추가 메모 길이 체크

@@ -6,7 +6,7 @@ import PromptPreview from '../components/PromptPreview';
 function ItemCreate() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    item_no: 29,
+    item_no: '29',
     passage: '',
     level: '중',
     extra: '',
@@ -22,31 +22,51 @@ function ItemCreate() {
   const [previewData, setPreviewData] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
-  // 문항 유형 목록
+  // 문항 유형 목록 (LC1~LC17, RC18~RC45, 세트문항 포함)
   const itemTypes = [
-    { no: 18, label: 'RC18 글의 목적' },
-    { no: 19, label: 'RC19 심경 변화' },
-    { no: 20, label: 'RC20 필자 주장' },
-    { no: 21, label: 'RC21 함축 의미' },
-    { no: 22, label: 'RC22 글의 요지' },
-    { no: 23, label: 'RC23 글의 주제' },
-    { no: 24, label: 'RC24 글의 제목' },
-    { no: 25, label: 'RC25 도표 이해' },
-    { no: 26, label: 'RC26 내용 일치 (인물)' },
-    { no: 27, label: 'RC27 내용 일치 (안내문)' },
-    { no: 28, label: 'RC28 어휘' },
-    { no: 29, label: 'RC29 어법' },
-    { no: 30, label: 'RC30 지칭 추론' },
-    { no: 31, label: 'RC31 빈칸 (어구)' },
-    { no: 32, label: 'RC32 빈칸 (어구)' },
-    { no: 33, label: 'RC33 빈칸 (문장)' },
-    { no: 34, label: 'RC34 빈칸 (문장)' },
-    { no: 35, label: 'RC35 무관한 문장' },
-    { no: 36, label: 'RC36 글의 순서' },
-    { no: 37, label: 'RC37 글의 순서' },
-    { no: 38, label: 'RC38 문장 삽입' },
-    { no: 39, label: 'RC39 문장 삽입' },
-    { no: 40, label: 'RC40 요약문 완성' },
+    // 듣기 (LC: Listening Comprehension)
+    { no: 1, label: 'LC01 짧은 대화 듣기', group: 'LC' },
+    { no: 2, label: 'LC02 짧은 대화 듣기', group: 'LC' },
+    { no: 3, label: 'LC03 담화 듣기 (목적)', group: 'LC' },
+    { no: 4, label: 'LC04 담화 듣기 (의견)', group: 'LC' },
+    { no: 5, label: 'LC05 담화 듣기 (관계)', group: 'LC' },
+    { no: 6, label: 'LC06 담화 듣기 (그림)', group: 'LC' },
+    { no: 7, label: 'LC07 담화 듣기 (할 일)', group: 'LC' },
+    { no: 8, label: 'LC08 담화 듣기 (이유)', group: 'LC' },
+    { no: 9, label: 'LC09 담화 듣기 (숫자)', group: 'LC' },
+    { no: 10, label: 'LC10 담화 듣기 (언급 안 된 것)', group: 'LC' },
+    { no: 11, label: 'LC11 담화 듣기 (내용 일치)', group: 'LC' },
+    { no: 12, label: 'LC12 담화 듣기 (도표)', group: 'LC' },
+    { no: 13, label: 'LC13 긴 대화 듣기', group: 'LC' },
+    { no: 14, label: 'LC14 긴 대화 듣기', group: 'LC' },
+    { no: 15, label: 'LC15 상황 듣기', group: 'LC' },
+    { no: '16-17', label: 'LC16-17 세트 (긴 담화)', group: 'LC', isSet: true },
+    // 독해 (RC: Reading Comprehension)
+    { no: 18, label: 'RC18 글의 목적', group: 'RC' },
+    { no: 19, label: 'RC19 심경 변화', group: 'RC' },
+    { no: 20, label: 'RC20 필자 주장', group: 'RC' },
+    { no: 21, label: 'RC21 함축 의미', group: 'RC' },
+    { no: 22, label: 'RC22 글의 요지', group: 'RC' },
+    { no: 23, label: 'RC23 글의 주제', group: 'RC' },
+    { no: 24, label: 'RC24 글의 제목', group: 'RC' },
+    { no: 25, label: 'RC25 도표 이해', group: 'RC' },
+    { no: 26, label: 'RC26 내용 일치 (인물)', group: 'RC' },
+    { no: 27, label: 'RC27 내용 일치 (안내문)', group: 'RC' },
+    { no: 28, label: 'RC28 어휘', group: 'RC' },
+    { no: 29, label: 'RC29 어법', group: 'RC' },
+    { no: 30, label: 'RC30 지칭 추론', group: 'RC' },
+    { no: 31, label: 'RC31 빈칸 (어구)', group: 'RC' },
+    { no: 32, label: 'RC32 빈칸 (어구)', group: 'RC' },
+    { no: 33, label: 'RC33 빈칸 (문장)', group: 'RC' },
+    { no: 34, label: 'RC34 빈칸 (문장)', group: 'RC' },
+    { no: 35, label: 'RC35 무관한 문장', group: 'RC' },
+    { no: 36, label: 'RC36 글의 순서', group: 'RC' },
+    { no: 37, label: 'RC37 글의 순서', group: 'RC' },
+    { no: 38, label: 'RC38 문장 삽입', group: 'RC' },
+    { no: 39, label: 'RC39 문장 삽입', group: 'RC' },
+    { no: 40, label: 'RC40 요약문 완성', group: 'RC' },
+    { no: '41-42', label: 'RC41-42 세트 (장문)', group: 'RC', isSet: true },
+    { no: '43-45', label: 'RC43-45 세트 (장문)', group: 'RC', isSet: true },
   ];
 
   const levels = ['하', '중하', '중', '중상', '상'];
@@ -55,7 +75,7 @@ function ItemCreate() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'item_no' ? parseInt(value) : value
+      [name]: value
     }));
     // 입력 변경 시 미리보기 닫기
     if (showPreview) {
@@ -182,7 +202,9 @@ function ItemCreate() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
             <div>
               <div className="text-muted">문항 유형</div>
-              <div style={{ fontWeight: 'bold' }}>RC{formData.item_no}</div>
+              <div style={{ fontWeight: 'bold' }}>
+                {itemTypes.find(t => String(t.no) === String(formData.item_no))?.label || formData.item_no}
+              </div>
             </div>
             <div>
               <div className="text-muted">난이도</div>
@@ -241,11 +263,20 @@ function ItemCreate() {
                 className="form-control"
                 required
               >
-                {itemTypes.map(type => (
-                  <option key={type.no} value={type.no}>
-                    {type.label}
-                  </option>
-                ))}
+                <optgroup label="듣기 (LC: Listening)">
+                  {itemTypes.filter(t => t.group === 'LC').map(type => (
+                    <option key={type.no} value={type.no} style={type.isSet ? { fontWeight: 'bold' } : {}}>
+                      {type.isSet ? '📦 ' : ''}{type.label}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="독해 (RC: Reading)">
+                  {itemTypes.filter(t => t.group === 'RC').map(type => (
+                    <option key={type.no} value={type.no} style={type.isSet ? { fontWeight: 'bold' } : {}}>
+                      {type.isSet ? '📦 ' : ''}{type.label}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </div>
 

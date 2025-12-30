@@ -28,20 +28,50 @@ function Prompts() {
     loadPrompts();
   }, []);
 
+  // 프롬프트 정렬 순서 결정 함수
+  const getPromptSortOrder = (key) => {
+    // 1순위: MASTER_PROMPT
+    if (key === 'MASTER_PROMPT') return { group: 0, order: 0 };
+    // 2순위: PASSAGE_MASTER
+    if (key === 'PASSAGE_MASTER') return { group: 1, order: 0 };
+    // 3순위: LC (LC1, LC2, ... 숫자 순서)
+    const lcMatch = key.match(/^LC(\d+)$/i);
+    if (lcMatch) return { group: 2, order: parseInt(lcMatch[1]) };
+    // 4순위: RC (RC18~RC45 또는 순수 숫자 18~45)
+    const rcMatch = key.match(/^RC?(\d+)$/i);
+    if (rcMatch) {
+      const num = parseInt(rcMatch[1]);
+      if (num >= 18 && num <= 45) return { group: 3, order: num };
+    }
+    // 5순위: P + 숫자 (지문용 프롬프트)
+    const pMatch = key.match(/^P(\d+)/i);
+    if (pMatch) return { group: 4, order: parseInt(pMatch[1]) };
+    // 6순위: 기타 (알파벳 순)
+    return { group: 5, order: 0, alpha: key };
+  };
+
   const loadPrompts = async () => {
     try {
       setLoading(true);
       const res = await promptsApi.getAll();
-      // 마스터 프롬프트를 상단에 표시하도록 정렬
+      // 정렬: MASTER_PROMPT → PASSAGE_MASTER → LC1, LC2... → RC18~45 → P숫자 → 기타
       const sorted = (res.data || []).sort((a, b) => {
-        // 1순위: MASTER_PROMPT
-        if (a.prompt_key === 'MASTER_PROMPT') return -1;
-        if (b.prompt_key === 'MASTER_PROMPT') return 1;
-        // 2순위: PASSAGE_MASTER
-        if (a.prompt_key === 'PASSAGE_MASTER') return -1;
-        if (b.prompt_key === 'PASSAGE_MASTER') return 1;
-        // 3순위: 기존 알파벳 순서
-        return a.prompt_key.localeCompare(b.prompt_key);
+        const orderA = getPromptSortOrder(a.prompt_key);
+        const orderB = getPromptSortOrder(b.prompt_key);
+
+        // 그룹 비교
+        if (orderA.group !== orderB.group) {
+          return orderA.group - orderB.group;
+        }
+        // 같은 그룹 내에서 숫자 순서 비교
+        if (orderA.order !== orderB.order) {
+          return orderA.order - orderB.order;
+        }
+        // 기타 그룹은 알파벳 순
+        if (orderA.alpha && orderB.alpha) {
+          return orderA.alpha.localeCompare(orderB.alpha);
+        }
+        return 0;
       });
       setPrompts(sorted);
     } catch (error) {
