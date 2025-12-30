@@ -34,27 +34,22 @@ function Prompts() {
     if (key === 'MASTER_PROMPT') return { group: 0, order: 0 };
     // 2순위: PASSAGE_MASTER
     if (key === 'PASSAGE_MASTER') return { group: 1, order: 0 };
-    // 3순위: LC (LC1, LC2, ... 숫자 순서)
-    const lcMatch = key.match(/^LC(\d+)$/i);
-    if (lcMatch) return { group: 2, order: parseInt(lcMatch[1]) };
-    // 4순위: RC (RC18~RC45 또는 순수 숫자 18~45)
-    const rcMatch = key.match(/^RC?(\d+)$/i);
-    if (rcMatch) {
-      const num = parseInt(rcMatch[1]);
-      if (num >= 18 && num <= 45) return { group: 3, order: num };
+    // 3순위: 순수 숫자 (1, 2, 3, ... 45)
+    if (/^\d+$/.test(key)) {
+      return { group: 2, order: parseInt(key) };
     }
-    // 5순위: P + 숫자 (지문용 프롬프트)
+    // 4순위: P + 숫자 (지문용 프롬프트)
     const pMatch = key.match(/^P(\d+)/i);
-    if (pMatch) return { group: 4, order: parseInt(pMatch[1]) };
-    // 6순위: 기타 (알파벳 순)
-    return { group: 5, order: 0, alpha: key };
+    if (pMatch) return { group: 3, order: parseInt(pMatch[1]) };
+    // 5순위: 기타 (알파벳 순)
+    return { group: 4, order: 0, alpha: key };
   };
 
   const loadPrompts = async () => {
     try {
       setLoading(true);
       const res = await promptsApi.getAll();
-      // 정렬: MASTER_PROMPT → PASSAGE_MASTER → LC1, LC2... → RC18~45 → P숫자 → 기타
+      // 정렬: MASTER_PROMPT → PASSAGE_MASTER → 1, 2, 3... → P숫자 → 기타
       const sorted = (res.data || []).sort((a, b) => {
         const orderA = getPromptSortOrder(a.prompt_key);
         const orderB = getPromptSortOrder(b.prompt_key);
@@ -237,8 +232,13 @@ function Prompts() {
   const getPromptTypeLabel = (key) => {
     if (key === 'MASTER_PROMPT') return '🎯 마스터';
     if (key === 'PASSAGE_MASTER') return '📄 지문 마스터';
+    if (/^\d+$/.test(key)) {
+      const num = parseInt(key);
+      if (num >= 1 && num <= 17) return `🎧 LC${key}`;
+      if (num >= 18 && num <= 45) return `📖 RC${key}`;
+      return `📋 ${key}`;
+    }
     if (key.startsWith('P')) return '📝 지문용';
-    if (/^\d+$/.test(key)) return `📋 RC${key}`;
     return '기타';
   };
 
