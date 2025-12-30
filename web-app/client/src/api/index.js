@@ -61,6 +61,21 @@ export const promptsApi = {
     request(`/prompts/${key}`, {
       method: 'DELETE',
     }),
+  evaluate: (key, promptText) =>
+    request(`/prompts/${key}/evaluate`, {
+      method: 'POST',
+      body: { prompt_text: promptText },
+    }),
+  quickValidate: (key, promptText) =>
+    request(`/prompts/${key}/quick-validate`, {
+      method: 'POST',
+      body: { prompt_text: promptText },
+    }),
+  improveWithFeedback: (key, promptText, feedback) =>
+    request(`/prompts/${key}/improve`, {
+      method: 'POST',
+      body: { prompt_text: promptText, feedback },
+    }),
 };
 
 // 문항 요청 API
@@ -91,6 +106,11 @@ export const itemsApi = {
     const query = new URLSearchParams(params).toString();
     return request(`/items/outputs${query ? `?${query}` : ''}`);
   },
+  previewPrompt: (data) =>
+    request('/items/preview-prompt', {
+      method: 'POST',
+      body: data,
+    }),
 };
 
 // 세트 API

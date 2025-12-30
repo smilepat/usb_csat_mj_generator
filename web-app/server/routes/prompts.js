@@ -6,6 +6,8 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db/database');
+const { evaluatePrompt, quickValidate, improvePromptWithFeedback } = require('../services/promptEvaluator');
+const logger = require('../services/logger');
 
 /**
  * GET /api/prompts
@@ -107,6 +109,132 @@ router.put('/:key', (req, res) => {
 
     res.json({ success: true, message: '프롬프트가 수정되었습니다.' });
   } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/:key/evaluate
+ * LLM을 사용한 프롬프트 품질 평가
+ */
+router.post('/:key/evaluate', async (req, res) => {
+  try {
+    const { key } = req.params;
+    const { prompt_text } = req.body;
+    const db = getDb();
+
+    // prompt_text가 제공되지 않으면 DB에서 조회
+    let textToEvaluate = prompt_text;
+    if (!textToEvaluate) {
+      const row = db.prepare('SELECT prompt_text FROM prompts WHERE prompt_key = ?').get(key);
+      if (!row) {
+        return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+      }
+      textToEvaluate = row.prompt_text;
+    }
+
+    // 1. 빠른 규칙 기반 사전 검증
+    const quickResult = quickValidate(key, textToEvaluate);
+
+    // 2. LLM 기반 평가
+    logger.info('프롬프트 평가 시작', key, `길이: ${textToEvaluate.length}자`);
+    const evalResult = await evaluatePrompt(key, textToEvaluate);
+
+    if (!evalResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: evalResult.error,
+        quickValidation: quickResult
+      });
+    }
+
+    logger.info('프롬프트 평가 완료', key, `점수: ${evalResult.data.overall_score}/10`);
+
+    res.json({
+      success: true,
+      data: {
+        ...evalResult.data,
+        quickValidation: quickResult
+      }
+    });
+  } catch (error) {
+    logger.error('프롬프트 평가 오류', req.params.key, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/:key/quick-validate
+ * 빠른 규칙 기반 검증 (LLM 호출 없음)
+ */
+router.post('/:key/quick-validate', (req, res) => {
+  try {
+    const { key } = req.params;
+    const { prompt_text } = req.body;
+    const db = getDb();
+
+    let textToValidate = prompt_text;
+    if (!textToValidate) {
+      const row = db.prepare('SELECT prompt_text FROM prompts WHERE prompt_key = ?').get(key);
+      if (!row) {
+        return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+      }
+      textToValidate = row.prompt_text;
+    }
+
+    const result = quickValidate(key, textToValidate);
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/:key/improve
+ * 사용자 피드백을 기반으로 프롬프트 개선
+ */
+router.post('/:key/improve', async (req, res) => {
+  try {
+    const { key } = req.params;
+    const { prompt_text, feedback } = req.body;
+    const db = getDb();
+
+    if (!feedback || feedback.trim().length === 0) {
+      return res.status(400).json({ success: false, error: '피드백을 입력해주세요.' });
+    }
+
+    // prompt_text가 제공되지 않으면 DB에서 조회
+    let textToImprove = prompt_text;
+    if (!textToImprove) {
+      const row = db.prepare('SELECT prompt_text FROM prompts WHERE prompt_key = ?').get(key);
+      if (!row) {
+        return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+      }
+      textToImprove = row.prompt_text;
+    }
+
+    logger.info('프롬프트 피드백 개선 시작', key, `피드백: ${feedback.substring(0, 50)}...`);
+    const result = await improvePromptWithFeedback(key, textToImprove, feedback);
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result.error
+      });
+    }
+
+    logger.info('프롬프트 피드백 개선 완료', key, `변경사항: ${result.data.changes_made.length}개`);
+
+    res.json({
+      success: true,
+      data: result.data
+    });
+  } catch (error) {
+    logger.error('프롬프트 피드백 개선 오류', req.params.key, error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

@@ -9,6 +9,7 @@ const { v4: uuidv4 } = require('uuid');
 const { getDb } = require('../db/database');
 const { generateItemPipeline, saveItemResults } = require('../services/itemPipeline');
 const logger = require('../services/logger');
+const { validatePromptBundle, generateSuggestions } = require('../services/promptValidator');
 
 /**
  * GET /api/items/requests
@@ -317,6 +318,60 @@ router.delete('/requests/:id', (req, res) => {
 
     res.json({ success: true, message: '요청이 삭제되었습니다.' });
   } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/items/preview-prompt
+ * 프롬프트 미리보기 및 1차 검증
+ */
+router.post('/preview-prompt', (req, res) => {
+  try {
+    const {
+      item_no,
+      passage,
+      level,
+      extra,
+      chart_id,
+      set_id,
+      topic
+    } = req.body;
+
+    if (!item_no) {
+      return res.status(400).json({ success: false, error: 'item_no는 필수입니다.' });
+    }
+
+    // 요청 객체 구성
+    const request = {
+      itemNo: parseInt(item_no),
+      passage: passage || '',
+      level: level || '중',
+      extra: extra || '',
+      chartId: chart_id || null,
+      setId: set_id || null,
+      topic: topic || ''
+    };
+
+    // 프롬프트 번들 검증
+    const validationResult = validatePromptBundle(request);
+
+    // 수정 제안 생성
+    const suggestions = generateSuggestions(validationResult);
+
+    res.json({
+      success: true,
+      data: {
+        valid: validationResult.valid,
+        errors: validationResult.errors,
+        warnings: validationResult.warnings,
+        suggestions,
+        preview: validationResult.preview,
+        stats: validationResult.stats
+      }
+    });
+  } catch (error) {
+    logger.error('프롬프트 미리보기 오류', 'preview-prompt', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

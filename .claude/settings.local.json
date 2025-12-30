@@ -13,7 +13,12 @@
       "Bash(git push:*)",
       "Bash(curl:*)",
       "Bash(ls:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\n사용자 가이드 문서 추가\n\n- 앱 정보 및 개요\n- 시스템 아키텍처 다이어그램\n- 문항 생성 작동 흐름 설명\n- 페이지별 사용 가이드 \\(8개 페이지\\)\n- 데이터베이스 구조\n- 환경 설정 가이드\n- 프로젝트 구조\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\n사용자 가이드 문서 추가\n\n- 앱 정보 및 개요\n- 시스템 아키텍처 다이어그램\n- 문항 생성 작동 흐름 설명\n- 페이지별 사용 가이드 \\(8개 페이지\\)\n- 데이터베이스 구조\n- 환경 설정 가이드\n- 프로젝트 구조\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(cat:*)"
     ]
   }
 }

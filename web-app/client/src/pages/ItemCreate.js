@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { itemsApi } from '../api';
+import PromptPreview from '../components/PromptPreview';
 
 function ItemCreate() {
   const navigate = useNavigate();
@@ -15,6 +16,11 @@ function ItemCreate() {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+
+  // 프롬프트 미리보기 관련 상태
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // 문항 유형 목록
   const itemTypes = [
@@ -51,6 +57,55 @@ function ItemCreate() {
       ...prev,
       [name]: name === 'item_no' ? parseInt(value) : value
     }));
+    // 입력 변경 시 미리보기 닫기
+    if (showPreview) {
+      setShowPreview(false);
+      setPreviewData(null);
+    }
+  };
+
+  // 프롬프트 미리보기 요청
+  const handlePreview = async () => {
+    try {
+      setPreviewLoading(true);
+      setMessage(null);
+
+      const res = await itemsApi.previewPrompt(formData);
+      setPreviewData(res.data);
+      setShowPreview(true);
+    } catch (error) {
+      setMessage({ type: 'error', text: '프롬프트 미리보기 오류: ' + error.message });
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  // 프롬프트 미리보기에서 확인 후 생성
+  const handleConfirmGenerate = async () => {
+    try {
+      setLoading(true);
+      const res = await itemsApi.createRequest(formData);
+      setMessage({ type: 'success', text: '요청이 생성되었습니다. 문항 생성을 시작합니다...' });
+
+      // 바로 생성 시작
+      try {
+        const genRes = await itemsApi.generate(res.data.requestId);
+        setMessage({
+          type: genRes.data.validationResult === 'PASS' ? 'success' : 'warning',
+          text: `문항 생성 완료: ${genRes.data.validationResult}`
+        });
+
+        setTimeout(() => {
+          navigate('/items');
+        }, 2000);
+      } catch (genError) {
+        setMessage({ type: 'error', text: '문항 생성 중 오류: ' + genError.message });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -98,6 +153,72 @@ function ItemCreate() {
     }
   };
 
+  // 미리보기 취소
+  const handleCancelPreview = () => {
+    setShowPreview(false);
+    setPreviewData(null);
+  };
+
+  // 프롬프트 편집 처리 (미래 기능을 위한 placeholder)
+  const handleEditPrompt = (editedData) => {
+    console.log('프롬프트 편집됨:', editedData);
+    // TODO: 편집된 프롬프트로 재검증 또는 직접 생성
+  };
+
+  // 프롬프트 미리보기 화면
+  if (showPreview && previewData) {
+    return (
+      <div>
+        <h1 style={{ marginBottom: '24px' }}>🔍 프롬프트 미리보기 및 검증</h1>
+
+        {message && (
+          <div className={`alert alert-${message.type}`}>
+            {message.text}
+          </div>
+        )}
+
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <h3 style={{ marginBottom: '12px' }}>📋 입력 정보</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
+            <div>
+              <div className="text-muted">문항 유형</div>
+              <div style={{ fontWeight: 'bold' }}>RC{formData.item_no}</div>
+            </div>
+            <div>
+              <div className="text-muted">난이도</div>
+              <div style={{ fontWeight: 'bold' }}>{formData.level}</div>
+            </div>
+            <div>
+              <div className="text-muted">지문</div>
+              <div style={{ fontWeight: 'bold' }}>{formData.passage ? '입력됨' : 'AI 자동 생성'}</div>
+            </div>
+            {formData.topic && (
+              <div>
+                <div className="text-muted">주제</div>
+                <div style={{ fontWeight: 'bold' }}>{formData.topic}</div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <PromptPreview
+          data={previewData}
+          onEdit={handleEditPrompt}
+          onConfirm={handleConfirmGenerate}
+          onCancel={handleCancelPreview}
+        />
+
+        {loading && (
+          <div className="loading" style={{ marginTop: '20px' }}>
+            <div className="spinner"></div>
+            <span>문항 생성 중...</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 기본 입력 폼 화면
   return (
     <div>
       <h1 style={{ marginBottom: '24px' }}>➕ 새 문항 생성</h1>
@@ -206,8 +327,16 @@ function ItemCreate() {
           )}
 
           <div className="flex gap-2 mt-4">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handlePreview}
+              disabled={loading || previewLoading}
+            >
+              {previewLoading ? '검증 중...' : '🔍 프롬프트 미리보기'}
+            </button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? '처리 중...' : '🚀 생성 및 실행'}
+              {loading ? '처리 중...' : '🚀 바로 생성'}
             </button>
             <button
               type="button"
@@ -232,6 +361,7 @@ function ItemCreate() {
       <div className="card">
         <h3 className="mb-2">💡 도움말</h3>
         <ul style={{ paddingLeft: '20px', color: 'var(--text-secondary)' }}>
+          <li><strong>🔍 프롬프트 미리보기</strong>: LLM에 전송될 프롬프트를 미리 확인하고 1차 검증을 수행합니다.</li>
           <li><strong>RC29 (어법)</strong>: 지문에 5개의 밑줄 부분이 생성되며, 1개가 틀린 표현입니다.</li>
           <li><strong>RC31-33 (빈칸)</strong>: 지문의 핵심 내용이 빈칸으로 처리됩니다.</li>
           <li><strong>RC25 (도표)</strong>: 차트 데이터가 필요합니다. 먼저 차트를 등록해주세요.</li>
