@@ -15,7 +15,8 @@ function App() {
       <div className="app-container">
         <aside className="sidebar">
           <div className="sidebar-header">
-            <h1>📝 수능 문항 생성기</h1>
+            <h1>📝 수능문항생성-검증-개선 시스템</h1>
+            <p style={{fontSize: '0.7em', opacity: 0.7, margin: 0}}>(origin: google appscript-mj)</p>
           </div>
           <nav>
             <ul className="sidebar-nav">
