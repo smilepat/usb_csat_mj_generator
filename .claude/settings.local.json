@@ -6,7 +6,11 @@
       "Bash(wc:*)",
       "Bash(npm run dev:*)",
       "Bash(npm start)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(git add:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\n.gitignore 추가 및 .env 보안 파일 제거\n\n- .gitignore 생성: node_modules, .env, *.db 등 제외\n- web-app/.env를 Git 추적에서 제거 \\(API 키 보안\\)\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)"
     ]
   }
 }
