@@ -84,8 +84,10 @@ async function initDatabase() {
       set_id TEXT,
       passage_source TEXT,
       topic TEXT,
+      prompt_id INTEGER,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (prompt_id) REFERENCES prompts(id)
     )
   `);
 
@@ -176,6 +178,48 @@ async function initDatabase() {
     )
   `);
 
+  // PROMPT_METRICS 테이블 (프롬프트 품질 메트릭스)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS prompt_metrics (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      prompt_id INTEGER NOT NULL,
+      prompt_key TEXT,
+
+      -- 규칙 기반 검증 점수
+      rule_score INTEGER DEFAULT 0,
+      rule_details TEXT,
+
+      -- AI 평가 점수
+      ai_score INTEGER DEFAULT 0,
+      ai_clarity INTEGER,
+      ai_completeness INTEGER,
+      ai_consistency INTEGER,
+      ai_specificity INTEGER,
+      ai_csat_fit INTEGER,
+      ai_reasoning TEXT,
+
+      -- 통합 점수
+      total_score INTEGER DEFAULT 0,
+      grade TEXT,
+
+      -- 성능 추적 (문항 생성 후 업데이트)
+      items_generated INTEGER DEFAULT 0,
+      avg_item_score REAL,
+      approve_count INTEGER DEFAULT 0,
+      review_count INTEGER DEFAULT 0,
+      reject_count INTEGER DEFAULT 0,
+      approve_rate REAL,
+
+      -- 플래그
+      needs_improvement INTEGER DEFAULT 0,
+      flags TEXT,
+
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (prompt_id) REFERENCES prompts(id)
+    )
+  `);
+
   // ITEM_METRICS 테이블 (3겹 검증 시스템)
   db.run(`
     CREATE TABLE IF NOT EXISTS item_metrics (
@@ -225,6 +269,8 @@ async function initDatabase() {
   db.run(`CREATE INDEX IF NOT EXISTS idx_logs_request_id ON logs(request_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_item_metrics_request_id ON item_metrics(request_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_item_metrics_recommendation ON item_metrics(recommendation)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_prompt_metrics_prompt_id ON prompt_metrics(prompt_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_item_requests_prompt_id ON item_requests(prompt_id)`);
 
   // 기본 설정 삽입 (Google Sheets CONFIG 시트 기준)
   const defaultConfigs = [

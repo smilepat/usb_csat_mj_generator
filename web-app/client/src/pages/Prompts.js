@@ -24,6 +24,9 @@ function Prompts() {
   const [improving, setImproving] = useState(false);
   const [improvementResult, setImprovementResult] = useState(null);
 
+  // 메트릭스 관련 상태
+  const [recalculating, setRecalculating] = useState(false);
+
   useEffect(() => {
     loadPrompts();
   }, []);
@@ -229,6 +232,26 @@ function Prompts() {
     }
   };
 
+  // 전체 메트릭스 재계산
+  const handleRecalculateAll = async () => {
+    if (!window.confirm('모든 프롬프트의 메트릭스를 재계산하시겠습니까?\n(규칙 기반 검증만 수행됩니다)')) return;
+
+    try {
+      setRecalculating(true);
+      setMessage(null);
+      const res = await promptsApi.recalculateAllMetrics();
+      setMessage({
+        type: 'success',
+        text: `메트릭스 재계산 완료: 성공 ${res.data.success}개, 실패 ${res.data.failed}개`
+      });
+      loadPrompts();
+    } catch (error) {
+      setMessage({ type: 'error', text: '메트릭스 재계산 실패: ' + error.message });
+    } finally {
+      setRecalculating(false);
+    }
+  };
+
   const getPromptTypeLabel = (key) => {
     if (key === 'MASTER_PROMPT') return '🎯 마스터';
     if (key === 'PASSAGE_MASTER') return '📄 지문 마스터';
@@ -266,9 +289,14 @@ function Prompts() {
     <div>
       <div className="flex-between mb-4">
         <h1>💬 프롬프트 관리</h1>
-        <button className="btn btn-primary" onClick={handleNew}>
-          ➕ 새 프롬프트
-        </button>
+        <div className="flex gap-2">
+          <button className="btn btn-secondary" onClick={handleRecalculateAll} disabled={recalculating}>
+            {recalculating ? '🔄 계산 중...' : '📊 전체 메트릭스 재계산'}
+          </button>
+          <button className="btn btn-primary" onClick={handleNew}>
+            ➕ 새 프롬프트
+          </button>
+        </div>
       </div>
 
       {message && (
@@ -308,16 +336,53 @@ function Prompts() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontWeight: 500 }}>{prompt.prompt_key}</span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      {getPromptTypeLabel(prompt.prompt_key)}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {/* 등급 배지 */}
+                      {prompt.grade && (
+                        <span style={{
+                          ...getGradeBadgeStyle(prompt.grade),
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '0.7rem',
+                          fontWeight: 'bold'
+                        }}>
+                          {prompt.grade}
+                        </span>
+                      )}
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        {getPromptTypeLabel(prompt.prompt_key)}
+                      </span>
+                    </div>
                   </div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                     {prompt.title || '(제목 없음)'}
                   </div>
-                  {prompt.active !== 1 && (
-                    <span className="badge badge-fail" style={{ marginTop: '4px' }}>비활성</span>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                    {prompt.active !== 1 && (
+                      <span className="badge badge-fail">비활성</span>
+                    )}
+                    {prompt.needs_improvement === 1 && (
+                      <span style={{
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '0.7rem',
+                        background: '#fff3cd',
+                        color: '#856404'
+                      }}>
+                        개선필요
+                      </span>
+                    )}
+                    {/* 성능 지표 */}
+                    {prompt.items_generated > 0 && (
+                      <span style={{
+                        fontSize: '0.7rem',
+                        color: prompt.approve_rate >= 70 ? 'var(--success-color)' :
+                               prompt.approve_rate >= 50 ? '#f57c00' : 'var(--error-color)'
+                      }}>
+                        승인율 {Math.round(prompt.approve_rate)}%
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

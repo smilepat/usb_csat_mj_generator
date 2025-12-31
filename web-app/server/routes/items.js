@@ -10,6 +10,8 @@ const { getDb } = require('../db/database');
 const { generateItemPipeline, saveItemResults } = require('../services/itemPipeline');
 const logger = require('../services/logger');
 const { validatePromptBundle, generateSuggestions } = require('../services/promptValidator');
+const { updatePromptPerformance } = require('../services/promptMetricsService');
+const { getMetricsByRequestId } = require('../services/metricsService');
 
 /**
  * GET /api/items/requests
@@ -67,7 +69,7 @@ router.get('/requests', (req, res) => {
 
 /**
  * GET /api/items/requests/:id
- * 특정 요청 조회
+ * 특정 요청 조회 (메트릭스 포함)
  */
 router.get('/requests/:id', (req, res) => {
   try {
@@ -83,12 +85,28 @@ router.get('/requests/:id', (req, res) => {
     const results = db.prepare('SELECT * FROM item_json WHERE request_id = ?').all(id);
     const output = db.prepare('SELECT * FROM item_output WHERE request_id = ?').get(id);
 
+    // 메트릭스 조회
+    const metrics = getMetricsByRequestId(id);
+
+    // 프롬프트 정보 조회 (prompt_id가 있는 경우)
+    let promptInfo = null;
+    if (request.prompt_id) {
+      promptInfo = db.prepare(`
+        SELECT p.prompt_key, p.title, pm.total_score, pm.grade
+        FROM prompts p
+        LEFT JOIN prompt_metrics pm ON p.id = pm.prompt_id
+        WHERE p.id = ?
+      `).get(request.prompt_id);
+    }
+
     res.json({
       success: true,
       data: {
         request,
         results,
-        output
+        output,
+        metrics,
+        promptInfo
       }
     });
   } catch (error) {
@@ -110,7 +128,8 @@ router.post('/requests', (req, res) => {
       chart_id,
       set_id,
       passage_source,
-      topic
+      topic,
+      prompt_id
     } = req.body;
 
     if (!item_no) {
@@ -123,8 +142,8 @@ router.post('/requests', (req, res) => {
     db.prepare(`
       INSERT INTO item_requests (
         request_id, status, item_no, passage, level, extra,
-        chart_id, set_id, passage_source, topic
-      ) VALUES (?, 'PENDING', ?, ?, ?, ?, ?, ?, ?, ?)
+        chart_id, set_id, passage_source, topic, prompt_id
+      ) VALUES (?, 'PENDING', ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       requestId,
       item_no,
@@ -134,7 +153,8 @@ router.post('/requests', (req, res) => {
       chart_id || null,
       set_id || null,
       passage_source || '',
-      topic || ''
+      topic || '',
+      prompt_id || null
     );
 
     res.json({
@@ -193,7 +213,7 @@ router.post('/generate/:id', async (req, res) => {
     const result = await generateItemPipeline(request);
 
     // 결과 저장
-    await saveItemResults(id, result);
+    await saveItemResults(id, result, row.item_no);
 
     // 상태 업데이트
     const finalStatus = result.validationResult === 'PASS' ? 'OK' : 'FAIL';
@@ -205,6 +225,19 @@ router.post('/generate/:id', async (req, res) => {
 
     logger.info('문항 생성 완료', id, result.validationLog);
 
+    // 프롬프트 성능 자동 업데이트 (prompt_id가 있는 경우)
+    if (row.prompt_id) {
+      try {
+        const performance = updatePromptPerformance(row.prompt_id);
+        if (performance) {
+          logger.info('프롬프트 성능 업데이트', `prompt_id:${row.prompt_id}`,
+            `승인율: ${(performance.approve_rate * 100).toFixed(1)}%`);
+        }
+      } catch (perfError) {
+        logger.warn('프롬프트 성능 업데이트 실패', `prompt_id:${row.prompt_id}`, perfError.message);
+      }
+    }
+
     res.json({
       success: true,
       data: {
@@ -212,7 +245,8 @@ router.post('/generate/:id', async (req, res) => {
         status: finalStatus,
         validationResult: result.validationResult,
         validationLog: result.validationLog,
-        finalJson: result.finalJson
+        finalJson: result.finalJson,
+        metrics: result.metrics || null
       }
     });
   } catch (error) {
@@ -265,7 +299,7 @@ router.post('/generate-pending', async (req, res) => {
 
       try {
         const result = await generateItemPipeline(request);
-        await saveItemResults(row.request_id, result);
+        await saveItemResults(row.request_id, result, row.item_no);
 
         const finalStatus = result.validationResult === 'PASS' ? 'OK' : 'FAIL';
         db.prepare(`
@@ -276,6 +310,15 @@ router.post('/generate-pending', async (req, res) => {
 
         if (finalStatus === 'OK') okCount++;
         else failCount++;
+
+        // 프롬프트 성능 자동 업데이트
+        if (row.prompt_id) {
+          try {
+            updatePromptPerformance(row.prompt_id);
+          } catch (perfError) {
+            logger.warn('프롬프트 성능 업데이트 실패', `prompt_id:${row.prompt_id}`, perfError.message);
+          }
+        }
 
       } catch (e) {
         db.prepare(`

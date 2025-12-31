@@ -76,6 +76,23 @@ export const promptsApi = {
       method: 'POST',
       body: { prompt_text: promptText, feedback },
     }),
+  // 메트릭스 관련
+  getMetricsSummary: () => request('/prompts/metrics/summary'),
+  getMetrics: (key) => request(`/prompts/${key}/metrics`),
+  calculateMetrics: (key, includeAI = false) =>
+    request(`/prompts/${key}/metrics/calculate`, {
+      method: 'POST',
+      body: { includeAI },
+    }),
+  recalculateAllMetrics: (includeAI = false) =>
+    request('/prompts/metrics/recalculate-all', {
+      method: 'POST',
+      body: { includeAI },
+    }),
+  updatePerformance: (key) =>
+    request(`/prompts/${key}/performance/update`, {
+      method: 'POST',
+    }),
 };
 
 // 문항 요청 API

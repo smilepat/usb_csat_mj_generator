@@ -7,20 +7,87 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db/database');
 const { evaluatePrompt, quickValidate, improvePromptWithFeedback } = require('../services/promptEvaluator');
+const {
+  calculateAndSavePromptMetrics,
+  getPromptMetrics,
+  getPromptMetricsSummary,
+  recalculateAllPromptMetrics,
+  updatePromptPerformance
+} = require('../services/promptMetricsService');
 const logger = require('../services/logger');
 
 /**
  * GET /api/prompts
- * 모든 프롬프트 조회
+ * 모든 프롬프트 조회 (메트릭스 포함)
  */
 router.get('/', (req, res) => {
   try {
     const db = getDb();
     const rows = db.prepare(`
-      SELECT * FROM prompts ORDER BY prompt_key
+      SELECT p.*, pm.total_score, pm.grade, pm.needs_improvement,
+             pm.items_generated, pm.approve_rate
+      FROM prompts p
+      LEFT JOIN prompt_metrics pm ON p.id = pm.prompt_id
+      ORDER BY
+        CASE
+          WHEN p.prompt_key = 'MASTER_PROMPT' THEN 1
+          WHEN p.prompt_key = 'PASSAGE_MASTER' THEN 2
+          WHEN p.prompt_key LIKE 'P%' THEN 3
+          ELSE 4
+        END,
+        p.prompt_key
     `).all();
     res.json({ success: true, data: rows });
   } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================
+// 메트릭스 관련 엔드포인트 (/:key 라우트보다 먼저 정의)
+// ============================================
+
+/**
+ * GET /api/prompts/metrics/summary
+ * 프롬프트 메트릭스 요약
+ */
+router.get('/metrics/summary', (req, res) => {
+  try {
+    const summary = getPromptMetricsSummary();
+    res.json({ success: true, data: summary });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/metrics/recalculate-all
+ * 모든 프롬프트 메트릭스 재계산
+ */
+router.post('/metrics/recalculate-all', async (req, res) => {
+  try {
+    const { includeAI = false } = req.body;
+
+    logger.info('모든 프롬프트 메트릭스 재계산 시작', 'system', `AI 포함: ${includeAI}`);
+
+    const results = await recalculateAllPromptMetrics(includeAI);
+
+    const successCount = results.filter(r => r.success).length;
+    const failCount = results.filter(r => !r.success).length;
+
+    logger.info('모든 프롬프트 메트릭스 재계산 완료', 'system', `성공: ${successCount}, 실패: ${failCount}`);
+
+    res.json({
+      success: true,
+      data: {
+        total: results.length,
+        success: successCount,
+        failed: failCount,
+        details: results
+      }
+    });
+  } catch (error) {
+    logger.error('모든 프롬프트 메트릭스 재계산 오류', 'system', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -49,9 +116,9 @@ router.get('/:key', (req, res) => {
 
 /**
  * POST /api/prompts
- * 새 프롬프트 생성
+ * 새 프롬프트 생성 (메트릭스 자동 계산)
  */
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { prompt_key, title, prompt_text, active = 1 } = req.body;
 
@@ -68,7 +135,24 @@ router.post('/', (req, res) => {
       VALUES (?, ?, ?, ?)
     `).run(prompt_key, title || '', prompt_text, active ? 1 : 0);
 
-    res.json({ success: true, message: '프롬프트가 생성되었습니다.' });
+    // 새로 생성된 프롬프트 ID 조회
+    const newPrompt = db.prepare('SELECT id FROM prompts WHERE prompt_key = ?').get(prompt_key);
+
+    // 메트릭스 자동 계산 (규칙 기반만, AI 평가는 별도 요청으로)
+    let metrics = null;
+    if (newPrompt) {
+      try {
+        metrics = await calculateAndSavePromptMetrics(newPrompt.id, prompt_key, prompt_text, false);
+      } catch (metricsError) {
+        logger.warn('프롬프트 메트릭스 계산 실패', prompt_key, metricsError.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: '프롬프트가 생성되었습니다.',
+      metrics: metrics
+    });
   } catch (error) {
     if (error.message.includes('UNIQUE constraint')) {
       return res.status(400).json({ success: false, error: '이미 존재하는 prompt_key입니다.' });
@@ -79,9 +163,9 @@ router.post('/', (req, res) => {
 
 /**
  * PUT /api/prompts/:key
- * 프롬프트 수정
+ * 프롬프트 수정 (메트릭스 재계산)
  */
-router.put('/:key', (req, res) => {
+router.put('/:key', async (req, res) => {
   try {
     const { key } = req.params;
     const { title, prompt_text, active } = req.body;
@@ -93,6 +177,8 @@ router.put('/:key', (req, res) => {
       return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
     }
 
+    const newPromptText = prompt_text !== undefined ? prompt_text : existing.prompt_text;
+
     db.prepare(`
       UPDATE prompts
       SET title = ?,
@@ -102,12 +188,27 @@ router.put('/:key', (req, res) => {
       WHERE prompt_key = ?
     `).run(
       title !== undefined ? title : existing.title,
-      prompt_text !== undefined ? prompt_text : existing.prompt_text,
+      newPromptText,
       active !== undefined ? (active ? 1 : 0) : existing.active,
       key
     );
 
-    res.json({ success: true, message: '프롬프트가 수정되었습니다.' });
+    // 프롬프트 텍스트가 변경되었으면 메트릭스 재계산
+    let metrics = null;
+    if (prompt_text !== undefined && prompt_text !== existing.prompt_text) {
+      try {
+        metrics = await calculateAndSavePromptMetrics(existing.id, key, newPromptText, false);
+        logger.info('프롬프트 수정 후 메트릭스 재계산', key, `Score: ${metrics?.totalScore}`);
+      } catch (metricsError) {
+        logger.warn('프롬프트 메트릭스 재계산 실패', key, metricsError.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: '프롬프트가 수정되었습니다.',
+      metrics: metrics
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -255,6 +356,86 @@ router.delete('/:key', (req, res) => {
     }
 
     res.json({ success: true, message: '프롬프트가 삭제되었습니다.' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================
+// 추가 메트릭스 엔드포인트 (/:key 하위 경로)
+// ============================================
+
+/**
+ * GET /api/prompts/:key/metrics
+ * 특정 프롬프트의 메트릭스 조회
+ */
+router.get('/:key/metrics', (req, res) => {
+  try {
+    const { key } = req.params;
+    const db = getDb();
+
+    const prompt = db.prepare('SELECT id FROM prompts WHERE prompt_key = ?').get(key);
+    if (!prompt) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    const metrics = getPromptMetrics(prompt.id);
+
+    res.json({
+      success: true,
+      data: metrics || { message: '메트릭스가 아직 계산되지 않았습니다.' }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/:key/metrics/calculate
+ * 프롬프트 메트릭스 계산 (강제 재계산)
+ */
+router.post('/:key/metrics/calculate', async (req, res) => {
+  try {
+    const { key } = req.params;
+    const { includeAI = false } = req.body;
+    const db = getDb();
+
+    const prompt = db.prepare('SELECT id, prompt_text FROM prompts WHERE prompt_key = ?').get(key);
+    if (!prompt) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    logger.info('프롬프트 메트릭스 계산 요청', key, `AI 포함: ${includeAI}`);
+
+    const metrics = await calculateAndSavePromptMetrics(prompt.id, key, prompt.prompt_text, includeAI);
+
+    res.json({ success: true, data: metrics });
+  } catch (error) {
+    logger.error('프롬프트 메트릭스 계산 오류', req.params.key, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/:key/performance/update
+ * 프롬프트 성능 데이터 업데이트 (문항 생성 후 호출)
+ */
+router.post('/:key/performance/update', (req, res) => {
+  try {
+    const { key } = req.params;
+    const db = getDb();
+
+    const prompt = db.prepare('SELECT id FROM prompts WHERE prompt_key = ?').get(key);
+    if (!prompt) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    const performance = updatePromptPerformance(prompt.id);
+
+    res.json({
+      success: true,
+      data: performance || { message: '해당 프롬프트로 생성된 문항이 없습니다.' }
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

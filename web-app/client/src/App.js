@@ -62,7 +62,7 @@ function App() {
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/quality" className={({ isActive }) => isActive ? 'active' : '}>
+                <NavLink to="/quality" className={({ isActive }) => isActive ? 'active' : ''}>
                   🎯 품질 대시보드
                 </NavLink>
               </li>
