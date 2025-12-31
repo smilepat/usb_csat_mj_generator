@@ -8,6 +8,7 @@ import Prompts from './pages/Prompts';
 import Charts from './pages/Charts';
 import Config from './pages/Config';
 import Logs from './pages/Logs';
+import Quality from './pages/Quality';
 
 function App() {
   return (
@@ -60,6 +61,11 @@ function App() {
                   📜 로그
                 </NavLink>
               </li>
+              <li>
+                <NavLink to="/quality" className={({ isActive }) => isActive ? 'active' : '}>
+                  🎯 품질 대시보드
+                </NavLink>
+              </li>
             </ul>
           </nav>
         </aside>
@@ -74,6 +80,7 @@ function App() {
             <Route path="/charts" element={<Charts />} />
             <Route path="/config" element={<Config />} />
             <Route path="/logs" element={<Logs />} />
+            <Route path="/quality" element={<Quality />} />
           </Routes>
         </main>
       </div>

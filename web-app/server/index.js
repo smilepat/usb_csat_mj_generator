@@ -16,6 +16,7 @@ const itemRoutes = require('./routes/items');
 const setRoutes = require('./routes/sets');
 const chartRoutes = require('./routes/charts');
 const logRoutes = require('./routes/logs');
+const metricsRoutes = require('./routes/metrics');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -46,6 +47,7 @@ app.use('/api/items', itemRoutes);
 app.use('/api/sets', setRoutes);
 app.use('/api/charts', chartRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/metrics', metricsRoutes);
 
 // 헬스 체크
 app.get('/api/health', (req, res) => {

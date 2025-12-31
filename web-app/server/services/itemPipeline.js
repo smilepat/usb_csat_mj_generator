@@ -19,6 +19,7 @@ const {
   validateItemSet,
   checkSetPattern
 } = require('./validators');
+const { saveItemMetrics } = require('./metricsService');
 
 /**
  * 단일 문항 생성 파이프라인
@@ -192,8 +193,8 @@ async function generateSetItems(setId) {
     const result = await generateItemPipeline(req);
     results.push({ req, result });
 
-    // 결과 저장
-    await saveItemResults(req.requestId, result);
+    // 결과 저장 (itemNo 전달)
+    await saveItemResults(req.requestId, result, req.itemNo);
 
     // 상태 업데이트: OK/FAIL
     const finalStatus = result.validationResult === 'PASS' ? 'OK' : 'FAIL';
@@ -221,8 +222,9 @@ async function generateSetItems(setId) {
  * 문항 결과 저장
  * @param {string} requestId - 요청 ID
  * @param {Object} result - 결과 객체
+ * @param {number} itemNo - 문항 번호
  */
-async function saveItemResults(requestId, result) {
+async function saveItemResults(requestId, result, itemNo) {
   const db = getDb();
 
   // ITEM_JSON 저장
@@ -267,6 +269,19 @@ async function saveItemResults(requestId, result) {
       result.difficultyEst || '',
       fj.distractor_meta ? JSON.stringify(fj.distractor_meta) : ''
     );
+  }
+
+  // ITEM_METRICS 저장 (3겹 검증 시스템)
+  const layer1Pass = result.validationResult === 'PASS';
+  const layer1Log = result.validationLog || '';
+  const itemObj = result.finalJson || result.normalized || {};
+  const actualItemNo = itemNo || itemObj.itemNo || 0;
+
+  if (Object.keys(itemObj).length > 0) {
+    const metrics = saveItemMetrics(requestId, itemObj, actualItemNo, layer1Pass, layer1Log);
+    if (metrics) {
+      result.metrics = metrics;
+    }
   }
 }
 

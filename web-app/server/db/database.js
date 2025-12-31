@@ -176,12 +176,55 @@ async function initDatabase() {
     )
   `);
 
+  // ITEM_METRICS 테이블 (3겹 검증 시스템)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS item_metrics (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      request_id TEXT NOT NULL,
+      item_no INTEGER,
+
+      -- Layer 1: 구조 검증 (기계적)
+      layer1_score INTEGER DEFAULT 0,
+      layer1_pass INTEGER DEFAULT 0,
+      layer1_log TEXT,
+
+      -- Layer 3: 수능 적합성 (규칙 기반) - Layer 2보다 먼저 구현
+      word_count INTEGER,
+      sentence_count INTEGER,
+      avg_sentence_length REAL,
+      passage_length_score INTEGER,
+      format_score INTEGER,
+      layer3_score INTEGER DEFAULT 0,
+      layer3_log TEXT,
+
+      -- Layer 2: 내용 품질 (규칙 + AI)
+      answer_in_options INTEGER,
+      distractor_uniqueness INTEGER,
+      layer2_rule_score INTEGER DEFAULT 0,
+      layer2_ai_score INTEGER,
+      layer2_ai_reasoning TEXT,
+      layer2_score INTEGER DEFAULT 0,
+      layer2_log TEXT,
+
+      -- 종합 점수 및 분류
+      final_score REAL DEFAULT 0,
+      grade TEXT,
+      recommendation TEXT,
+      flags TEXT,
+
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (request_id) REFERENCES item_requests(request_id)
+    )
+  `);
+
   // 인덱스 생성
   db.run(`CREATE INDEX IF NOT EXISTS idx_item_requests_status ON item_requests(status)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_item_requests_set_id ON item_requests(set_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_item_json_request_id ON item_json(request_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_logs_level ON logs(level)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_logs_request_id ON logs(request_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_item_metrics_request_id ON item_metrics(request_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_item_metrics_recommendation ON item_metrics(recommendation)`);
 
   // 기본 설정 삽입 (Google Sheets CONFIG 시트 기준)
   const defaultConfigs = [
