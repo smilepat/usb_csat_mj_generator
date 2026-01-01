@@ -73,9 +73,18 @@ function Prompts() {
       return { group: 4, order: num, subOrder: 0 };
     }
 
-    // 6순위: P + 숫자 (지문용 프롬프트)
-    const pMatch = key.match(/^P(\d+)/i);
-    if (pMatch) return { group: 5, order: parseInt(pMatch[1]), subOrder: 0 };
+    // 6순위: P + 숫자 (지문용 프롬프트) - P1-P45
+    const pMatch = key.match(/^P(\d+)$/i);
+    if (pMatch) {
+      const num = parseInt(pMatch[1]);
+      // P16-17은 세트로 취급
+      if (num === 16 || num === 17) return { group: 5, order: 16, subOrder: num };
+      // P41-42는 세트로 취급
+      if (num >= 41 && num <= 42) return { group: 5, order: 41, subOrder: num };
+      // P43-45는 세트로 취급
+      if (num >= 43 && num <= 45) return { group: 5, order: 43, subOrder: num };
+      return { group: 5, order: num, subOrder: 0 };
+    }
 
     // 7순위: 기타 (알파벳 순)
     return { group: 6, order: 0, subOrder: 0, alpha: key };
@@ -323,6 +332,16 @@ function Prompts() {
         return `📖 독해`;
       }
       return `📋 ${key}`;
+    }
+
+    // P + 숫자 (지문용 프롬프트)
+    const pMatch = key.match(/^P(\d+)$/i);
+    if (pMatch) {
+      const num = parseInt(pMatch[1]);
+      if (num === 16 || num === 17) return `📝 P16-17 세트`;
+      if (num >= 41 && num <= 42) return `📝 P41-42 세트`;
+      if (num >= 43 && num <= 45) return `📝 P43-45 세트`;
+      return `📝 지문용`;
     }
 
     if (key.startsWith('P')) return '📝 지문용';
