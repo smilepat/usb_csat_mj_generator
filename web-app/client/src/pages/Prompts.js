@@ -613,7 +613,11 @@ function Prompts() {
                 <div style={{ marginTop: '16px', padding: '16px', background: '#e8f5e9', borderRadius: '8px', border: '1px solid #a5d6a7' }}>
                   <div className="flex-between" style={{ marginBottom: '12px' }}>
                     <h4 style={{ margin: 0, color: '#2e7d32' }}>✨ 피드백 반영 개선 결과</h4>
-                    <button className="btn btn-primary btn-sm" onClick={handleApplyFeedbackImproved}>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={handleApplyFeedbackImproved}
+                      disabled={!improvementResult?.improved_prompt}
+                    >
                       📝 적용하기
                     </button>
                   </div>
