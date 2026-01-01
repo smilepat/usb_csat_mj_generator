@@ -66,6 +66,11 @@ async function generateItemPipeline(req) {
         throw new Error('parseItemJson 결과가 유효한 객체가 아닙니다.');
       }
 
+      // 디버깅: LLM 응답에서 answer 관련 필드 확인
+      logger.info('LLM 응답 파싱 결과', req.requestId,
+        `answer=${parsed.answer}, correct_answer=${parsed.correct_answer}, keys=${Object.keys(parsed).join(',')}`
+      );
+
       // 4) Normalize
       const normalized = normalizeItemJson(parsed);
       if (!normalized || typeof normalized !== 'object') {

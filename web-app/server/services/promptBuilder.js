@@ -23,28 +23,64 @@ function readMasterPrompt() {
 }
 
 /**
+ * 문항 번호를 프롬프트 키로 변환
+ * LC01-LC17 (1-17), RC18-RC45 (18-45)
+ */
+function itemNoToPromptKey(itemNo) {
+  const num = parseInt(itemNo, 10);
+  if (num >= 1 && num <= 17) {
+    // 듣기 문항: LC01-LC17
+    return 'LC' + String(num).padStart(2, '0');
+  } else if (num >= 18 && num <= 45) {
+    // 독해 문항: RC18-RC45
+    return 'RC' + String(num);
+  }
+  // 기존 형식 (숫자만)도 지원
+  return String(itemNo);
+}
+
+/**
  * ITEM_PROMPT 읽기
  */
 function readItemPrompt(itemNo) {
   const db = getDb();
-  const key = String(itemNo);
 
-  // 활성화된 프롬프트 먼저 찾기
+  // 새 형식 (LC01, RC20 등)과 기존 형식 (숫자만) 모두 시도
+  const newKey = itemNoToPromptKey(itemNo);
+  const oldKey = String(itemNo);
+
+  // 1. 새 형식 키로 활성화된 프롬프트 찾기
   let row = db.prepare(`
     SELECT prompt_text FROM prompts
     WHERE prompt_key = ? AND active = 1
-  `).get(key);
+  `).get(newKey);
 
+  // 2. 새 형식 키로 비활성화된 프롬프트 찾기
   if (!row) {
-    // 비활성화된 것이라도 찾기
     row = db.prepare(`
       SELECT prompt_text FROM prompts
       WHERE prompt_key = ?
-    `).get(key);
+    `).get(newKey);
+  }
+
+  // 3. 기존 형식 키로 활성화된 프롬프트 찾기
+  if (!row) {
+    row = db.prepare(`
+      SELECT prompt_text FROM prompts
+      WHERE prompt_key = ? AND active = 1
+    `).get(oldKey);
+  }
+
+  // 4. 기존 형식 키로 비활성화된 프롬프트 찾기
+  if (!row) {
+    row = db.prepare(`
+      SELECT prompt_text FROM prompts
+      WHERE prompt_key = ?
+    `).get(oldKey);
   }
 
   if (!row || !row.prompt_text) {
-    throw new Error(`ITEM_NO=${itemNo}에 해당하는 프롬프트를 찾을 수 없습니다.`);
+    throw new Error(`ITEM_NO=${itemNo}에 해당하는 프롬프트를 찾을 수 없습니다. (시도한 키: ${newKey}, ${oldKey})`);
   }
 
   return row.prompt_text;
@@ -269,6 +305,7 @@ function buildPromptBundle(req, logger = null) {
 module.exports = {
   readMasterPrompt,
   readItemPrompt,
+  itemNoToPromptKey,
   readPassageMasterPrompt,
   readPassageItemPrompt,
   readSetInfo,

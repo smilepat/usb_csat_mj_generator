@@ -78,22 +78,43 @@ function normalizeItemJson(obj) {
     out.options = out.options.slice(0, 5);
   }
 
-  // answer: correct_answer도 지원 (새 프롬프트 형식)
-  let answerValue = out.answer !== undefined ? out.answer : out.correct_answer;
+  // answer: 다양한 필드명 지원 (correct_answer, correctAnswer, answer_key 등)
+  let answerValue = null;
+
+  // 우선순위대로 answer 값 탐색
+  if (out.answer !== undefined && out.answer !== null) {
+    answerValue = out.answer;
+  } else if (out.correct_answer !== undefined && out.correct_answer !== null) {
+    answerValue = out.correct_answer;
+  } else if (out.correctAnswer !== undefined && out.correctAnswer !== null) {
+    answerValue = out.correctAnswer;
+  } else if (out.answer_key !== undefined && out.answer_key !== null) {
+    answerValue = out.answer_key;
+  } else if (out.answerKey !== undefined && out.answerKey !== null) {
+    answerValue = out.answerKey;
+  }
 
   if (typeof answerValue === 'number') {
-    out.answer = String(answerValue);
+    // 숫자 그대로 사용 (1-5 범위 체크)
+    if (answerValue >= 1 && answerValue <= 5) {
+      out.answer = String(answerValue);
+    } else {
+      throw new Error('answer 필드가 1~5 범위를 벗어남: ' + answerValue);
+    }
   } else if (typeof answerValue === 'string') {
-    const m = answerValue.match(/([1-5])/);
+    // 문자열에서 1-5 추출
+    const m = String(answerValue).match(/([1-5])/);
     if (m) {
       out.answer = m[1];
     } else {
       throw new Error('answer 필드에서 1~5를 찾을 수 없습니다: ' + answerValue);
     }
   } else if (answerValue === undefined || answerValue === null) {
-    throw new Error('answer 필드가 없습니다.');
+    // answer 필드가 없으면 전체 객체 키 목록과 함께 에러
+    const keys = Object.keys(obj).join(', ');
+    throw new Error('answer 필드가 없습니다. 객체 키: [' + keys + ']');
   } else {
-    throw new Error('answer 필드가 없습니다.');
+    throw new Error('answer 필드가 잘못된 타입입니다: ' + typeof answerValue);
   }
 
   // explanation

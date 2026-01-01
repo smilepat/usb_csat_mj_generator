@@ -3,11 +3,11 @@
  * 수능 문항 생성-검증 시스템 메인 서버
  */
 
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
-const path = require('path');
 
 const { initDatabase } = require('./db/database');
 const configRoutes = require('./routes/config');
