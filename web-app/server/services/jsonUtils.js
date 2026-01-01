@@ -54,8 +54,16 @@ function normalizeItemJson(obj) {
   // itemNo
   if (!out.itemNo) out.itemNo = obj.itemNo || null;
 
-  // question
-  out.question = out.question || '';
+  // question: question_stem도 지원 (새 프롬프트 형식)
+  out.question = out.question || out.question_stem || '';
+
+  // passage: stimulus, transcript도 지원 (새 프롬프트 형식)
+  if (!out.passage && out.stimulus) {
+    out.passage = out.stimulus;
+  }
+  if (!out.passage && out.transcript) {
+    out.passage = out.transcript;
+  }
 
   // options: 배열, 정확히 5개 유지
   if (!Array.isArray(out.options)) {
@@ -70,16 +78,20 @@ function normalizeItemJson(obj) {
     out.options = out.options.slice(0, 5);
   }
 
-  // answer: 문자열 "1"~"5"
-  if (typeof out.answer === 'number') {
-    out.answer = String(out.answer);
-  } else if (typeof out.answer === 'string') {
-    const m = out.answer.match(/([1-5])/);
+  // answer: correct_answer도 지원 (새 프롬프트 형식)
+  let answerValue = out.answer !== undefined ? out.answer : out.correct_answer;
+
+  if (typeof answerValue === 'number') {
+    out.answer = String(answerValue);
+  } else if (typeof answerValue === 'string') {
+    const m = answerValue.match(/([1-5])/);
     if (m) {
       out.answer = m[1];
     } else {
-      throw new Error('answer 필드에서 1~5를 찾을 수 없습니다: ' + out.answer);
+      throw new Error('answer 필드에서 1~5를 찾을 수 없습니다: ' + answerValue);
     }
+  } else if (answerValue === undefined || answerValue === null) {
+    throw new Error('answer 필드가 없습니다.');
   } else {
     throw new Error('answer 필드가 없습니다.');
   }
@@ -104,7 +116,7 @@ function normalizeItemJson(obj) {
     }
   }
 
-  // passage 보존
+  // passage 보존 (위에서 stimulus/transcript로 이미 매핑됨)
   out.passage = out.passage || '';
 
   // RC29 전용 grammar_meta
@@ -121,6 +133,23 @@ function normalizeItemJson(obj) {
   const g4 = obj.gappedPassage;
 
   out.gapped_passage = g1 || g2 || g3 || g4 || out.gapped_passage || '';
+
+  // 새 프롬프트 형식의 추가 필드 보존
+  if (obj.vocabulary_difficulty) {
+    out.vocabulary_difficulty = obj.vocabulary_difficulty;
+  }
+  if (obj.low_frequency_words) {
+    out.low_frequency_words = obj.low_frequency_words;
+  }
+  if (obj.vocabulary_meta) {
+    out.vocabulary_meta = obj.vocabulary_meta;
+  }
+  if (obj.image_prompt) {
+    out.image_prompt = obj.image_prompt;
+  }
+  if (obj.chart_data) {
+    out.chart_data = obj.chart_data;
+  }
 
   return out;
 }
