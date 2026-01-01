@@ -18,7 +18,11 @@
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
       "Bash(netstat:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(git commit:*)",
+      "Bash(powershell -Command \"cd ''c:\\\\csat_mj_generator\\\\web-app''; npm start\")",
+      "Bash(cmd /c \"cd /d c:\\\\csat_mj_generator\\\\web-app && node server/index.js\")"
     ]
   }
 }
