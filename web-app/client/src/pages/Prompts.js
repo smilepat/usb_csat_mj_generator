@@ -37,22 +37,55 @@ function Prompts() {
     if (key === 'MASTER_PROMPT') return { group: 0, order: 0 };
     // 2순위: PASSAGE_MASTER
     if (key === 'PASSAGE_MASTER') return { group: 1, order: 0 };
-    // 3순위: 순수 숫자 (1, 2, 3, ... 45)
-    if (/^\d+$/.test(key)) {
-      return { group: 2, order: parseInt(key) };
+
+    // 3순위: LC01-LC17 (듣기 문항)
+    const lcMatch = key.match(/^LC(\d+)$/i);
+    if (lcMatch) {
+      const num = parseInt(lcMatch[1]);
+      // LC16-17은 세트로 취급
+      if (num === 16 || num === 17) return { group: 2, order: 16, subOrder: num };
+      return { group: 2, order: num, subOrder: 0 };
     }
-    // 4순위: P + 숫자 (지문용 프롬프트)
+
+    // 4순위: RC18-RC45 (독해 문항)
+    const rcMatch = key.match(/^RC(\d+)$/i);
+    if (rcMatch) {
+      const num = parseInt(rcMatch[1]);
+      // RC41-42, RC43-45는 세트로 취급
+      if (num >= 41 && num <= 42) return { group: 3, order: 41, subOrder: num };
+      if (num >= 43 && num <= 45) return { group: 3, order: 43, subOrder: num };
+      return { group: 3, order: num, subOrder: 0 };
+    }
+
+    // 5순위: 순수 숫자 (1, 2, 3, ... 45) - 기존 형식
+    if (/^\d+$/.test(key)) {
+      const num = parseInt(key);
+      // 듣기(1-17) vs 독해(18-45) 구분
+      if (num >= 1 && num <= 17) {
+        if (num === 16 || num === 17) return { group: 2, order: 16, subOrder: num };
+        return { group: 2, order: num, subOrder: 0 };
+      }
+      if (num >= 18 && num <= 45) {
+        if (num >= 41 && num <= 42) return { group: 3, order: 41, subOrder: num };
+        if (num >= 43 && num <= 45) return { group: 3, order: 43, subOrder: num };
+        return { group: 3, order: num, subOrder: 0 };
+      }
+      return { group: 4, order: num, subOrder: 0 };
+    }
+
+    // 6순위: P + 숫자 (지문용 프롬프트)
     const pMatch = key.match(/^P(\d+)/i);
-    if (pMatch) return { group: 3, order: parseInt(pMatch[1]) };
-    // 5순위: 기타 (알파벳 순)
-    return { group: 4, order: 0, alpha: key };
+    if (pMatch) return { group: 5, order: parseInt(pMatch[1]), subOrder: 0 };
+
+    // 7순위: 기타 (알파벳 순)
+    return { group: 6, order: 0, subOrder: 0, alpha: key };
   };
 
   const loadPrompts = async () => {
     try {
       setLoading(true);
       const res = await promptsApi.getAll();
-      // 정렬: MASTER_PROMPT → PASSAGE_MASTER → 1, 2, 3... → P숫자 → 기타
+      // 정렬: MASTER_PROMPT → PASSAGE_MASTER → LC01-LC17 → RC18-RC45 → P숫자 → 기타
       const sorted = (res.data || []).sort((a, b) => {
         const orderA = getPromptSortOrder(a.prompt_key);
         const orderB = getPromptSortOrder(b.prompt_key);
@@ -64,6 +97,10 @@ function Prompts() {
         // 같은 그룹 내에서 숫자 순서 비교
         if (orderA.order !== orderB.order) {
           return orderA.order - orderB.order;
+        }
+        // 세트 내 순서 비교 (subOrder)
+        if (orderA.subOrder !== orderB.subOrder) {
+          return orderA.subOrder - orderB.subOrder;
         }
         // 기타 그룹은 알파벳 순
         if (orderA.alpha && orderB.alpha) {
@@ -255,12 +292,39 @@ function Prompts() {
   const getPromptTypeLabel = (key) => {
     if (key === 'MASTER_PROMPT') return '🎯 마스터';
     if (key === 'PASSAGE_MASTER') return '📄 지문 마스터';
+
+    // LC01-LC17 형식
+    const lcMatch = key.match(/^LC(\d+)$/i);
+    if (lcMatch) {
+      const num = parseInt(lcMatch[1]);
+      if (num === 16 || num === 17) return `🎧 LC16-17 세트`;
+      return `🎧 듣기`;
+    }
+
+    // RC18-RC45 형식
+    const rcMatch = key.match(/^RC(\d+)$/i);
+    if (rcMatch) {
+      const num = parseInt(rcMatch[1]);
+      if (num >= 41 && num <= 42) return `📖 RC41-42 세트`;
+      if (num >= 43 && num <= 45) return `📖 RC43-45 세트`;
+      return `📖 독해`;
+    }
+
+    // 순수 숫자 (기존 형식)
     if (/^\d+$/.test(key)) {
       const num = parseInt(key);
-      if (num >= 1 && num <= 17) return `🎧 LC${key}`;
-      if (num >= 18 && num <= 45) return `📖 RC${key}`;
+      if (num >= 1 && num <= 17) {
+        if (num === 16 || num === 17) return `🎧 LC16-17 세트`;
+        return `🎧 듣기`;
+      }
+      if (num >= 18 && num <= 45) {
+        if (num >= 41 && num <= 42) return `📖 RC41-42 세트`;
+        if (num >= 43 && num <= 45) return `📖 RC43-45 세트`;
+        return `📖 독해`;
+      }
       return `📋 ${key}`;
     }
+
     if (key.startsWith('P')) return '📝 지문용';
     return '기타';
   };
