@@ -35,3 +35,9 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+temp_prompts.json
+ccsat_mj_generatortemp_prompts.json
+
+# Windows reserved names
+nul
+NUL
