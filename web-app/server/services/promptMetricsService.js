@@ -8,6 +8,7 @@
 const { getDb, saveDatabase } = require('../db/database');
 const { validatePromptStructure, getTypeKeywords } = require('./promptValidator');
 const { evaluatePrompt, quickValidate } = require('./promptEvaluator');
+const { SEVERITY } = require('./promptEvaluator.rules');
 const logger = require('./logger');
 
 // 가중치 설정
@@ -106,12 +107,34 @@ function calculateRuleScore(promptKey, promptText) {
     }
   }
 
-  // 5. 빠른 검증 (추가 체크)
+  // 5. 빠른 검증 (promptEvaluator.rules.js 기반)
   const quickResult = quickValidate(promptKey, promptText);
-  if (!quickResult.passed) {
-    const deduction = Math.min(10, quickResult.issues.length * 5);
-    baseScore -= deduction;
-    result.deductions.push({ reason: '빠른 검증 실패: ' + quickResult.issues.join(', '), points: -deduction });
+
+  // ERROR 레벨 이슈: 더 높은 감점 (이슈당 10점, 최대 30점)
+  if (quickResult.issues.length > 0) {
+    const errorDeduction = Math.min(30, quickResult.issues.length * 10);
+    baseScore -= errorDeduction;
+    result.deductions.push({
+      reason: '빠른 검증 오류: ' + quickResult.issues.join(', '),
+      points: -errorDeduction,
+      severity: SEVERITY.ERROR
+    });
+  }
+
+  // WARN 레벨 경고: 낮은 감점 (경고당 3점, 최대 15점)
+  if (quickResult.warnings.length > 0) {
+    const warnDeduction = Math.min(15, quickResult.warnings.length * 3);
+    baseScore -= warnDeduction;
+    result.deductions.push({
+      reason: '빠른 검증 경고: ' + quickResult.warnings.join(', '),
+      points: -warnDeduction,
+      severity: SEVERITY.WARN
+    });
+  }
+
+  // 검증 통과 시 상세 정보 추가
+  if (quickResult.passed && quickResult.warnings.length === 0) {
+    result.details.push('빠른 검증 통과 (규칙 기반)');
   }
 
   result.score = Math.max(0, baseScore);
