@@ -48,6 +48,46 @@ router.get('/', (req, res) => {
 // ============================================
 
 /**
+ * GET /api/prompts/defaults
+ * 모든 기본값 프롬프트 조회 (문항 생성 페이지에서 사용)
+ */
+router.get('/defaults', (req, res) => {
+  try {
+    const db = getDb();
+    const defaults = db.prepare(`
+      SELECT prompt_key, title, is_default
+      FROM prompts
+      WHERE is_default = 1 AND active = 1
+    `).all();
+
+    // 문항 번호별 매핑
+    const defaultMap = {};
+    for (const p of defaults) {
+      let itemNo = null;
+      if (/^\d+$/.test(p.prompt_key)) {
+        itemNo = parseInt(p.prompt_key);
+      } else if (/^RC(\d+)$/i.test(p.prompt_key)) {
+        itemNo = parseInt(p.prompt_key.match(/^RC(\d+)$/i)[1]);
+      } else if (/^LC(\d+)$/i.test(p.prompt_key)) {
+        itemNo = parseInt(p.prompt_key.match(/^LC(\d+)$/i)[1]);
+      }
+      if (itemNo !== null) {
+        defaultMap[itemNo] = p.prompt_key;
+      } else {
+        defaultMap[p.prompt_key] = p.prompt_key;
+      }
+    }
+
+    res.json({
+      success: true,
+      data: defaultMap
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * GET /api/prompts/metrics/summary
  * 프롬프트 메트릭스 요약
  */
@@ -55,6 +95,46 @@ router.get('/metrics/summary', (req, res) => {
   try {
     const summary = getPromptMetricsSummary();
     res.json({ success: true, data: summary });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 유효한 상태 목록
+const VALID_STATUSES = ['draft', 'testing', 'approved', 'archived'];
+
+/**
+ * GET /api/prompts/by-status/:status
+ * 특정 상태의 프롬프트 목록 조회
+ */
+router.get('/by-status/:status', (req, res) => {
+  try {
+    const { status } = req.params;
+
+    if (!VALID_STATUSES.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: `유효하지 않은 상태입니다. 가능한 값: ${VALID_STATUSES.join(', ')}`
+      });
+    }
+
+    const db = getDb();
+    const prompts = db.prepare(`
+      SELECT p.*, pm.total_score, pm.grade, pm.approve_rate
+      FROM prompts p
+      LEFT JOIN prompt_metrics pm ON p.id = pm.prompt_id
+      WHERE p.status = ?
+      ORDER BY p.updated_at DESC
+    `).all(status);
+
+    res.json({
+      success: true,
+      data: {
+        status,
+        count: prompts.length,
+        prompts
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -483,6 +563,107 @@ router.post('/:key/versions/:version/restore', async (req, res) => {
   }
 });
 
+// ============================================
+// 프롬프트 라이프사이클 상태 관리
+// ============================================
+
+/**
+ * GET /api/prompts/:key/status
+ * 프롬프트 상태 조회
+ */
+router.get('/:key/status', (req, res) => {
+  try {
+    const { key } = req.params;
+    const db = getDb();
+
+    const prompt = db.prepare('SELECT id, prompt_key, status, updated_at FROM prompts WHERE prompt_key = ?').get(key);
+    if (!prompt) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        prompt_key: prompt.prompt_key,
+        status: prompt.status || 'draft',
+        updated_at: prompt.updated_at
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * PUT /api/prompts/:key/status
+ * 프롬프트 상태 변경
+ * 상태: draft -> testing -> approved -> archived
+ */
+router.put('/:key/status', (req, res) => {
+  try {
+    const { key } = req.params;
+    const { status, reason } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ success: false, error: '상태값이 필요합니다.' });
+    }
+
+    if (!VALID_STATUSES.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: `유효하지 않은 상태입니다. 가능한 값: ${VALID_STATUSES.join(', ')}`
+      });
+    }
+
+    const db = getDb();
+    const prompt = db.prepare('SELECT id, prompt_key, status FROM prompts WHERE prompt_key = ?').get(key);
+
+    if (!prompt) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    const oldStatus = prompt.status || 'draft';
+
+    // 상태 전이 유효성 검사
+    const validTransitions = {
+      'draft': ['testing', 'archived'],
+      'testing': ['approved', 'draft', 'archived'],
+      'approved': ['archived', 'testing'],
+      'archived': ['draft']
+    };
+
+    if (oldStatus !== status && !validTransitions[oldStatus]?.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: `${oldStatus}에서 ${status}로 전이할 수 없습니다. 가능한 전이: ${validTransitions[oldStatus]?.join(', ') || '없음'}`
+      });
+    }
+
+    // 상태 업데이트
+    db.prepare(`
+      UPDATE prompts
+      SET status = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE prompt_key = ?
+    `).run(status, key);
+
+    logger.info('프롬프트 상태 변경', key, `${oldStatus} -> ${status}${reason ? ` (사유: ${reason})` : ''}`);
+
+    res.json({
+      success: true,
+      message: `상태가 ${status}로 변경되었습니다.`,
+      data: {
+        prompt_key: key,
+        old_status: oldStatus,
+        new_status: status,
+        reason: reason || null
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 /**
  * DELETE /api/prompts/:key
  * 프롬프트 삭제
@@ -578,6 +759,99 @@ router.post('/:key/performance/update', (req, res) => {
     res.json({
       success: true,
       data: performance || { message: '해당 프롬프트로 생성된 문항이 없습니다.' }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================
+// 기본값 설정 엔드포인트
+// ============================================
+
+/**
+ * POST /api/prompts/:key/set-default
+ * 해당 프롬프트를 기본값으로 설정 (동일 문항 번호 내에서 유일)
+ */
+router.post('/:key/set-default', (req, res) => {
+  try {
+    const { key } = req.params;
+    const db = getDb();
+
+    const prompt = db.prepare('SELECT * FROM prompts WHERE prompt_key = ?').get(key);
+    if (!prompt) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    // 문항 번호 추출 (RC18 -> 18, LC17 -> 17, 29 -> 29)
+    let itemNo = null;
+    if (/^\d+$/.test(key)) {
+      itemNo = parseInt(key);
+    } else if (/^RC(\d+)$/i.test(key)) {
+      itemNo = parseInt(key.match(/^RC(\d+)$/i)[1]);
+    } else if (/^LC(\d+)$/i.test(key)) {
+      itemNo = parseInt(key.match(/^LC(\d+)$/i)[1]);
+    }
+
+    // 동일 문항 번호의 다른 프롬프트들의 is_default를 0으로 설정
+    if (itemNo !== null) {
+      // 동일 번호를 가진 프롬프트 키 패턴들
+      const patterns = [
+        String(itemNo),           // "18"
+        `RC${itemNo}`,            // "RC18"
+        `LC${itemNo}`             // "LC18"
+      ];
+
+      for (const pattern of patterns) {
+        db.prepare(`
+          UPDATE prompts SET is_default = 0 WHERE prompt_key = ?
+        `).run(pattern);
+      }
+    } else {
+      // MASTER_PROMPT, PASSAGE_MASTER 등 특수 키는 해당 키만 처리
+      db.prepare(`
+        UPDATE prompts SET is_default = 0 WHERE prompt_key = ?
+      `).run(key);
+    }
+
+    // 현재 프롬프트를 기본값으로 설정
+    db.prepare(`
+      UPDATE prompts SET is_default = 1, updated_at = CURRENT_TIMESTAMP WHERE prompt_key = ?
+    `).run(key);
+
+    logger.info('프롬프트 기본값 설정', key, `문항번호: ${itemNo || 'N/A'}`);
+
+    res.json({
+      success: true,
+      message: `"${key}" 프롬프트가 기본값으로 설정되었습니다.`,
+      data: { prompt_key: key, is_default: true, item_no: itemNo }
+    });
+  } catch (error) {
+    logger.error('프롬프트 기본값 설정 오류', req.params.key, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/prompts/:key/set-default
+ * 기본값 설정 해제
+ */
+router.delete('/:key/set-default', (req, res) => {
+  try {
+    const { key } = req.params;
+    const db = getDb();
+
+    const result = db.prepare(`
+      UPDATE prompts SET is_default = 0, updated_at = CURRENT_TIMESTAMP WHERE prompt_key = ?
+    `).run(key);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    res.json({
+      success: true,
+      message: `"${key}" 프롬프트의 기본값 설정이 해제되었습니다.`
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

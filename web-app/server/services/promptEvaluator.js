@@ -301,6 +301,20 @@ function quickValidate(promptKey, promptText) {
           warnings.push(keywordRule.message);
         }
       }
+
+      // additionalRules: 추가 세부 규칙 검사
+      if (keywordRule.additionalRules && Array.isArray(keywordRule.additionalRules)) {
+        for (const addRule of keywordRule.additionalRules) {
+          // check 함수가 false를 반환하면 규칙 미충족
+          if (!addRule.check(promptText || '')) {
+            if (addRule.severity === SEVERITY.ERROR) {
+              issues.push(addRule.message);
+            } else if (addRule.severity === SEVERITY.WARN) {
+              warnings.push(addRule.message);
+            }
+          }
+        }
+      }
     }
   }
 

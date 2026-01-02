@@ -178,6 +178,7 @@ const PASSAGE_PROMPT_RULES = [
  * 문항 번호별 키워드 매핑 (18번 ~ 45번)
  * - requiredAny: 하나라도 매칭되면 통과
  * - requiredAll: 모두 매칭되어야 통과 (필요시 사용)
+ * - additionalRules: 추가 세부 검증 규칙
  * ============================================================
  */
 const ITEM_KEYWORD_MAP = {
@@ -186,6 +187,18 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/목적|purpose|의도|intention|why.*write|글.*쓴\s*이유/i],
     message: "18번 프롬프트에 '글의 목적' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(편지|letter|이메일|email|안내|notice)/i.test(text),
+        message: "18번은 편지/이메일/안내문 형식이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(선택지|options|5개|five)/i.test(text),
+        message: "18번 선택지 형식 지침이 필요합니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 19번: 심경 변화 ==========
@@ -193,6 +206,18 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/심경|심리|감정|feeling|emotion|mood|변화|change/i],
     message: "19번 프롬프트에 '심경/감정 변화' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(서사|narrative|이야기|story|소설|fiction)/i.test(text),
+        message: "19번은 서사/이야기 형식 지문이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(→|->|에서.*로|from.*to|변화)/i.test(text),
+        message: "19번 심경 '변화' 방향 표시 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 20번: 필자 주장 ==========
@@ -200,6 +225,13 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/주장|claim|argument|opinion|필자.*말|author.*say/i],
     message: "20번 프롬프트에 '필자 주장' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(논증|argument|주장.*근거|evidence|support)/i.test(text),
+        message: "20번 주장의 근거 제시 방식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 21번: 함축 의미 ==========
@@ -207,6 +239,18 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/함축|imply|의미|meaning|밑줄|underline|뜻/i],
     message: "21번 프롬프트에 '함축 의미' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(밑줄|underline|강조|highlight)/i.test(text),
+        message: "21번 밑줄 부분 표시 방식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(비유|metaphor|은유|figurative)/i.test(text),
+        message: "21번 비유/은유 표현 관련 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 22번: 글의 요지 ==========
@@ -214,6 +258,13 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/요지|gist|main\s*point|핵심|central\s*idea/i],
     message: "22번 프롬프트에 '글의 요지' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(주제문|topic\s*sentence|핵심\s*문장)/i.test(text),
+        message: "22번 주제문 도출 방식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 23번: 글의 주제 ==========
@@ -221,6 +272,13 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/주제|topic|subject|theme|about/i],
     message: "23번 프롬프트에 '글의 주제' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(추상적|abstract|구체적|specific)/i.test(text),
+        message: "23번 주제의 추상도 수준 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 24번: 글의 제목 ==========
@@ -228,6 +286,18 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/제목|title|heading|적절.*제목/i],
     message: "24번 프롬프트에 '글의 제목' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(함축|imply|은유|metaphor|비유)/i.test(text),
+        message: "24번 제목의 함축적/은유적 표현 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(간결|concise|짧|short)/i.test(text),
+        message: "24번 제목 형식(간결성) 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 25번: 도표 이해 ==========
@@ -235,6 +305,18 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/도표|graph|chart|table|그래프|표/i],
     message: "25번 프롬프트에 '도표/그래프' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(데이터|data|숫자|number|수치|figure)/i.test(text),
+        message: "25번 도표 데이터 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(불일치|mismatch|틀린|incorrect)/i.test(text),
+        message: "25번 '내용과 일치하지 않는 것' 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 26번: 내용 일치 (인물) ==========
@@ -242,6 +324,18 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/인물|person|biography|일치|match|내용.*맞/i],
     message: "26번 프롬프트에 '인물 내용 일치' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(전기|biography|역사적\s*인물|historical)/i.test(text),
+        message: "26번 인물 소개글 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(사실|fact|정보|information)/i.test(text),
+        message: "26번 사실 정보 포함 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 27번: 내용 일치 (안내문) ==========
@@ -249,6 +343,13 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/안내|notice|announcement|광고|advertisement|일치|match/i],
     message: "27번 프롬프트에 '안내문 내용 일치' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(날짜|date|시간|time|장소|place|비용|cost|fee)/i.test(text),
+        message: "27번 안내문 필수 정보(날짜/시간/장소/비용) 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 28번: 어휘 추론 ==========
@@ -256,6 +357,18 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/어휘|vocabulary|word|단어|문맥|context/i],
     message: "28번 프롬프트에 '어휘 추론' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(밑줄|underline|괄호|bracket)/i.test(text),
+        message: "28번 어휘 표시 방식(밑줄/괄호) 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(2개|two|쌍|pair)/i.test(text),
+        message: "28번 어휘 쌍(2개) 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 29번: 어법 (밑줄 5개) ==========
@@ -263,6 +376,23 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/underline|밑줄/i, /어법|문법|grammar/i],
     message: "29번 프롬프트에 '밑줄/어법(문법)' 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(5개|five|5\s*밑줄|5\s*underline)/i.test(text),
+        message: "29번 밑줄 5개 형식 지침이 필요합니다(필수).",
+        severity: SEVERITY.ERROR,
+      },
+      {
+        check: (text) => /(시제|tense|수일치|agreement|분사|participle|관계사|relative)/i.test(text),
+        message: "29번 어법 항목(시제/수일치/분사/관계사 등) 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(grammar_meta|어법\s*메타|설명)/i.test(text),
+        message: "29번 각 밑줄 설명(grammar_meta) 출력 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 30번: 지칭 추론 ==========
@@ -270,6 +400,13 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/지칭|refer|reference|가리키|indicate/i],
     message: "30번 프롬프트에 '지칭 추론' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(대명사|pronoun|it|they|he|she)/i.test(text),
+        message: "30번 대명사 지칭 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 31~34번: 빈칸 추론 ==========
@@ -277,21 +414,64 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/blank|빈칸|빈 칸/i],
     message: "31번 프롬프트에 '빈칸(blank)' 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(어구|phrase|표현|expression)/i.test(text),
+        message: "31번 빈칸 유형(어구) 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(gapped_passage|빈칸.*지문)/i.test(text),
+        message: "31번 빈칸 포함 지문 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
   32: {
     requiredAny: [/blank|빈칸|빈 칸/i],
     message: "32번 프롬프트에 '빈칸(blank)' 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(어구|phrase|표현|expression)/i.test(text),
+        message: "32번 빈칸 유형(어구) 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
   33: {
     requiredAny: [/blank|빈칸|빈 칸/i],
     message: "33번 프롬프트에 '빈칸(blank)' 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(문장|sentence)/i.test(text),
+        message: "33번 빈칸 유형(문장) 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(고난도|high.*difficulty|어려운)/i.test(text),
+        message: "33번 고난도 빈칸 특성 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
   34: {
     requiredAny: [/blank|빈칸|빈 칸/i],
     message: "34번 프롬프트에 '빈칸(blank)' 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(문장|sentence)/i.test(text),
+        message: "34번 빈칸 유형(문장) 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(고난도|high.*difficulty|어려운)/i.test(text),
+        message: "34번 고난도 빈칸 특성 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 35번: 무관한 문장 ==========
@@ -299,6 +479,18 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/무관|관계\s*없|irrelevant|out\s*of\s*place|흐름.*맞지|doesn't\s*belong/i],
     message: "35번 프롬프트에 '흐름과 무관한 문장' 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(①|②|③|④|⑤|\[1\]|\[2\]|\[3\]|\[4\]|\[5\])/i.test(text),
+        message: "35번 문장 번호 표시 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(5\s*문장|five\s*sentences)/i.test(text),
+        message: "35번 5개 문장 구조 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 36~37번: 글의 순서 ==========
@@ -306,11 +498,30 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/순서|order|배열|arrange|sequence/i],
     message: "36번 프롬프트에 '글의 순서' 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(\(A\)|\(B\)|\(C\)|단락)/i.test(text),
+        message: "36번 단락 표시((A), (B), (C)) 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(연결사|connector|transition|however|therefore)/i.test(text),
+        message: "36번 연결사 활용 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
   37: {
     requiredAny: [/순서|order|배열|arrange|sequence/i],
     message: "37번 프롬프트에 '글의 순서' 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(\(A\)|\(B\)|\(C\)|단락)/i.test(text),
+        message: "37번 단락 표시((A), (B), (C)) 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 38~39번: 문장 삽입 ==========
@@ -318,11 +529,30 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/삽입|insert|넣|위치|position|어디/i],
     message: "38번 프롬프트에 '문장 삽입' 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(주어진\s*문장|given\s*sentence)/i.test(text),
+        message: "38번 '주어진 문장' 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(①|②|③|④|⑤|\[1\]|\[2\]|\[3\]|\[4\]|\[5\])/i.test(text),
+        message: "38번 삽입 위치 표시 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
   39: {
     requiredAny: [/삽입|insert|넣|위치|position|어디/i],
     message: "39번 프롬프트에 '문장 삽입' 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(주어진\s*문장|given\s*sentence)/i.test(text),
+        message: "39번 '주어진 문장' 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 40번: 요약문 완성 ==========
@@ -330,6 +560,18 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/요약|summary|summarize|완성|complete/i],
     message: "40번 프롬프트에 '요약문 완성' 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(\(A\)|\(B\)|빈칸\s*2개|two\s*blanks)/i.test(text),
+        message: "40번 요약문 빈칸 2개((A), (B)) 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(3x3|3\s*x\s*3|9\s*단어|nine\s*words)/i.test(text),
+        message: "40번 선택지 3x3 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 41~42번: 장문 (제목/순서/삽입) ==========
@@ -337,11 +579,30 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/장문|long\s*passage|제목|순서|삽입/i],
     message: "41번 프롬프트에 '장문 독해' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(제목|title)/i.test(text),
+        message: "41번 제목 추론 유형 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(300|350|400|단어|words)/i.test(text),
+        message: "41-42번 장문 길이(300-400단어) 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
   42: {
     requiredAny: [/장문|long\s*passage|제목|순서|삽입/i],
     message: "42번 프롬프트에 '장문 독해' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(순서|order|삽입|insert)/i.test(text),
+        message: "42번 순서/삽입 유형 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 
   // ========== 43~45번: 장문 (세트) ==========
@@ -349,16 +610,42 @@ const ITEM_KEYWORD_MAP = {
     requiredAny: [/장문|long\s*passage|세트|set/i],
     message: "43번 프롬프트에 '장문 세트' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(빈칸|blank|어휘|vocabulary)/i.test(text),
+        message: "43번 빈칸/어휘 유형 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(공통\s*지문|shared\s*passage|같은\s*지문)/i.test(text),
+        message: "43-45번 공통 지문 사용 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
   44: {
     requiredAny: [/장문|long\s*passage|세트|set/i],
     message: "44번 프롬프트에 '장문 세트' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(일치|match|내용)/i.test(text),
+        message: "44번 내용 일치 유형 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
   45: {
     requiredAny: [/장문|long\s*passage|세트|set/i],
     message: "45번 프롬프트에 '장문 세트' 관련 단서가 부족합니다.",
     severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(일치|match|내용)/i.test(text),
+        message: "45번 내용 일치 유형 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
   },
 };
 

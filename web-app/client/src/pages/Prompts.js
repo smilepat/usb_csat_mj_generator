@@ -33,6 +33,12 @@ function Prompts() {
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [restoringVersion, setRestoringVersion] = useState(null);
 
+  // 상태 관리
+  const [changingStatus, setChangingStatus] = useState(false);
+
+  // 빠른 검증 로딩 상태
+  const [quickValidating, setQuickValidating] = useState(false);
+
   useEffect(() => {
     loadPrompts();
   }, []);
@@ -223,14 +229,31 @@ function Prompts() {
       return;
     }
 
+    setQuickValidating(true);
+    setMessage(null);
+
     try {
       const res = await promptsApi.quickValidate(formData.prompt_key, formData.prompt_text);
       setEvaluationResult({
         quickValidation: res.data,
         overall_score: null
       });
+
+      // 결과에 따른 메시지 표시
+      if (res.data.passed) {
+        const warningCount = res.data.warnings?.length || 0;
+        if (warningCount > 0) {
+          setMessage({ type: 'warning', text: `✅ 기본 규칙 통과 (경고 ${warningCount}개)` });
+        } else {
+          setMessage({ type: 'success', text: '✅ 빠른 검증 통과! 모든 기본 규칙을 충족합니다.' });
+        }
+      } else {
+        setMessage({ type: 'error', text: `❌ 규칙 검증 실패: ${res.data.issues?.length || 0}개 문제 발견` });
+      }
     } catch (error) {
       setMessage({ type: 'error', text: '검증 실패: ' + error.message });
+    } finally {
+      setQuickValidating(false);
     }
   };
 
@@ -349,6 +372,54 @@ function Prompts() {
     } finally {
       setRecalculating(false);
     }
+  };
+
+  // 프롬프트 상태 변경
+  const handleChangeStatus = async (newStatus) => {
+    if (!selectedPrompt) return;
+
+    const statusLabels = {
+      'draft': '초안',
+      'testing': '테스트 중',
+      'approved': '승인됨',
+      'archived': '보관됨'
+    };
+
+    if (!window.confirm(`프롬프트 상태를 "${statusLabels[newStatus]}"로 변경하시겠습니까?`)) return;
+
+    try {
+      setChangingStatus(true);
+      const response = await fetch(`/api/prompts/${selectedPrompt.prompt_key}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const res = await response.json();
+
+      if (res.success) {
+        setMessage({ type: 'success', text: `상태가 "${statusLabels[newStatus]}"로 변경되었습니다.` });
+        loadPrompts();
+        // 선택된 프롬프트 상태도 업데이트
+        setSelectedPrompt(prev => ({ ...prev, status: newStatus }));
+      } else {
+        setMessage({ type: 'error', text: res.error });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: '상태 변경 실패: ' + error.message });
+    } finally {
+      setChangingStatus(false);
+    }
+  };
+
+  // 상태 배지 스타일
+  const getStatusBadgeStyle = (status) => {
+    const styles = {
+      'draft': { bg: '#e3f2fd', color: '#1565c0', label: '초안' },
+      'testing': { bg: '#fff3e0', color: '#e65100', label: '테스트 중' },
+      'approved': { bg: '#e8f5e9', color: '#2e7d32', label: '승인됨' },
+      'archived': { bg: '#f5f5f5', color: '#757575', label: '보관됨' }
+    };
+    return styles[status] || styles['draft'];
   };
 
   const getPromptTypeLabel = (key) => {
@@ -493,7 +564,35 @@ function Prompts() {
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                     {prompt.title || '(제목 없음)'}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                    {/* 상태 배지 */}
+                    {(() => {
+                      const statusStyle = getStatusBadgeStyle(prompt.status);
+                      return (
+                        <span style={{
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '0.65rem',
+                          background: statusStyle.bg,
+                          color: statusStyle.color,
+                          fontWeight: 500
+                        }}>
+                          {statusStyle.label}
+                        </span>
+                      );
+                    })()}
+                    {prompt.is_default === 1 && (
+                      <span style={{
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '0.65rem',
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        color: 'white',
+                        fontWeight: 600
+                      }}>
+                        ⭐ 기본값
+                      </span>
+                    )}
                     {prompt.active !== 1 && (
                       <span className="badge badge-fail">비활성</span>
                     )}
@@ -608,16 +707,122 @@ function Prompts() {
                 />
               </div>
 
-              <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <input
-                    type="checkbox"
-                    checked={formData.active}
-                    onChange={e => setFormData(prev => ({ ...prev, active: e.target.checked }))}
-                    disabled={!editMode}
-                  />
-                  활성화
-                </label>
+              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                <div className="form-group" style={{ flex: 1, minWidth: '200px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: selectedPrompt ? 'pointer' : 'default' }}>
+                      <input
+                        type="checkbox"
+                        checked={formData.active}
+                        onChange={async (e) => {
+                          const newActive = e.target.checked;
+                          setFormData(prev => ({ ...prev, active: newActive }));
+
+                          // 기존 프롬프트인 경우 즉시 저장
+                          if (selectedPrompt) {
+                            try {
+                              await promptsApi.update(selectedPrompt.prompt_key, {
+                                active: newActive
+                              });
+                              setMessage({
+                                type: 'success',
+                                text: newActive ? '✅ 프롬프트가 활성화되었습니다.' : '⏸️ 프롬프트가 비활성화되었습니다.'
+                              });
+                              loadPrompts();
+                            } catch (error) {
+                              setFormData(prev => ({ ...prev, active: !newActive }));
+                              setMessage({ type: 'error', text: '활성화 상태 변경 실패: ' + error.message });
+                            }
+                          }
+                        }}
+                        disabled={!selectedPrompt && !editMode}
+                      />
+                      활성화
+                    </label>
+
+                    {/* 기본값 설정 버튼 */}
+                    {selectedPrompt && (
+                      <button
+                        className={`btn btn-sm ${selectedPrompt.is_default === 1 ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          ...(selectedPrompt.is_default === 1 ? {
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            border: 'none'
+                          } : {})
+                        }}
+                        onClick={async () => {
+                          try {
+                            if (selectedPrompt.is_default === 1) {
+                              await promptsApi.unsetDefault(selectedPrompt.prompt_key);
+                              setMessage({ type: 'success', text: '⭐ 기본값 설정이 해제되었습니다.' });
+                            } else {
+                              await promptsApi.setDefault(selectedPrompt.prompt_key);
+                              setMessage({ type: 'success', text: '⭐ 기본값으로 설정되었습니다. 문항 생성 시 자동 선택됩니다.' });
+                            }
+                            loadPrompts();
+                            // 선택된 프롬프트 상태 업데이트
+                            setSelectedPrompt(prev => ({
+                              ...prev,
+                              is_default: prev.is_default === 1 ? 0 : 1
+                            }));
+                          } catch (error) {
+                            setMessage({ type: 'error', text: '기본값 설정 실패: ' + error.message });
+                          }
+                        }}
+                      >
+                        {selectedPrompt.is_default === 1 ? '⭐ 기본값' : '☆ 기본값 설정'}
+                      </button>
+                    )}
+                  </div>
+                  {selectedPrompt && (
+                    <span style={{
+                      fontSize: '0.75rem',
+                      color: '#666',
+                      marginTop: '4px',
+                      display: 'block'
+                    }}>
+                      {selectedPrompt.is_default === 1
+                        ? '이 프롬프트가 문항 생성 시 기본 선택됩니다'
+                        : '기본값으로 설정하면 문항 생성 시 자동 선택됩니다'}
+                    </span>
+                  )}
+                </div>
+
+                {/* 상태 관리 */}
+                {selectedPrompt && (
+                  <div className="form-group" style={{ flex: 2 }}>
+                    <label className="form-label">프롬프트 상태</label>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {[
+                        { value: 'draft', label: '초안', icon: '📝' },
+                        { value: 'testing', label: '테스트', icon: '🧪' },
+                        { value: 'approved', label: '승인', icon: '✅' },
+                        { value: 'archived', label: '보관', icon: '📦' }
+                      ].map(({ value, label, icon }) => {
+                        const isActive = (selectedPrompt.status || 'draft') === value;
+                        const style = getStatusBadgeStyle(value);
+                        return (
+                          <button
+                            key={value}
+                            className={`btn btn-sm ${isActive ? '' : 'btn-secondary'}`}
+                            style={isActive ? {
+                              background: style.color,
+                              color: 'white',
+                              border: 'none'
+                            } : {}}
+                            onClick={() => handleChangeStatus(value)}
+                            disabled={changingStatus || isActive}
+                          >
+                            {icon} {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* AI 검증 및 피드백 버튼 */}
@@ -625,9 +830,9 @@ function Prompts() {
                 <button
                   className="btn btn-secondary"
                   onClick={handleQuickValidate}
-                  disabled={!formData.prompt_text}
+                  disabled={quickValidating || !formData.prompt_text}
                 >
-                  ⚡ 빠른 검증
+                  {quickValidating ? '🔄 검증 중...' : '⚡ 빠른 검증'}
                 </button>
                 <button
                   className="btn btn-primary"
@@ -824,7 +1029,9 @@ function Prompts() {
       {evaluationResult && (
         <div className="card mt-4">
           <div className="card-header">
-            <h3 style={{ fontSize: '1rem' }}>🤖 AI 검증 결과</h3>
+            <h3 style={{ fontSize: '1rem' }}>
+              {evaluationResult.overall_score ? '🤖 AI 검증 결과' : '⚡ 빠른 검증 결과'}
+            </h3>
             {evaluationResult.overall_score && (
               <div style={{
                 ...getGradeBadgeStyle(evaluationResult.grade),
@@ -840,12 +1047,30 @@ function Prompts() {
           {/* 빠른 검증 결과 */}
           {evaluationResult.quickValidation && (
             <div style={{ marginBottom: '16px' }}>
-              <h4 style={{ marginBottom: '8px' }}>⚡ 규칙 기반 검증</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <h4 style={{ margin: 0 }}>⚡ 규칙 기반 검증</h4>
+                {evaluationResult.quickValidation.promptType && (
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    background: '#e3f2fd',
+                    color: '#1565c0'
+                  }}>
+                    프롬프트 유형: {evaluationResult.quickValidation.promptType}
+                  </span>
+                )}
+              </div>
               {evaluationResult.quickValidation.passed ? (
-                <div className="alert alert-success">✅ 기본 규칙 검증 통과</div>
+                <div className="alert alert-success">
+                  ✅ 기본 규칙 검증 통과
+                  {evaluationResult.quickValidation.warnings?.length === 0 && (
+                    <span style={{ marginLeft: '8px', opacity: 0.8 }}>- 모든 규칙 충족!</span>
+                  )}
+                </div>
               ) : (
                 <div className="alert alert-error">
-                  ⚠️ 규칙 검증 실패
+                  ❌ 규칙 검증 실패
                   <ul style={{ margin: '8px 0 0', paddingLeft: '20px' }}>
                     {evaluationResult.quickValidation.issues?.map((issue, idx) => (
                       <li key={idx}>{issue}</li>
@@ -854,9 +1079,18 @@ function Prompts() {
                 </div>
               )}
               {evaluationResult.quickValidation.warnings?.length > 0 && (
-                <div style={{ marginTop: '8px', color: '#b08800' }}>
+                <div style={{
+                  marginTop: '12px',
+                  padding: '12px',
+                  background: '#fff8e1',
+                  borderRadius: '8px',
+                  border: '1px solid #ffe082'
+                }}>
+                  <div style={{ fontWeight: '600', marginBottom: '8px', color: '#f57c00' }}>
+                    ⚠️ 경고 ({evaluationResult.quickValidation.warnings.length}개)
+                  </div>
                   {evaluationResult.quickValidation.warnings.map((warn, idx) => (
-                    <div key={idx}>⚠️ {warn}</div>
+                    <div key={idx} style={{ color: '#795548', marginBottom: '4px' }}>• {warn}</div>
                   ))}
                 </div>
               )}

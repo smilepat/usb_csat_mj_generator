@@ -79,6 +79,13 @@ async function initDatabase() {
     // 이미 컬럼이 존재하면 무시
   }
 
+  // prompts 테이블에 is_default 컬럼 추가 (문항 생성 시 기본 선택될 프롬프트)
+  try {
+    db.run(`ALTER TABLE prompts ADD COLUMN is_default INTEGER DEFAULT 0`);
+  } catch (e) {
+    // 이미 컬럼이 존재하면 무시
+  }
+
   // ITEM_REQUEST 테이블
   db.run(`
     CREATE TABLE IF NOT EXISTS item_requests (
@@ -225,12 +232,17 @@ async function initDatabase() {
       grade TEXT,
 
       -- 성능 추적 (문항 생성 후 업데이트)
+      times_used INTEGER DEFAULT 0,
       items_generated INTEGER DEFAULT 0,
       avg_item_score REAL,
       approve_count INTEGER DEFAULT 0,
       review_count INTEGER DEFAULT 0,
       reject_count INTEGER DEFAULT 0,
       approve_rate REAL,
+      last_used_at DATETIME,
+
+      -- 버전별 성능 추적
+      version_performance TEXT,
 
       -- 플래그
       needs_improvement INTEGER DEFAULT 0,

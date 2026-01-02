@@ -331,10 +331,35 @@ async function calculateAndSavePromptMetrics(promptId, promptKey, promptText, in
 }
 
 /**
- * 프롬프트 성능 업데이트 (문항 생성 후 호출)
+ * 프롬프트 사용 횟수 증가 (문항 생성 시작 시 호출)
  * @param {number} promptId - 프롬프트 ID
  */
-function updatePromptPerformance(promptId) {
+function incrementPromptUsage(promptId) {
+  const db = getDb();
+
+  try {
+    db.prepare(`
+      UPDATE prompt_metrics SET
+        times_used = COALESCE(times_used, 0) + 1,
+        last_used_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE prompt_id = ?
+    `).run(promptId);
+
+    logger.info('프롬프트 사용 횟수 증가', promptId);
+    return true;
+  } catch (error) {
+    logger.error('프롬프트 사용 횟수 증가 실패', promptId, error);
+    return false;
+  }
+}
+
+/**
+ * 프롬프트 성능 업데이트 (문항 생성 후 호출)
+ * @param {number} promptId - 프롬프트 ID
+ * @param {number} promptVersion - 프롬프트 버전 (선택)
+ */
+function updatePromptPerformance(promptId, promptVersion = null) {
   const db = getDb();
 
   try {
@@ -357,6 +382,30 @@ function updatePromptPerformance(promptId) {
 
     const approveRate = stats.total > 0 ? (stats.approve_count / stats.total) * 100 : 0;
 
+    // 기존 버전 성능 데이터 가져오기
+    let versionPerformance = {};
+    const existing = db.prepare(`
+      SELECT version_performance FROM prompt_metrics WHERE prompt_id = ?
+    `).get(promptId);
+
+    if (existing && existing.version_performance) {
+      try {
+        versionPerformance = JSON.parse(existing.version_performance);
+      } catch (e) {
+        versionPerformance = {};
+      }
+    }
+
+    // 버전별 성능 추적 (버전이 제공된 경우)
+    if (promptVersion !== null) {
+      versionPerformance[`v${promptVersion}`] = {
+        items_generated: stats.total,
+        avg_score: Math.round(stats.avg_score * 10) / 10,
+        approve_rate: Math.round(approveRate * 10) / 10,
+        updated_at: new Date().toISOString()
+      };
+    }
+
     // 성능 데이터 업데이트
     db.prepare(`
       UPDATE prompt_metrics SET
@@ -366,6 +415,7 @@ function updatePromptPerformance(promptId) {
         review_count = ?,
         reject_count = ?,
         approve_rate = ?,
+        version_performance = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE prompt_id = ?
     `).run(
@@ -375,6 +425,7 @@ function updatePromptPerformance(promptId) {
       stats.review_count,
       stats.reject_count,
       Math.round(approveRate * 10) / 10,
+      JSON.stringify(versionPerformance),
       promptId
     );
 
@@ -394,7 +445,8 @@ function updatePromptPerformance(promptId) {
     return {
       itemsGenerated: stats.total,
       avgItemScore: stats.avg_score,
-      approveRate
+      approveRate,
+      versionPerformance
     };
 
   } catch (error) {
@@ -542,6 +594,7 @@ module.exports = {
   normalizeAIScore,
   calculateTotalScore,
   calculateAndSavePromptMetrics,
+  incrementPromptUsage,
   updatePromptPerformance,
   getPromptMetrics,
   getPromptMetricsSummary,

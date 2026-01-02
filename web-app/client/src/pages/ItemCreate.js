@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { itemsApi } from '../api';
+import { itemsApi, promptsApi } from '../api';
 import PromptPreview from '../components/PromptPreview';
 
 function ItemCreate() {
@@ -21,6 +21,24 @@ function ItemCreate() {
   const [showPreview, setShowPreview] = useState(false);
   const [previewData, setPreviewData] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+
+  // 기본 프롬프트 매핑 상태
+  const [defaultPrompts, setDefaultPrompts] = useState({});
+
+  // 기본 프롬프트 로드
+  useEffect(() => {
+    const loadDefaultPrompts = async () => {
+      try {
+        const res = await promptsApi.getDefaults();
+        if (res.success) {
+          setDefaultPrompts(res.data || {});
+        }
+      } catch (error) {
+        console.error('기본 프롬프트 로드 실패:', error);
+      }
+    };
+    loadDefaultPrompts();
+  }, []);
 
   // 문항 유형 목록 (LC1~LC17, RC18~RC45, 세트문항 포함)
   const itemTypes = [
@@ -264,20 +282,56 @@ function ItemCreate() {
                 required
               >
                 <optgroup label="듣기 (LC: Listening)">
-                  {itemTypes.filter(t => t.group === 'LC').map(type => (
-                    <option key={type.no} value={type.no} style={type.isSet ? { fontWeight: 'bold' } : {}}>
-                      {type.isSet ? '📦 ' : ''}{type.label}
-                    </option>
-                  ))}
+                  {itemTypes.filter(t => t.group === 'LC').map(type => {
+                    const itemNo = typeof type.no === 'string' ? parseInt(type.no) : type.no;
+                    const hasDefault = defaultPrompts[itemNo];
+                    return (
+                      <option key={type.no} value={type.no} style={type.isSet ? { fontWeight: 'bold' } : {}}>
+                        {type.isSet ? '📦 ' : ''}{hasDefault ? '⭐ ' : ''}{type.label}
+                      </option>
+                    );
+                  })}
                 </optgroup>
                 <optgroup label="독해 (RC: Reading)">
-                  {itemTypes.filter(t => t.group === 'RC').map(type => (
-                    <option key={type.no} value={type.no} style={type.isSet ? { fontWeight: 'bold' } : {}}>
-                      {type.isSet ? '📦 ' : ''}{type.label}
-                    </option>
-                  ))}
+                  {itemTypes.filter(t => t.group === 'RC').map(type => {
+                    const itemNo = typeof type.no === 'string' ? parseInt(type.no) : type.no;
+                    const hasDefault = defaultPrompts[itemNo];
+                    return (
+                      <option key={type.no} value={type.no} style={type.isSet ? { fontWeight: 'bold' } : {}}>
+                        {type.isSet ? '📦 ' : ''}{hasDefault ? '⭐ ' : ''}{type.label}
+                      </option>
+                    );
+                  })}
                 </optgroup>
               </select>
+              {/* 기본 프롬프트 표시 */}
+              {(() => {
+                const itemNo = typeof formData.item_no === 'string' ? parseInt(formData.item_no) : formData.item_no;
+                const defaultPromptKey = defaultPrompts[itemNo];
+                if (defaultPromptKey) {
+                  return (
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '8px 12px',
+                      background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(102, 126, 234, 0.3)',
+                      fontSize: '0.85rem'
+                    }}>
+                      <span style={{ color: '#667eea', fontWeight: 600 }}>⭐ 기본 프롬프트:</span>
+                      <span style={{ marginLeft: '8px', color: '#333' }}>{defaultPromptKey}</span>
+                      <span style={{
+                        marginLeft: '8px',
+                        fontSize: '0.75rem',
+                        color: '#666'
+                      }}>
+                        (프롬프트 관리에서 설정됨)
+                      </span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             <div className="form-group">

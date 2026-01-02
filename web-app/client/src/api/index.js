@@ -99,6 +99,16 @@ export const promptsApi = {
     request(`/prompts/${key}/versions/${version}/restore`, {
       method: 'POST',
     }),
+  // 기본값 설정
+  getDefaults: () => request('/prompts/defaults'),
+  setDefault: (key) =>
+    request(`/prompts/${key}/set-default`, {
+      method: 'POST',
+    }),
+  unsetDefault: (key) =>
+    request(`/prompts/${key}/set-default`, {
+      method: 'DELETE',
+    }),
 };
 
 // 문항 요청 API
