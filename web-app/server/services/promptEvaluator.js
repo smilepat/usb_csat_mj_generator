@@ -10,7 +10,9 @@ const {
   SEVERITY,
   COMMON_PROMPT_RULES,
   MASTER_PROMPT_RULES,
+  PASSAGE_PROMPT_RULES,
   ITEM_KEYWORD_MAP,
+  getPromptType,
 } = require('./promptEvaluator.rules');
 
 /**
@@ -234,8 +236,9 @@ function quickValidate(promptKey, promptText) {
   const issues = [];
   const warnings = [];
   const context = { text: promptText, key: promptKey };
+  const promptType = getPromptType(promptKey);
 
-  // 1. 공통 규칙 검사
+  // 1. 공통 규칙 검사 (모든 프롬프트에 적용)
   for (const rule of COMMON_PROMPT_RULES) {
     if (rule.when(context)) {
       if (rule.severity === SEVERITY.ERROR) {
@@ -247,7 +250,7 @@ function quickValidate(promptKey, promptText) {
   }
 
   // 2. MASTER_PROMPT 전용 규칙 검사
-  if (promptKey === 'MASTER_PROMPT') {
+  if (promptType === 'master') {
     for (const rule of MASTER_PROMPT_RULES) {
       if (rule.when(context)) {
         if (rule.severity === SEVERITY.ERROR) {
@@ -259,9 +262,30 @@ function quickValidate(promptKey, promptText) {
     }
   }
 
-  // 3. 문항 번호별 키워드 검사
+  // 3. 지문 생성 프롬프트(P1~P45) 전용 규칙 검사
+  if (promptType === 'passage') {
+    for (const rule of PASSAGE_PROMPT_RULES) {
+      if (rule.when(context)) {
+        if (rule.severity === SEVERITY.ERROR) {
+          issues.push(rule.message);
+        } else if (rule.severity === SEVERITY.WARN) {
+          warnings.push(rule.message);
+        }
+      }
+    }
+  }
+
+  // 4. 문항 번호별 키워드 검사 (숫자 키 또는 RC/LC 키)
+  let itemNo = null;
   if (/^\d+$/.test(promptKey)) {
-    const itemNo = parseInt(promptKey);
+    itemNo = parseInt(promptKey);
+  } else if (/^RC(\d+)$/.test(promptKey)) {
+    itemNo = parseInt(promptKey.match(/^RC(\d+)$/)[1]);
+  } else if (/^LC(\d+)$/.test(promptKey)) {
+    itemNo = parseInt(promptKey.match(/^LC(\d+)$/)[1]);
+  }
+
+  if (itemNo !== null) {
     const keywordRule = ITEM_KEYWORD_MAP[itemNo];
 
     if (keywordRule) {
@@ -283,7 +307,8 @@ function quickValidate(promptKey, promptText) {
   return {
     passed: issues.length === 0,
     issues,
-    warnings
+    warnings,
+    promptType // 디버깅/로깅용으로 타입 정보 포함
   };
 }
 
