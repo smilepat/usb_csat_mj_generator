@@ -27,6 +27,12 @@ function Prompts() {
   // 메트릭스 관련 상태
   const [recalculating, setRecalculating] = useState(false);
 
+  // 버전 관리 상태
+  const [showVersions, setShowVersions] = useState(false);
+  const [versions, setVersions] = useState(null);
+  const [loadingVersions, setLoadingVersions] = useState(false);
+  const [restoringVersion, setRestoringVersion] = useState(null);
+
   useEffect(() => {
     loadPrompts();
   }, []);
@@ -138,6 +144,8 @@ function Prompts() {
     setShowFeedback(false);
     setFeedback('');
     setImprovementResult(null);
+    setShowVersions(false);
+    setVersions(null);
   };
 
   const handleSave = async () => {
@@ -275,6 +283,51 @@ function Prompts() {
       setFormData(prev => ({ ...prev, prompt_text: improvementResult.improved_prompt }));
       setEditMode(true);
       setMessage({ type: 'success', text: '개선된 프롬프트가 적용되었습니다. 저장하려면 💾 저장 버튼을 클릭하세요.' });
+    }
+  };
+
+  // 버전 히스토리 로드
+  const handleLoadVersions = async () => {
+    if (!selectedPrompt) return;
+
+    try {
+      setLoadingVersions(true);
+      const res = await promptsApi.getVersions(selectedPrompt.prompt_key);
+      setVersions(res.data);
+      setShowVersions(true);
+    } catch (error) {
+      setMessage({ type: 'error', text: '버전 히스토리 로드 실패: ' + error.message });
+    } finally {
+      setLoadingVersions(false);
+    }
+  };
+
+  // 버전 복원
+  const handleRestoreVersion = async (version) => {
+    if (!selectedPrompt) return;
+    if (!window.confirm(`버전 ${version}으로 복원하시겠습니까?\n현재 버전은 자동으로 백업됩니다.`)) return;
+
+    try {
+      setRestoringVersion(version);
+      const res = await promptsApi.restoreVersion(selectedPrompt.prompt_key, version);
+      setMessage({ type: 'success', text: res.message });
+
+      // 프롬프트 목록 새로고침
+      loadPrompts();
+
+      // 버전 히스토리 새로고침
+      handleLoadVersions();
+
+      // 폼 데이터 업데이트
+      const updatedPrompt = await promptsApi.get(selectedPrompt.prompt_key);
+      setFormData(prev => ({
+        ...prev,
+        prompt_text: updatedPrompt.data.prompt_text
+      }));
+    } catch (error) {
+      setMessage({ type: 'error', text: '버전 복원 실패: ' + error.message });
+    } finally {
+      setRestoringVersion(null);
     }
   };
 
@@ -502,9 +555,18 @@ function Prompts() {
                     </>
                   )}
                   {selectedPrompt && (
-                    <button className="btn btn-danger btn-sm" onClick={handleDelete}>
-                      🗑️ 삭제
-                    </button>
+                    <>
+                      <button
+                        className={`btn btn-sm ${showVersions ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={handleLoadVersions}
+                        disabled={loadingVersions}
+                      >
+                        {loadingVersions ? '🔄 로딩...' : '📜 버전 히스토리'}
+                      </button>
+                      <button className="btn btn-danger btn-sm" onClick={handleDelete}>
+                        🗑️ 삭제
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -605,6 +667,99 @@ function Prompts() {
                   >
                     {improving ? '🔄 AI 개선 중...' : '🚀 피드백 AI 적용'}
                   </button>
+                </div>
+              )}
+
+              {/* 버전 히스토리 패널 */}
+              {showVersions && versions && (
+                <div style={{ marginTop: '16px', padding: '16px', background: '#f5f5f5', borderRadius: '8px', border: '1px solid #ddd' }}>
+                  <div className="flex-between" style={{ marginBottom: '12px' }}>
+                    <h4 style={{ margin: 0 }}>📜 버전 히스토리 ({versions.total_versions}개)</h4>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setShowVersions(false)}
+                    >
+                      ✕ 닫기
+                    </button>
+                  </div>
+
+                  {/* 현재 버전 */}
+                  <div style={{
+                    padding: '12px',
+                    background: '#e8f5e9',
+                    borderRadius: '6px',
+                    marginBottom: '8px',
+                    border: '1px solid #a5d6a7'
+                  }}>
+                    <div className="flex-between">
+                      <div>
+                        <strong style={{ color: '#2e7d32' }}>현재 버전</strong>
+                        <span style={{ marginLeft: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          {versions.current.created_at}
+                        </span>
+                      </div>
+                      <span className="badge" style={{ background: '#2e7d32', color: 'white' }}>CURRENT</span>
+                    </div>
+                  </div>
+
+                  {/* 이전 버전 목록 */}
+                  {versions.history.length === 0 ? (
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                      이전 버전이 없습니다.<br />
+                      <span style={{ fontSize: '0.85rem' }}>프롬프트를 수정하면 자동으로 버전이 저장됩니다.</span>
+                    </div>
+                  ) : (
+                    <div style={{ maxHeight: '300px', overflow: 'auto' }}>
+                      {versions.history.map((ver) => (
+                        <div
+                          key={ver.id}
+                          style={{
+                            padding: '12px',
+                            background: 'white',
+                            borderRadius: '6px',
+                            marginBottom: '8px',
+                            border: '1px solid #ddd'
+                          }}
+                        >
+                          <div className="flex-between" style={{ marginBottom: '8px' }}>
+                            <div>
+                              <strong>버전 {ver.version}</strong>
+                              <span style={{ marginLeft: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                {ver.created_at}
+                              </span>
+                            </div>
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => handleRestoreVersion(ver.version)}
+                              disabled={restoringVersion === ver.version}
+                            >
+                              {restoringVersion === ver.version ? '🔄 복원 중...' : '↩️ 복원'}
+                            </button>
+                          </div>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                            {ver.change_reason}
+                          </div>
+                          <details style={{ fontSize: '0.85rem' }}>
+                            <summary style={{ cursor: 'pointer', color: 'var(--primary-color)' }}>
+                              프롬프트 내용 보기
+                            </summary>
+                            <pre style={{
+                              background: '#f8f9fa',
+                              padding: '12px',
+                              borderRadius: '4px',
+                              fontSize: '0.8rem',
+                              maxHeight: '150px',
+                              overflow: 'auto',
+                              whiteSpace: 'pre-wrap',
+                              marginTop: '8px'
+                            }}>
+                              {ver.prompt_text}
+                            </pre>
+                          </details>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 

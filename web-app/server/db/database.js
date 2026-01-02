@@ -154,6 +154,20 @@ async function initDatabase() {
     )
   `);
 
+  // PROMPT_VERSIONS 테이블 (프롬프트 버전 히스토리)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS prompt_versions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      prompt_id INTEGER NOT NULL,
+      prompt_key TEXT NOT NULL,
+      version INTEGER NOT NULL,
+      prompt_text TEXT,
+      change_reason TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (prompt_id) REFERENCES prompts(id)
+    )
+  `);
+
   // LOG 테이블
   db.run(`
     CREATE TABLE IF NOT EXISTS logs (
@@ -271,6 +285,8 @@ async function initDatabase() {
   db.run(`CREATE INDEX IF NOT EXISTS idx_item_metrics_recommendation ON item_metrics(recommendation)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_prompt_metrics_prompt_id ON prompt_metrics(prompt_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_item_requests_prompt_id ON item_requests(prompt_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_prompt_versions_prompt_id ON prompt_versions(prompt_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_prompt_versions_prompt_key ON prompt_versions(prompt_key)`);
 
   // 기본 설정 삽입 (Google Sheets CONFIG 시트 기준)
   const defaultConfigs = [

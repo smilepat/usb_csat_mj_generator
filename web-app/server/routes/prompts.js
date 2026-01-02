@@ -163,12 +163,12 @@ router.post('/', async (req, res) => {
 
 /**
  * PUT /api/prompts/:key
- * 프롬프트 수정 (메트릭스 재계산)
+ * 프롬프트 수정 (버전 히스토리 저장 + 메트릭스 재계산)
  */
 router.put('/:key', async (req, res) => {
   try {
     const { key } = req.params;
-    const { title, prompt_text, active } = req.body;
+    const { title, prompt_text, active, change_reason } = req.body;
 
     const db = getDb();
     const existing = db.prepare('SELECT * FROM prompts WHERE prompt_key = ?').get(key);
@@ -179,6 +179,32 @@ router.put('/:key', async (req, res) => {
 
     const newPromptText = prompt_text !== undefined ? prompt_text : existing.prompt_text;
 
+    // 프롬프트 텍스트가 변경되면 이전 버전을 히스토리에 저장
+    let newVersion = null;
+    if (prompt_text !== undefined && prompt_text !== existing.prompt_text) {
+      // 현재 최신 버전 번호 조회
+      const latestVersion = db.prepare(
+        'SELECT MAX(version) as max_version FROM prompt_versions WHERE prompt_id = ?'
+      ).get(existing.id);
+
+      newVersion = (latestVersion?.max_version || 0) + 1;
+
+      // 이전 버전 저장
+      db.prepare(`
+        INSERT INTO prompt_versions (prompt_id, prompt_key, version, prompt_text, change_reason)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(
+        existing.id,
+        key,
+        newVersion,
+        existing.prompt_text,  // 이전 텍스트 저장
+        change_reason || '수동 수정'
+      );
+
+      logger.info('프롬프트 버전 저장', key, `버전 ${newVersion} 저장됨`);
+    }
+
+    // 프롬프트 업데이트
     db.prepare(`
       UPDATE prompts
       SET title = ?,
@@ -207,6 +233,7 @@ router.put('/:key', async (req, res) => {
     res.json({
       success: true,
       message: '프롬프트가 수정되었습니다.',
+      version: newVersion,
       metrics: metrics
     });
   } catch (error) {
@@ -336,6 +363,122 @@ router.post('/:key/improve', async (req, res) => {
     });
   } catch (error) {
     logger.error('프롬프트 피드백 개선 오류', req.params.key, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/prompts/:key/versions
+ * 프롬프트 버전 히스토리 조회
+ */
+router.get('/:key/versions', (req, res) => {
+  try {
+    const { key } = req.params;
+    const db = getDb();
+
+    const prompt = db.prepare('SELECT id, prompt_text, updated_at FROM prompts WHERE prompt_key = ?').get(key);
+    if (!prompt) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    // 버전 히스토리 조회 (최신순)
+    const versions = db.prepare(`
+      SELECT id, version, prompt_text, change_reason, created_at
+      FROM prompt_versions
+      WHERE prompt_id = ?
+      ORDER BY version DESC
+    `).all(prompt.id);
+
+    // 현재 버전 정보 추가
+    const currentVersion = {
+      version: 'current',
+      prompt_text: prompt.prompt_text,
+      change_reason: '현재 버전',
+      created_at: prompt.updated_at
+    };
+
+    res.json({
+      success: true,
+      data: {
+        current: currentVersion,
+        history: versions,
+        total_versions: versions.length + 1
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/:key/versions/:version/restore
+ * 특정 버전으로 복원
+ */
+router.post('/:key/versions/:version/restore', async (req, res) => {
+  try {
+    const { key, version } = req.params;
+    const db = getDb();
+
+    const prompt = db.prepare('SELECT * FROM prompts WHERE prompt_key = ?').get(key);
+    if (!prompt) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    // 복원할 버전 조회
+    const targetVersion = db.prepare(`
+      SELECT * FROM prompt_versions
+      WHERE prompt_id = ? AND version = ?
+    `).get(prompt.id, parseInt(version));
+
+    if (!targetVersion) {
+      return res.status(404).json({ success: false, error: '해당 버전을 찾을 수 없습니다.' });
+    }
+
+    // 현재 버전을 히스토리에 저장
+    const latestVersion = db.prepare(
+      'SELECT MAX(version) as max_version FROM prompt_versions WHERE prompt_id = ?'
+    ).get(prompt.id);
+
+    const newVersion = (latestVersion?.max_version || 0) + 1;
+
+    db.prepare(`
+      INSERT INTO prompt_versions (prompt_id, prompt_key, version, prompt_text, change_reason)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(
+      prompt.id,
+      key,
+      newVersion,
+      prompt.prompt_text,
+      `버전 ${version}으로 복원 전 백업`
+    );
+
+    // 선택한 버전으로 복원
+    db.prepare(`
+      UPDATE prompts
+      SET prompt_text = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE prompt_key = ?
+    `).run(targetVersion.prompt_text, key);
+
+    logger.info('프롬프트 버전 복원', key, `버전 ${version}으로 복원됨`);
+
+    // 메트릭스 재계산
+    let metrics = null;
+    try {
+      metrics = await calculateAndSavePromptMetrics(prompt.id, key, targetVersion.prompt_text, false);
+    } catch (metricsError) {
+      logger.warn('복원 후 메트릭스 재계산 실패', key, metricsError.message);
+    }
+
+    res.json({
+      success: true,
+      message: `버전 ${version}으로 복원되었습니다.`,
+      restored_version: version,
+      backup_version: newVersion,
+      metrics: metrics
+    });
+  } catch (error) {
+    logger.error('프롬프트 버전 복원 오류', req.params.key, error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

@@ -93,6 +93,12 @@ export const promptsApi = {
     request(`/prompts/${key}/performance/update`, {
       method: 'POST',
     }),
+  // 버전 관리
+  getVersions: (key) => request(`/prompts/${key}/versions`),
+  restoreVersion: (key, version) =>
+    request(`/prompts/${key}/versions/${version}/restore`, {
+      method: 'POST',
+    }),
 };
 
 // 문항 요청 API
