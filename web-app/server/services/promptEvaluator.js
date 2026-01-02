@@ -6,6 +6,12 @@
 const { callLLM } = require('./llmClient');
 const { getConfig } = require('./configService');
 const logger = require('./logger');
+const {
+  SEVERITY,
+  COMMON_PROMPT_RULES,
+  MASTER_PROMPT_RULES,
+  ITEM_KEYWORD_MAP,
+} = require('./promptEvaluator.rules');
 
 /**
  * 프롬프트 평가용 시스템 프롬프트
@@ -219,6 +225,7 @@ function getGradeLabel(grade) {
 
 /**
  * 빠른 규칙 기반 사전 검증 (LLM 호출 전)
+ * promptEvaluator.rules.js의 규칙을 사용
  * @param {string} promptKey - 프롬프트 키
  * @param {string} promptText - 프롬프트 내용
  * @returns {Object} 사전 검증 결과
@@ -226,41 +233,49 @@ function getGradeLabel(grade) {
 function quickValidate(promptKey, promptText) {
   const issues = [];
   const warnings = [];
+  const context = { text: promptText, key: promptKey };
 
-  // 길이 체크
-  if (promptText.length < 50) {
-    issues.push('프롬프트가 너무 짧습니다 (최소 50자 권장)');
-  }
-
-  if (promptText.length > 10000) {
-    warnings.push('프롬프트가 매우 깁니다. 토큰 비용에 주의하세요.');
-  }
-
-  // MASTER_PROMPT 전용 체크
-  if (promptKey === 'MASTER_PROMPT') {
-    if (!promptText.includes('JSON')) {
-      issues.push('MASTER_PROMPT에 JSON 관련 지침이 없습니다.');
-    }
-    if (!promptText.includes('item_no') && !promptText.includes('itemNo')) {
-      warnings.push('item_no 필드에 대한 언급이 없습니다.');
-    }
-  }
-
-  // 문항 프롬프트 체크
-  if (/^\d+$/.test(promptKey)) {
-    const itemNo = parseInt(promptKey);
-
-    // RC29 어법
-    if (itemNo === 29) {
-      if (!promptText.includes('밑줄') && !promptText.includes('underline')) {
-        warnings.push('RC29는 밑줄 문항입니다. 밑줄 관련 지침이 없습니다.');
+  // 1. 공통 규칙 검사
+  for (const rule of COMMON_PROMPT_RULES) {
+    if (rule.when(context)) {
+      if (rule.severity === SEVERITY.ERROR) {
+        issues.push(rule.message);
+      } else if (rule.severity === SEVERITY.WARN) {
+        warnings.push(rule.message);
       }
     }
+  }
 
-    // RC31-34 빈칸
-    if (itemNo >= 31 && itemNo <= 34) {
-      if (!promptText.includes('빈칸') && !promptText.includes('blank')) {
-        warnings.push('빈칸 문항인데 빈칸 관련 지침이 없습니다.');
+  // 2. MASTER_PROMPT 전용 규칙 검사
+  if (promptKey === 'MASTER_PROMPT') {
+    for (const rule of MASTER_PROMPT_RULES) {
+      if (rule.when(context)) {
+        if (rule.severity === SEVERITY.ERROR) {
+          issues.push(rule.message);
+        } else if (rule.severity === SEVERITY.WARN) {
+          warnings.push(rule.message);
+        }
+      }
+    }
+  }
+
+  // 3. 문항 번호별 키워드 검사
+  if (/^\d+$/.test(promptKey)) {
+    const itemNo = parseInt(promptKey);
+    const keywordRule = ITEM_KEYWORD_MAP[itemNo];
+
+    if (keywordRule) {
+      // requiredAny: 하나라도 매칭되면 통과
+      const hasMatch = keywordRule.requiredAny.some(pattern =>
+        pattern.test(promptText || '')
+      );
+
+      if (!hasMatch) {
+        if (keywordRule.severity === SEVERITY.ERROR) {
+          issues.push(keywordRule.message);
+        } else if (keywordRule.severity === SEVERITY.WARN) {
+          warnings.push(keywordRule.message);
+        }
       }
     }
   }
