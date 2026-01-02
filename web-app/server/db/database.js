@@ -66,10 +66,18 @@ async function initDatabase() {
       title TEXT,
       prompt_text TEXT,
       active INTEGER DEFAULT 1,
+      status TEXT DEFAULT 'draft',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // prompts 테이블에 status 컬럼이 없으면 추가
+  try {
+    db.run(`ALTER TABLE prompts ADD COLUMN status TEXT DEFAULT 'draft'`);
+  } catch (e) {
+    // 이미 컬럼이 존재하면 무시
+  }
 
   // ITEM_REQUEST 테이블
   db.run(`
