@@ -196,22 +196,20 @@ function PromptPreview({ data, onEdit, onConfirm, onCancel }) {
             ← 돌아가기
           </button>
         )}
-        {onConfirm && valid && (
-          <button className="btn btn-primary" onClick={onConfirm}>
-            🚀 이 프롬프트로 생성
-          </button>
-        )}
-        {onConfirm && !valid && (
+        {onConfirm && (
           <button
-            className="btn btn-secondary"
+            className="btn btn-primary"
             onClick={() => {
-              if (window.confirm('검증에서 오류가 발견되었습니다. 그래도 생성하시겠습니까?\n\n오류가 있으면 문항 생성이 실패할 수 있습니다.')) {
+              if (!valid) {
+                if (window.confirm('검증에서 경고/오류가 있습니다. 그래도 생성하시겠습니까?\n\n문항 생성이 실패할 수 있습니다.')) {
+                  onConfirm();
+                }
+              } else {
                 onConfirm();
               }
             }}
-            title="오류를 무시하고 생성을 시도합니다"
           >
-            ⚠️ 무시하고 생성
+            🚀 이 프롬프트로 생성
           </button>
         )}
       </div>
