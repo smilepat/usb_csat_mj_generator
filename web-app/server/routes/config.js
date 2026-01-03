@@ -31,14 +31,16 @@ router.put('/:key', (req, res) => {
     const { value, description } = req.body;
 
     const db = getDb();
+
+    // SQL.js는 ON CONFLICT를 지원하지 않으므로 INSERT OR REPLACE 사용
+    // description이 없으면 기존 값 유지를 위해 먼저 조회
+    const existing = db.prepare('SELECT description FROM config WHERE key = ?').get(key);
+    const finalDescription = description || (existing ? existing.description : null);
+
     db.prepare(`
-      INSERT INTO config (key, value, description, updated_at)
-      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-      ON CONFLICT(key) DO UPDATE SET
-        value = ?,
-        description = COALESCE(?, description),
-        updated_at = CURRENT_TIMESTAMP
-    `).run(key, value, description, value, description);
+      INSERT OR REPLACE INTO config (key, value, description, updated_at)
+      VALUES (?, ?, ?, datetime('now'))
+    `).run(key, value, finalDescription);
 
     res.json({ success: true, message: '설정이 업데이트되었습니다.' });
   } catch (error) {
@@ -55,15 +57,13 @@ router.post('/batch', (req, res) => {
     const { configs } = req.body;
     const db = getDb();
 
-    const stmt = db.prepare(`
-      INSERT INTO config (key, value, updated_at)
-      VALUES (?, ?, CURRENT_TIMESTAMP)
-      ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
-    `);
-
+    // SQL.js 호환: INSERT OR REPLACE 사용
     const updateMany = db.transaction((items) => {
       for (const item of items) {
-        stmt.run(item.key, item.value, item.value);
+        db.prepare(`
+          INSERT OR REPLACE INTO config (key, value, updated_at)
+          VALUES (?, ?, datetime('now'))
+        `).run(item.key, item.value);
       }
     });
 

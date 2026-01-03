@@ -11,6 +11,22 @@ const DB_PATH = path.join(__dirname, '../../data/csat.db');
 
 let db = null;
 let SQL = null;
+let saveTimer = null;
+const SAVE_DELAY_MS = 1000; // 1초 디바운스
+
+/**
+ * 디바운스된 DB 저장 (성능 최적화)
+ * 매번 저장하지 않고, 마지막 변경 후 1초 뒤에 저장
+ */
+function scheduleSave() {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+  }
+  saveTimer = setTimeout(() => {
+    saveDatabase();
+    saveTimer = null;
+  }, SAVE_DELAY_MS);
+}
 
 /**
  * DB를 파일로 저장
@@ -457,6 +473,11 @@ function getPassageItemTemplate(itemNo) {
  */
 function closeDatabase() {
   if (db) {
+    // 대기 중인 저장 타이머가 있으면 즉시 저장
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
     saveDatabase();
     db.close();
     db = null;
@@ -475,7 +496,7 @@ function getDb() {
     prepare: (sql) => ({
       run: (...params) => {
         db.run(sql, params);
-        saveDatabase();
+        scheduleSave(); // 디바운스된 저장 (성능 최적화)
         return { changes: db.getRowsModified() };
       },
       get: (...params) => {
@@ -502,7 +523,7 @@ function getDb() {
     }),
     exec: (sql) => {
       db.exec(sql);
-      saveDatabase();
+      scheduleSave(); // 디바운스된 저장 (성능 최적화)
     },
     transaction: (fn) => {
       return (...args) => {
@@ -510,7 +531,7 @@ function getDb() {
         try {
           const result = fn(...args);
           db.run('COMMIT');
-          saveDatabase();
+          saveDatabase(); // 트랜잭션 완료 후 즉시 저장
           return result;
         } catch (e) {
           db.run('ROLLBACK');

@@ -36,11 +36,11 @@ function getConfig() {
  */
 function setConfig(key, value) {
   const db = getDb();
+  // SQL.js 호환: INSERT OR REPLACE 사용
   db.prepare(`
-    INSERT INTO config (key, value, updated_at)
-    VALUES (?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
-  `).run(key, value, value);
+    INSERT OR REPLACE INTO config (key, value, updated_at)
+    VALUES (?, ?, datetime('now'))
+  `).run(key, value);
 }
 
 /**

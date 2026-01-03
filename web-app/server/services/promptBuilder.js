@@ -4,6 +4,7 @@
  */
 
 const { getDb } = require('../db/database');
+const logger = require('./logger');
 
 /**
  * MASTER_PROMPT 읽기
@@ -256,7 +257,7 @@ function readPassageItemPrompt(req) {
   }
 
   // DB에 없으면 기본 템플릿 반환
-  console.log(`[promptBuilder] P${req.itemNo} 프롬프트 없음, 기본 템플릿 사용`);
+  logger.info('promptBuilder', null, `P${req.itemNo} 프롬프트 없음, 기본 템플릿 사용`);
   return getDefaultPassageTemplate(req.itemNo);
 }
 

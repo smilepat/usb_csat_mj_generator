@@ -54,7 +54,7 @@ async function generatePassageIfNeeded(req, logger = null) {
     '[추가 정보]\n' + context;
 
   // 4) LLM 호출
-  const config = await getConfig();
+  const config = getConfig(); // getConfig()는 동기 함수
   const raw = await callLLM(master, userPrompt, config);
 
   // 5) 후처리

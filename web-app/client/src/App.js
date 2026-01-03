@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Component } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import ItemRequests from './pages/ItemRequests';
@@ -9,6 +9,105 @@ import Charts from './pages/Charts';
 import Config from './pages/Config';
 import Logs from './pages/Logs';
 import Quality from './pages/Quality';
+
+/**
+ * Error Boundary 컴포넌트
+ * 렌더링 중 발생하는 에러를 잡아서 전체 앱이 크래시되지 않도록 합니다.
+ */
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    this.setState({ error, errorInfo });
+    // 에러 로깅 (콘솔에 출력)
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  }
+
+  handleReload = () => {
+    this.setState({ hasError: false, error: null, errorInfo: null });
+    window.location.reload();
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          padding: '40px',
+          background: '#f8f9fa',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '40px',
+            borderRadius: '12px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            maxWidth: '600px'
+          }}>
+            <h2 style={{ color: '#e53935', marginBottom: '16px' }}>
+              오류가 발생했습니다
+            </h2>
+            <p style={{ color: '#666', marginBottom: '24px', lineHeight: '1.6' }}>
+              애플리케이션에서 예상치 못한 오류가 발생했습니다.
+              페이지를 새로고침하거나, 문제가 지속되면 관리자에게 문의하세요.
+            </p>
+            {this.state.error && (
+              <details style={{
+                background: '#fff3f3',
+                padding: '16px',
+                borderRadius: '8px',
+                marginBottom: '24px',
+                textAlign: 'left'
+              }}>
+                <summary style={{ cursor: 'pointer', fontWeight: '600', color: '#c62828' }}>
+                  오류 상세 정보
+                </summary>
+                <pre style={{
+                  marginTop: '12px',
+                  fontSize: '0.85rem',
+                  overflow: 'auto',
+                  whiteSpace: 'pre-wrap',
+                  color: '#666'
+                }}>
+                  {this.state.error.toString()}
+                  {this.state.errorInfo && this.state.errorInfo.componentStack}
+                </pre>
+              </details>
+            )}
+            <button
+              onClick={this.handleReload}
+              style={{
+                background: '#667eea',
+                color: 'white',
+                border: 'none',
+                padding: '12px 32px',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              페이지 새로고침
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 function App() {
   const [showUserGuide, setShowUserGuide] = useState(false);
@@ -421,4 +520,13 @@ function App() {
   );
 }
 
-export default App;
+// ErrorBoundary로 감싼 App 컴포넌트를 내보냄
+function AppWithErrorBoundary() {
+  return (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+}
+
+export default AppWithErrorBoundary;
