@@ -28,7 +28,9 @@
       "Bash(powershell -Command:*)",
       "Bash(ping:*)",
       "Bash(cmd /c \"cd /d c:\\\\csat_mj_generator\\\\web-app & npm start\")",
-      "Bash(cmd /c \"cd /d c:\\\\csat_mj_generator\\\\web-app\\\\client && npm start\")"
+      "Bash(cmd /c \"cd /d c:\\\\csat_mj_generator\\\\web-app\\\\client && npm start\")",
+      "Bash(git -C /c/csat_mj_generator log --oneline -15)",
+      "Bash(git -C /c/csat_mj_generator diff HEAD~3 HEAD --stat)"
     ]
   }
 }
