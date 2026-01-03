@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { itemsApi, promptsApi } from '../api';
 import PromptPreview from '../components/PromptPreview';
+import { validateForm, countWords, isLCItem, isRCItem, isSetItem } from '../utils/validation';
 
 function ItemCreate() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ function ItemCreate() {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [validationResult, setValidationResult] = useState({ valid: true, errors: [], warnings: [] });
 
   // 프롬프트 미리보기 관련 상태
   const [showPreview, setShowPreview] = useState(false);
@@ -91,10 +93,16 @@ function ItemCreate() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       [name]: value
-    }));
+    };
+    setFormData(newFormData);
+
+    // 실시간 유효성 검사
+    const result = validateForm(newFormData);
+    setValidationResult(result);
+
     // 입력 변경 시 미리보기 닫기
     if (showPreview) {
       setShowPreview(false);
@@ -148,6 +156,25 @@ function ItemCreate() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 클라이언트 측 유효성 검사
+    const validation = validateForm(formData);
+    setValidationResult(validation);
+
+    if (!validation.valid) {
+      setMessage({ type: 'error', text: '입력 오류: ' + validation.errors.join(', ') });
+      return;
+    }
+
+    // 경고가 있으면 확인
+    if (validation.warnings.length > 0) {
+      const proceed = window.confirm(
+        '다음 경고가 있습니다:\n\n' +
+        validation.warnings.join('\n') +
+        '\n\n계속 진행하시겠습니까?'
+      );
+      if (!proceed) return;
+    }
 
     try {
       setLoading(true);
@@ -364,6 +391,11 @@ function ItemCreate() {
               rows="8"
               placeholder="수능 스타일의 영어 지문을 입력하세요. 비워두면 AI가 자동으로 생성합니다."
             />
+            {formData.passage && (
+              <div style={{ marginTop: '8px', fontSize: '0.85rem', color: '#666' }}>
+                {countWords(formData.passage)}단어 / {formData.passage.length}자
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -411,16 +443,49 @@ function ItemCreate() {
             </div>
           )}
 
+          {/* 유효성 검사 결과 표시 */}
+          {(validationResult.errors.length > 0 || validationResult.warnings.length > 0) && (
+            <div style={{ marginBottom: '16px' }}>
+              {validationResult.errors.length > 0 && (
+                <div style={{
+                  padding: '12px',
+                  background: '#fee2e2',
+                  borderRadius: '6px',
+                  border: '1px solid #fca5a5',
+                  marginBottom: '8px'
+                }}>
+                  <strong style={{ color: '#dc2626' }}>오류:</strong>
+                  <ul style={{ margin: '8px 0 0 20px', padding: 0, color: '#dc2626' }}>
+                    {validationResult.errors.map((err, i) => <li key={i}>{err}</li>)}
+                  </ul>
+                </div>
+              )}
+              {validationResult.warnings.length > 0 && (
+                <div style={{
+                  padding: '12px',
+                  background: '#fef3c7',
+                  borderRadius: '6px',
+                  border: '1px solid #fcd34d'
+                }}>
+                  <strong style={{ color: '#d97706' }}>경고:</strong>
+                  <ul style={{ margin: '8px 0 0 20px', padding: 0, color: '#92400e' }}>
+                    {validationResult.warnings.map((warn, i) => <li key={i}>{warn}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-2 mt-4">
             <button
               type="button"
               className="btn btn-secondary"
               onClick={handlePreview}
-              disabled={loading || previewLoading}
+              disabled={loading || previewLoading || !validationResult.valid}
             >
               {previewLoading ? '검증 중...' : '🔍 프롬프트 미리보기'}
             </button>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
+            <button type="submit" className="btn btn-primary" disabled={loading || !validationResult.valid}>
               {loading ? '처리 중...' : '🚀 바로 생성'}
             </button>
             <button

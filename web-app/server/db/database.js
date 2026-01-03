@@ -64,6 +64,9 @@ async function initDatabase() {
     db = new SQL.Database();
   }
 
+  // 외래키 제약 활성화 (SQLite에서는 기본적으로 비활성화되어 있음)
+  db.run('PRAGMA foreign_keys = ON');
+
   // CONFIG 테이블
   db.run(`
     CREATE TABLE IF NOT EXISTS config (
@@ -542,9 +545,289 @@ function getDb() {
   };
 }
 
+/**
+ * 참조 무결성 검사 - 삭제 전 의존성 확인
+ * @param {string} table - 테이블명
+ * @param {string} key - 키 컬럼명
+ * @param {any} value - 키 값
+ * @returns {{ canDelete: boolean, dependencies: Object }}
+ */
+function checkDependencies(table, key, value) {
+  const dependencies = {};
+  let canDelete = true;
+
+  const db = getDb();
+
+  switch (table) {
+    case 'prompts':
+      // prompts를 참조하는 item_requests 확인
+      const requestCount = db.prepare(
+        'SELECT COUNT(*) as cnt FROM item_requests WHERE prompt_id = ?'
+      ).get(value);
+      if (requestCount && requestCount.cnt > 0) {
+        dependencies.item_requests = requestCount.cnt;
+        canDelete = false;
+      }
+
+      // prompts를 참조하는 prompt_versions 확인
+      const versionCount = db.prepare(
+        'SELECT COUNT(*) as cnt FROM prompt_versions WHERE prompt_id = ?'
+      ).get(value);
+      if (versionCount && versionCount.cnt > 0) {
+        dependencies.prompt_versions = versionCount.cnt;
+      }
+
+      // prompts를 참조하는 prompt_metrics 확인
+      const metricsCount = db.prepare(
+        'SELECT COUNT(*) as cnt FROM prompt_metrics WHERE prompt_id = ?'
+      ).get(value);
+      if (metricsCount && metricsCount.cnt > 0) {
+        dependencies.prompt_metrics = metricsCount.cnt;
+      }
+      break;
+
+    case 'item_requests':
+      // item_requests를 참조하는 item_json 확인
+      const jsonCount = db.prepare(
+        'SELECT COUNT(*) as cnt FROM item_json WHERE request_id = ?'
+      ).get(value);
+      if (jsonCount && jsonCount.cnt > 0) {
+        dependencies.item_json = jsonCount.cnt;
+      }
+
+      // item_requests를 참조하는 item_output 확인
+      const outputCount = db.prepare(
+        'SELECT COUNT(*) as cnt FROM item_output WHERE request_id = ?'
+      ).get(value);
+      if (outputCount && outputCount.cnt > 0) {
+        dependencies.item_output = outputCount.cnt;
+      }
+
+      // item_requests를 참조하는 item_metrics 확인
+      const itemMetricsCount = db.prepare(
+        'SELECT COUNT(*) as cnt FROM item_metrics WHERE request_id = ?'
+      ).get(value);
+      if (itemMetricsCount && itemMetricsCount.cnt > 0) {
+        dependencies.item_metrics = itemMetricsCount.cnt;
+      }
+      break;
+
+    case 'item_sets':
+      // item_sets를 참조하는 item_requests 확인
+      const setRequestCount = db.prepare(
+        'SELECT COUNT(*) as cnt FROM item_requests WHERE set_id = ?'
+      ).get(value);
+      if (setRequestCount && setRequestCount.cnt > 0) {
+        dependencies.item_requests = setRequestCount.cnt;
+        canDelete = false;
+      }
+      break;
+
+    case 'charts':
+      // charts를 참조하는 item_requests 확인
+      const chartRequestCount = db.prepare(
+        'SELECT COUNT(*) as cnt FROM item_requests WHERE chart_id = ?'
+      ).get(value);
+      if (chartRequestCount && chartRequestCount.cnt > 0) {
+        dependencies.item_requests = chartRequestCount.cnt;
+        canDelete = false;
+      }
+      break;
+  }
+
+  return { canDelete, dependencies };
+}
+
+/**
+ * CASCADE 삭제 - 관련 레코드와 함께 삭제
+ * @param {string} table - 테이블명
+ * @param {string} key - 키 컬럼명
+ * @param {any} value - 키 값
+ * @returns {{ success: boolean, deleted: Object }}
+ */
+function cascadeDelete(table, key, value) {
+  const db = getDb();
+  const deleted = {};
+
+  try {
+    db.exec('BEGIN TRANSACTION');
+
+    switch (table) {
+      case 'prompts':
+        // prompt_metrics 먼저 삭제
+        db.prepare('DELETE FROM prompt_metrics WHERE prompt_id = ?').run(value);
+        deleted.prompt_metrics = db.prepare('SELECT changes() as cnt').get().cnt;
+
+        // prompt_versions 삭제
+        db.prepare('DELETE FROM prompt_versions WHERE prompt_id = ?').run(value);
+        deleted.prompt_versions = db.prepare('SELECT changes() as cnt').get().cnt;
+
+        // prompts 삭제
+        db.prepare('DELETE FROM prompts WHERE id = ?').run(value);
+        deleted.prompts = 1;
+        break;
+
+      case 'item_requests':
+        // item_json 삭제
+        db.prepare('DELETE FROM item_json WHERE request_id = ?').run(value);
+        deleted.item_json = db.prepare('SELECT changes() as cnt').get().cnt;
+
+        // item_output 삭제
+        db.prepare('DELETE FROM item_output WHERE request_id = ?').run(value);
+        deleted.item_output = db.prepare('SELECT changes() as cnt').get().cnt;
+
+        // item_metrics 삭제
+        db.prepare('DELETE FROM item_metrics WHERE request_id = ?').run(value);
+        deleted.item_metrics = db.prepare('SELECT changes() as cnt').get().cnt;
+
+        // logs 삭제 (선택적)
+        db.prepare('DELETE FROM logs WHERE request_id = ?').run(value);
+        deleted.logs = db.prepare('SELECT changes() as cnt').get().cnt;
+
+        // errors 삭제 (선택적)
+        db.prepare('DELETE FROM errors WHERE request_id = ?').run(value);
+        deleted.errors = db.prepare('SELECT changes() as cnt').get().cnt;
+
+        // item_requests 삭제
+        db.prepare('DELETE FROM item_requests WHERE request_id = ?').run(value);
+        deleted.item_requests = 1;
+        break;
+
+      default:
+        // 일반 삭제
+        db.prepare(`DELETE FROM ${table} WHERE ${key} = ?`).run(value);
+        deleted[table] = 1;
+    }
+
+    db.exec('COMMIT');
+    saveDatabase();
+    return { success: true, deleted };
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+/**
+ * 데이터베이스 무결성 검사
+ * @returns {{ valid: boolean, issues: string[] }}
+ */
+function checkIntegrity() {
+  const db = getDb();
+  const issues = [];
+
+  // 외래키 위반 검사
+  const fkCheck = db.prepare('PRAGMA foreign_key_check').all();
+  if (fkCheck.length > 0) {
+    fkCheck.forEach(violation => {
+      issues.push(`외래키 위반: ${violation.table}.${violation.parent} (rowid: ${violation.rowid})`);
+    });
+  }
+
+  // 고아 레코드 검사 - item_json
+  const orphanJson = db.prepare(`
+    SELECT COUNT(*) as cnt FROM item_json
+    WHERE request_id NOT IN (SELECT request_id FROM item_requests)
+  `).get();
+  if (orphanJson && orphanJson.cnt > 0) {
+    issues.push(`고아 레코드: item_json에 ${orphanJson.cnt}개의 유효하지 않은 request_id 참조`);
+  }
+
+  // 고아 레코드 검사 - item_output
+  const orphanOutput = db.prepare(`
+    SELECT COUNT(*) as cnt FROM item_output
+    WHERE request_id NOT IN (SELECT request_id FROM item_requests)
+  `).get();
+  if (orphanOutput && orphanOutput.cnt > 0) {
+    issues.push(`고아 레코드: item_output에 ${orphanOutput.cnt}개의 유효하지 않은 request_id 참조`);
+  }
+
+  // 고아 레코드 검사 - prompt_versions
+  const orphanVersions = db.prepare(`
+    SELECT COUNT(*) as cnt FROM prompt_versions
+    WHERE prompt_id NOT IN (SELECT id FROM prompts)
+  `).get();
+  if (orphanVersions && orphanVersions.cnt > 0) {
+    issues.push(`고아 레코드: prompt_versions에 ${orphanVersions.cnt}개의 유효하지 않은 prompt_id 참조`);
+  }
+
+  // 고아 레코드 검사 - prompt_metrics
+  const orphanMetrics = db.prepare(`
+    SELECT COUNT(*) as cnt FROM prompt_metrics
+    WHERE prompt_id NOT IN (SELECT id FROM prompts)
+  `).get();
+  if (orphanMetrics && orphanMetrics.cnt > 0) {
+    issues.push(`고아 레코드: prompt_metrics에 ${orphanMetrics.cnt}개의 유효하지 않은 prompt_id 참조`);
+  }
+
+  return {
+    valid: issues.length === 0,
+    issues
+  };
+}
+
+/**
+ * 고아 레코드 정리
+ * @returns {{ cleaned: Object }}
+ */
+function cleanOrphanRecords() {
+  const db = getDb();
+  const cleaned = {};
+
+  try {
+    db.exec('BEGIN TRANSACTION');
+
+    // item_json 고아 레코드 삭제
+    db.prepare(`
+      DELETE FROM item_json
+      WHERE request_id NOT IN (SELECT request_id FROM item_requests)
+    `).run();
+    cleaned.item_json = db.prepare('SELECT changes() as cnt').get().cnt;
+
+    // item_output 고아 레코드 삭제
+    db.prepare(`
+      DELETE FROM item_output
+      WHERE request_id NOT IN (SELECT request_id FROM item_requests)
+    `).run();
+    cleaned.item_output = db.prepare('SELECT changes() as cnt').get().cnt;
+
+    // item_metrics 고아 레코드 삭제
+    db.prepare(`
+      DELETE FROM item_metrics
+      WHERE request_id NOT IN (SELECT request_id FROM item_requests)
+    `).run();
+    cleaned.item_metrics = db.prepare('SELECT changes() as cnt').get().cnt;
+
+    // prompt_versions 고아 레코드 삭제
+    db.prepare(`
+      DELETE FROM prompt_versions
+      WHERE prompt_id NOT IN (SELECT id FROM prompts)
+    `).run();
+    cleaned.prompt_versions = db.prepare('SELECT changes() as cnt').get().cnt;
+
+    // prompt_metrics 고아 레코드 삭제
+    db.prepare(`
+      DELETE FROM prompt_metrics
+      WHERE prompt_id NOT IN (SELECT id FROM prompts)
+    `).run();
+    cleaned.prompt_metrics = db.prepare('SELECT changes() as cnt').get().cnt;
+
+    db.exec('COMMIT');
+    saveDatabase();
+    return { cleaned };
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
 module.exports = {
   getDb,
   initDatabase,
   closeDatabase,
-  saveDatabase
+  saveDatabase,
+  checkDependencies,
+  cascadeDelete,
+  checkIntegrity,
+  cleanOrphanRecords
 };

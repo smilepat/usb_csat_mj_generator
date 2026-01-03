@@ -8,6 +8,16 @@ const { countUnderlinedSegments, validateGrammarItem } = require('./grammar');
 const { countBlanks, checkPassageDiffApprox, validateGapItem } = require('./gap');
 const { getChartData, validateChartItem } = require('./chart');
 const { ALLOWED_SET_PATTERNS, checkSetPattern, validateItemSet } = require('./set');
+const {
+  LC_ITEM_RULES,
+  countSpeakerTurns,
+  hasSpeakerMarkers,
+  countWords,
+  areOptionsEnglish,
+  areOptionsNumeric,
+  validateListeningItem,
+  isListeningItem
+} = require('./listening');
 
 module.exports = {
   // Common
@@ -29,5 +39,15 @@ module.exports = {
   // Set (16-17, 41-42, 43-45)
   ALLOWED_SET_PATTERNS,
   checkSetPattern,
-  validateItemSet
+  validateItemSet,
+
+  // Listening (LC1-17)
+  LC_ITEM_RULES,
+  countSpeakerTurns,
+  hasSpeakerMarkers,
+  countWords,
+  areOptionsEnglish,
+  areOptionsNumeric,
+  validateListeningItem,
+  isListeningItem
 };
