@@ -229,12 +229,29 @@ function ItemCreate() {
         setShowResult(true);
         setShowPreview(false);
 
-        setMessage({
-          type: genRes.data.validationResult === 'PASS' ? 'success' : 'warning',
-          text: genRes.data.validationResult === 'PASS'
-            ? '문항이 성공적으로 생성되었습니다!'
-            : '문항 생성 완료 (검토 필요)'
-        });
+        // 생성 성공 시 자동으로 라이브러리에 저장
+        if (genRes.data.validationResult === 'PASS') {
+          try {
+            await libraryApi.saveItemFromRequest(res.data.requestId, {
+              category: `${formData.item_no}번 문항`
+            });
+            setMessage({
+              type: 'success',
+              text: '문항이 성공적으로 생성되어 라이브러리에 저장되었습니다!'
+            });
+          } catch (libError) {
+            console.error('라이브러리 저장 오류:', libError);
+            setMessage({
+              type: 'success',
+              text: '문항이 성공적으로 생성되었습니다! (라이브러리 저장은 수동으로 해주세요)'
+            });
+          }
+        } else {
+          setMessage({
+            type: 'warning',
+            text: '문항 생성 완료 (검토 필요 - 승인 후 라이브러리에 저장하세요)'
+          });
+        }
       } catch (genError) {
         setMessage({ type: 'error', text: '문항 생성 중 오류: ' + genError.message });
       }
