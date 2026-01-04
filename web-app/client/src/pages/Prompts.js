@@ -1405,7 +1405,18 @@ function Prompts() {
               {/* 사용자 피드백 입력 영역 */}
               {showFeedback && (
                 <div style={{ marginTop: '16px', padding: '16px', background: '#f0f7ff', borderRadius: '8px', border: '1px solid #b3d4fc' }}>
-                  <h4 style={{ margin: '0 0 12px 0', color: '#1565c0' }}>💬 사용자 피드백 입력</h4>
+                  <div className="flex-between" style={{ marginBottom: '12px' }}>
+                    <h4 style={{ margin: 0, color: '#1565c0' }}>💬 사용자 피드백 입력</h4>
+                    {selectedPrompt && (
+                      <button
+                        className={`btn btn-sm ${showFeedbackList ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={handleLoadFeedbackList}
+                        disabled={loadingFeedbackList}
+                      >
+                        {loadingFeedbackList ? '로딩...' : '📋 피드백 관리'}
+                      </button>
+                    )}
+                  </div>
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
                     프롬프트에 대한 개선 요청을 입력하세요. AI가 피드백을 반영하여 프롬프트를 개선합니다.
                   </p>
@@ -1417,13 +1428,156 @@ function Prompts() {
                     placeholder="예: 더 구체적인 예시를 추가해줘, 어법 문항의 경우 밑줄 형식을 명확히 해줘, 난이도 조절 지침을 강화해줘..."
                     style={{ marginBottom: '12px' }}
                   />
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleImproveWithFeedback}
-                    disabled={improving || !feedback.trim()}
-                  >
-                    {improving ? '🔄 AI 개선 중...' : '🚀 피드백 AI 적용'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleImproveWithFeedback}
+                      disabled={improving || !feedback.trim()}
+                    >
+                      {improving ? '🔄 AI 개선 중...' : '🚀 피드백 AI 적용'}
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={handleSaveFeedback}
+                      disabled={!feedback.trim()}
+                    >
+                      💾 피드백 저장
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 피드백 관리 패널 */}
+              {showFeedbackList && (
+                <div style={{ marginTop: '16px', padding: '16px', background: '#fce4ec', borderRadius: '8px', border: '1px solid #f48fb1' }}>
+                  <div className="flex-between" style={{ marginBottom: '16px' }}>
+                    <h4 style={{ margin: 0, color: '#c2185b' }}>📋 피드백 관리</h4>
+                    <div className="flex gap-2">
+                      {selectedFeedbacks.length > 0 && (
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={handleApplySelectedFeedbacks}
+                          style={{ background: '#c2185b', borderColor: '#c2185b' }}
+                        >
+                          선택 피드백 적용 ({selectedFeedbacks.length}개)
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => {
+                          setShowFeedbackList(false);
+                          setSelectedFeedbacks([]);
+                        }}
+                      >
+                        ✕ 닫기
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 피드백 통계 */}
+                  {feedbackStats && (
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(4, 1fr)',
+                      gap: '8px',
+                      marginBottom: '16px'
+                    }}>
+                      <div style={{ textAlign: 'center', padding: '8px', background: 'white', borderRadius: '6px' }}>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#c2185b' }}>{feedbackStats.total || 0}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#666' }}>전체</div>
+                      </div>
+                      <div style={{ textAlign: 'center', padding: '8px', background: 'white', borderRadius: '6px' }}>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#2e7d32' }}>{feedbackStats.applied_count || 0}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#666' }}>적용됨</div>
+                      </div>
+                      <div style={{ textAlign: 'center', padding: '8px', background: 'white', borderRadius: '6px' }}>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#1565c0' }}>{feedbackStats.user_count || 0}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#666' }}>사용자</div>
+                      </div>
+                      <div style={{ textAlign: 'center', padding: '8px', background: 'white', borderRadius: '6px' }}>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#ff9800' }}>{feedbackStats.auto_improve_count || 0}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#666' }}>자동개선</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 피드백 목록 */}
+                  {feedbackList.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                      저장된 피드백이 없습니다.
+                    </div>
+                  ) : (
+                    <div style={{ maxHeight: '300px', overflow: 'auto' }}>
+                      {feedbackList.map(fb => (
+                        <div
+                          key={fb.id}
+                          style={{
+                            padding: '12px',
+                            background: fb.applied ? '#e8f5e9' : 'white',
+                            borderRadius: '6px',
+                            marginBottom: '8px',
+                            border: selectedFeedbacks.includes(fb.id)
+                              ? '2px solid #c2185b'
+                              : fb.applied ? '1px solid #a5d6a7' : '1px solid #ddd',
+                            opacity: fb.applied ? 0.7 : 1
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {!fb.applied && (
+                                <input
+                                  type="checkbox"
+                                  checked={selectedFeedbacks.includes(fb.id)}
+                                  onChange={() => handleToggleFeedbackSelect(fb.id)}
+                                  style={{ width: '16px', height: '16px' }}
+                                />
+                              )}
+                              <span style={{
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                fontSize: '0.7rem',
+                                background: fb.feedback_type === 'auto_improve' ? '#fff3e0' : '#e3f2fd',
+                                color: fb.feedback_type === 'auto_improve' ? '#e65100' : '#1565c0'
+                              }}>
+                                {fb.feedback_type === 'auto_improve' ? '자동개선' : '사용자'}
+                              </span>
+                              <span style={{ fontSize: '0.75rem', color: '#999' }}>
+                                v{fb.prompt_version}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {fb.applied ? (
+                                <span style={{
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  background: '#e8f5e9',
+                                  color: '#2e7d32'
+                                }}>
+                                  ✅ 적용됨
+                                </span>
+                              ) : (
+                                <button
+                                  className="btn btn-primary btn-sm"
+                                  onClick={() => handleApplySingleFeedback(fb.id)}
+                                  disabled={applyingFeedback === fb.id}
+                                  style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                                >
+                                  {applyingFeedback === fb.id ? '적용 중...' : '적용'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '0.9rem', color: '#333', whiteSpace: 'pre-wrap' }}>
+                            {fb.feedback_text}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '8px' }}>
+                            {new Date(fb.created_at).toLocaleString('ko-KR')}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
