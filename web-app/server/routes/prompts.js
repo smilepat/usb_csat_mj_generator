@@ -127,6 +127,117 @@ router.get('/metrics/summary', (req, res) => {
   }
 });
 
+/**
+ * GET /api/prompts/auto-improve/scan
+ * 모든 프롬프트 스캔하여 개선 필요 목록 반환
+ * NOTE: /:key 라우트보다 먼저 정의되어야 함
+ */
+router.get('/auto-improve/scan', (req, res) => {
+  try {
+    const result = scanAllPromptsForImprovement();
+
+    logger.info('자동 개선 스캔 완료', 'system',
+      `스캔: ${result.scanned}개, 개선필요: ${result.needsImprovement}개`);
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    logger.error('자동 개선 스캔 오류', 'system', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/prompts/ab-tests
+ * A/B 테스트 목록 조회
+ * NOTE: /:key 라우트보다 먼저 정의되어야 함
+ */
+router.get('/ab-tests', (req, res) => {
+  try {
+    const { status = 'all' } = req.query;
+    const tests = getABTests(status);
+
+    res.json({
+      success: true,
+      data: tests
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/prompts/ab-tests/:testId
+ * A/B 테스트 상세 결과 조회
+ * NOTE: /:key 라우트보다 먼저 정의되어야 함
+ */
+router.get('/ab-tests/:testId', (req, res) => {
+  try {
+    const { testId } = req.params;
+    const result = getABTestResults(parseInt(testId));
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/ab-tests/:testId/complete
+ * A/B 테스트 종료
+ * NOTE: /:key 라우트보다 먼저 정의되어야 함
+ */
+router.post('/ab-tests/:testId/complete', (req, res) => {
+  try {
+    const { testId } = req.params;
+    const { winner, apply_winner = false } = req.body;
+
+    if (!winner || !['A', 'B', 'tie'].includes(winner)) {
+      return res.status(400).json({
+        success: false,
+        error: "winner는 'A', 'B', 'tie' 중 하나여야 합니다."
+      });
+    }
+
+    const result = completeABTest(parseInt(testId), winner, apply_winner);
+
+    logger.info('A/B 테스트 종료', `testId:${testId}`, `승자: ${winner}`);
+
+    res.json({
+      success: true,
+      message: 'A/B 테스트가 종료되었습니다.',
+      data: result
+    });
+  } catch (error) {
+    logger.error('A/B 테스트 종료 오류', `testId:${req.params.testId}`, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/prompts/ab-tests/:testId
+ * A/B 테스트 삭제
+ * NOTE: /:key 라우트보다 먼저 정의되어야 함
+ */
+router.delete('/ab-tests/:testId', (req, res) => {
+  try {
+    const { testId } = req.params;
+    deleteABTest(parseInt(testId));
+
+    res.json({
+      success: true,
+      message: 'A/B 테스트가 삭제되었습니다.'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // 유효한 상태 목록
 const VALID_STATUSES = ['draft', 'testing', 'approved', 'archived'];
 
@@ -886,29 +997,8 @@ router.delete('/:key/set-default', (req, res) => {
 });
 
 // ============================================
-// 자동 개선 (Auto-Improve) 엔드포인트
+// 자동 개선 (Auto-Improve) - /:key 하위 라우트
 // ============================================
-
-/**
- * GET /api/prompts/auto-improve/scan
- * 모든 프롬프트 스캔하여 개선 필요 목록 반환
- */
-router.get('/auto-improve/scan', (req, res) => {
-  try {
-    const result = scanAllPromptsForImprovement();
-
-    logger.info('자동 개선 스캔 완료', 'system',
-      `스캔: ${result.scanned}개, 개선필요: ${result.needsImprovement}개`);
-
-    res.json({
-      success: true,
-      data: result
-    });
-  } catch (error) {
-    logger.error('자동 개선 스캔 오류', 'system', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
 
 /**
  * GET /api/prompts/:key/auto-improve/analyze
@@ -1193,44 +1283,8 @@ router.post('/:key/feedback/:feedbackId/apply', async (req, res) => {
 });
 
 // ============================================
-// A/B 테스팅 엔드포인트
+// A/B 테스트 생성 (/:key 하위 라우트)
 // ============================================
-
-/**
- * GET /api/prompts/ab-tests
- * A/B 테스트 목록 조회
- */
-router.get('/ab-tests', (req, res) => {
-  try {
-    const { status = 'all' } = req.query;
-    const tests = getABTests(status);
-
-    res.json({
-      success: true,
-      data: tests
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/prompts/ab-tests/:testId
- * A/B 테스트 상세 결과 조회
- */
-router.get('/ab-tests/:testId', (req, res) => {
-  try {
-    const { testId } = req.params;
-    const result = getABTestResults(parseInt(testId));
-
-    res.json({
-      success: true,
-      data: result
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
 
 /**
  * POST /api/prompts/:key/ab-test
@@ -1264,55 +1318,6 @@ router.post('/:key/ab-test', (req, res) => {
     });
   } catch (error) {
     logger.error('A/B 테스트 생성 오류', req.params.key, error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * POST /api/prompts/ab-tests/:testId/complete
- * A/B 테스트 종료
- */
-router.post('/ab-tests/:testId/complete', (req, res) => {
-  try {
-    const { testId } = req.params;
-    const { winner, apply_winner = false } = req.body;
-
-    if (!winner || !['A', 'B', 'tie'].includes(winner)) {
-      return res.status(400).json({
-        success: false,
-        error: "winner는 'A', 'B', 'tie' 중 하나여야 합니다."
-      });
-    }
-
-    const result = completeABTest(parseInt(testId), winner, apply_winner);
-
-    logger.info('A/B 테스트 종료', `testId:${testId}`, `승자: ${winner}`);
-
-    res.json({
-      success: true,
-      message: 'A/B 테스트가 종료되었습니다.',
-      data: result
-    });
-  } catch (error) {
-    logger.error('A/B 테스트 종료 오류', `testId:${req.params.testId}`, error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * DELETE /api/prompts/ab-tests/:testId
- * A/B 테스트 삭제
- */
-router.delete('/ab-tests/:testId', (req, res) => {
-  try {
-    const { testId } = req.params;
-    deleteABTest(parseInt(testId));
-
-    res.json({
-      success: true,
-      message: 'A/B 테스트가 삭제되었습니다.'
-    });
-  } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
