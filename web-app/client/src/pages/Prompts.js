@@ -40,6 +40,16 @@ function Prompts() {
   // 빠른 검증 로딩 상태
   const [quickValidating, setQuickValidating] = useState(false);
 
+  // 자동 개선 스캔 관련 상태
+  const [scanning, setScanning] = useState(false);
+  const [scanResults, setScanResults] = useState(null);
+  const [showScanResults, setShowScanResults] = useState(false);
+
+  // 성능 분석 관련 상태
+  const [showPerformance, setShowPerformance] = useState(false);
+  const [performanceData, setPerformanceData] = useState(null);
+  const [loadingPerformance, setLoadingPerformance] = useState(false);
+
   useEffect(() => {
     loadPrompts();
   }, []);
@@ -393,6 +403,61 @@ function Prompts() {
     }
   };
 
+  // 자동 개선 스캔 실행
+  const handleAutoImproveScan = async () => {
+    try {
+      setScanning(true);
+      setMessage(null);
+      const response = await fetch('/api/prompts/auto-improve/scan');
+      const res = await response.json();
+
+      if (res.success) {
+        setScanResults(res.data);
+        setShowScanResults(true);
+        const needsImprovement = res.data.needsImprovement || [];
+        if (needsImprovement.length > 0) {
+          setMessage({
+            type: 'warning',
+            text: `🔍 스캔 완료: ${res.data.scanned}개 중 ${needsImprovement.length}개 프롬프트 개선 필요`
+          });
+        } else {
+          setMessage({
+            type: 'success',
+            text: `✅ 스캔 완료: ${res.data.scanned}개 프롬프트 모두 양호`
+          });
+        }
+      } else {
+        setMessage({ type: 'error', text: res.error });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: '스캔 실패: ' + error.message });
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  // 프롬프트 성능 분석 로드
+  const handleLoadPerformance = async () => {
+    if (!selectedPrompt) return;
+
+    try {
+      setLoadingPerformance(true);
+      const response = await fetch(`/api/prompts/${selectedPrompt.prompt_key}/metrics`);
+      const res = await response.json();
+
+      if (res.success) {
+        setPerformanceData(res.data);
+        setShowPerformance(true);
+      } else {
+        setMessage({ type: 'error', text: '성능 데이터 로드 실패' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: '성능 분석 실패: ' + error.message });
+    } finally {
+      setLoadingPerformance(false);
+    }
+  };
+
   // 상태 배지 스타일
   const getStatusBadgeStyle = (status) => {
     const styles = {
@@ -477,6 +542,14 @@ function Prompts() {
       <div className="flex-between mb-4">
         <h1>💬 프롬프트 관리</h1>
         <div className="flex gap-2">
+          <button
+            className="btn btn-warning"
+            onClick={handleAutoImproveScan}
+            disabled={scanning}
+            style={{ background: '#ff9800', color: 'white', border: 'none' }}
+          >
+            {scanning ? '🔄 스캔 중...' : '🔍 자동 개선 스캔'}
+          </button>
           <button className="btn btn-secondary" onClick={handleRecalculateAll} disabled={recalculating}>
             {recalculating ? '🔄 계산 중...' : '📊 전체 메트릭스 재계산'}
           </button>

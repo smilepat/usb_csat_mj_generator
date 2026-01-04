@@ -256,6 +256,293 @@ function ItemCreate() {
     // TODO: 편집된 프롬프트로 재검증 또는 직접 생성
   };
 
+  // 새 문항 생성 (결과 화면에서)
+  const handleCreateNew = () => {
+    setShowResult(false);
+    setGenerationResult(null);
+    setMessage(null);
+    setFormData({
+      item_no: formData.item_no,
+      passage: '',
+      level: '중',
+      extra: '',
+      chart_id: '',
+      topic: '',
+      passage_source: ''
+    });
+  };
+
+  // 재생성
+  const handleRegenerate = async () => {
+    if (!generationResult?.requestId) return;
+
+    try {
+      setLoading(true);
+      setMessage({ type: 'info', text: '문항을 재생성하고 있습니다...' });
+
+      const genRes = await itemsApi.generate(generationResult.requestId);
+      const detailRes = await itemsApi.getRequest(generationResult.requestId);
+
+      setGenerationResult({
+        ...genRes.data,
+        requestId: generationResult.requestId,
+        details: detailRes.data
+      });
+
+      setMessage({
+        type: genRes.data.validationResult === 'PASS' ? 'success' : 'warning',
+        text: genRes.data.validationResult === 'PASS'
+          ? '문항이 성공적으로 재생성되었습니다!'
+          : '문항 재생성 완료 (검토 필요)'
+      });
+    } catch (error) {
+      setMessage({ type: 'error', text: '재생성 오류: ' + error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 등급 배지 색상
+  const getGradeBadgeStyle = (grade) => {
+    const styles = {
+      'A': { background: '#10b981', color: 'white' },
+      'B': { background: '#3b82f6', color: 'white' },
+      'C': { background: '#f59e0b', color: 'white' },
+      'D': { background: '#ef4444', color: 'white' },
+      'F': { background: '#6b7280', color: 'white' }
+    };
+    return styles[grade] || styles['F'];
+  };
+
+  // 생성 결과 화면
+  if (showResult && generationResult) {
+    const { details } = generationResult;
+    const output = details?.output || {};
+    const metrics = details?.metrics || {};
+    const isSuccess = generationResult.validationResult === 'PASS';
+
+    return (
+      <div>
+        <h1 style={{ marginBottom: '24px' }}>
+          {isSuccess ? '✅ 문항 생성 완료!' : '⚠️ 문항 생성 완료 - 검토 필요'}
+        </h1>
+
+        {message && (
+          <div className={`alert alert-${message.type}`}>
+            {message.text}
+          </div>
+        )}
+
+        {/* 지문 */}
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <h3 style={{ marginBottom: '12px', color: '#1e40af' }}>📖 지문</h3>
+          <div style={{
+            background: '#f8fafc',
+            padding: '16px',
+            borderRadius: '8px',
+            lineHeight: '1.8',
+            fontSize: '1rem',
+            whiteSpace: 'pre-wrap'
+          }}>
+            {output.passage || generationResult.finalJson?.passage || '(지문 없음)'}
+          </div>
+        </div>
+
+        {/* 발문 */}
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <h3 style={{ marginBottom: '12px', color: '#1e40af' }}>❓ 발문</h3>
+          <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>
+            {output.question || generationResult.finalJson?.question || '(발문 없음)'}
+          </div>
+        </div>
+
+        {/* 선택지 */}
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <h3 style={{ marginBottom: '12px', color: '#1e40af' }}>📝 선택지</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {[1, 2, 3, 4, 5].map(i => {
+              const optionKey = `option_${i}`;
+              const optionText = output[optionKey] ||
+                (generationResult.finalJson?.options && generationResult.finalJson.options[i-1]) || '';
+              const isAnswer = String(output.answer || generationResult.finalJson?.answer) === String(i);
+
+              return (
+                <div key={i} style={{
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  background: isAnswer ? '#dcfce7' : '#f1f5f9',
+                  border: isAnswer ? '2px solid #22c55e' : '1px solid #e2e8f0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <span style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    background: isAnswer ? '#22c55e' : '#94a3b8',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '0.9rem'
+                  }}>
+                    {i}
+                  </span>
+                  <span style={{ flex: 1 }}>{optionText}</span>
+                  {isAnswer && (
+                    <span style={{
+                      background: '#22c55e',
+                      color: 'white',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600
+                    }}>
+                      정답
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 해설 */}
+        {(output.explanation || generationResult.finalJson?.explanation) && (
+          <div className="card" style={{ marginBottom: '16px' }}>
+            <h3 style={{ marginBottom: '12px', color: '#1e40af' }}>💡 해설</h3>
+            <div style={{
+              background: '#fffbeb',
+              padding: '16px',
+              borderRadius: '8px',
+              border: '1px solid #fcd34d',
+              lineHeight: '1.6'
+            }}>
+              {output.explanation || generationResult.finalJson?.explanation}
+            </div>
+          </div>
+        )}
+
+        {/* 품질 점수 */}
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <h3 style={{ marginBottom: '16px', color: '#1e40af' }}>📊 품질 점수</h3>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '20px' }}>
+            {/* Layer 1 */}
+            <div style={{
+              background: '#f0fdf4',
+              padding: '16px',
+              borderRadius: '8px',
+              border: '1px solid #86efac',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '0.85rem', color: '#166534', marginBottom: '8px' }}>Layer 1 (구조)</div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#15803d' }}>
+                {metrics.layer1_score ?? '-'}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#166534' }}>
+                {metrics.layer1_pass ? '✅ 통과' : '⚠️ 검토필요'}
+              </div>
+            </div>
+
+            {/* Layer 2 */}
+            <div style={{
+              background: '#eff6ff',
+              padding: '16px',
+              borderRadius: '8px',
+              border: '1px solid #93c5fd',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '0.85rem', color: '#1e40af', marginBottom: '8px' }}>Layer 2 (내용)</div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1d4ed8' }}>
+                {metrics.layer2_score ?? '-'}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#1e40af' }}>
+                {(metrics.layer2_score ?? 0) >= 70 ? '✅ 양호' : '⚠️ 검토필요'}
+              </div>
+            </div>
+
+            {/* Layer 3 */}
+            <div style={{
+              background: '#faf5ff',
+              padding: '16px',
+              borderRadius: '8px',
+              border: '1px solid #d8b4fe',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '0.85rem', color: '#6b21a8', marginBottom: '8px' }}>Layer 3 (수능적합성)</div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#7c3aed' }}>
+                {metrics.layer3_score ?? '-'}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#6b21a8' }}>
+                {(metrics.layer3_score ?? 0) >= 70 ? '✅ 양호' : '⚠️ 검토필요'}
+              </div>
+            </div>
+          </div>
+
+          {/* 최종 점수 */}
+          <div style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            padding: '20px',
+            borderRadius: '12px',
+            color: 'white',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div>
+              <div style={{ fontSize: '1rem', opacity: 0.9, marginBottom: '4px' }}>최종 점수</div>
+              <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>
+                {metrics.final_score?.toFixed(1) ?? '-'}점
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{
+                ...getGradeBadgeStyle(metrics.grade),
+                padding: '8px 24px',
+                borderRadius: '20px',
+                fontSize: '1.5rem',
+                fontWeight: 'bold',
+                marginBottom: '8px'
+              }}>
+                {metrics.grade || '-'}등급
+              </div>
+              <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
+                {metrics.recommendation === 'APPROVE' ? '✅ 승인 권장' :
+                 metrics.recommendation === 'REVIEW' ? '🔍 검토 권장' : '❌ 재생성 권장'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 버튼 */}
+        <div className="flex gap-2">
+          <button
+            className="btn btn-primary"
+            onClick={handleCreateNew}
+          >
+            ➕ 새 문항 생성
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={handleRegenerate}
+            disabled={loading}
+          >
+            {loading ? '재생성 중...' : '🔄 재생성'}
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => navigate('/items')}
+          >
+            📋 요청 목록으로
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // 프롬프트 미리보기 화면
   if (showPreview && previewData) {
     return (
