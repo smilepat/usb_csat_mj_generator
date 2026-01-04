@@ -50,6 +50,20 @@ function Prompts() {
   const [performanceData, setPerformanceData] = useState(null);
   const [loadingPerformance, setLoadingPerformance] = useState(false);
 
+  // A/B 테스트 관련 상태
+  const [showABTest, setShowABTest] = useState(false);
+  const [abTests, setABTests] = useState([]);
+  const [loadingABTests, setLoadingABTests] = useState(false);
+  const [creatingABTest, setCreatingABTest] = useState(false);
+
+  // 피드백 관리 관련 상태
+  const [showFeedbackList, setShowFeedbackList] = useState(false);
+  const [feedbackList, setFeedbackList] = useState([]);
+  const [feedbackStats, setFeedbackStats] = useState(null);
+  const [loadingFeedbackList, setLoadingFeedbackList] = useState(false);
+  const [selectedFeedbacks, setSelectedFeedbacks] = useState([]);
+  const [applyingFeedback, setApplyingFeedback] = useState(null);
+
   useEffect(() => {
     loadPrompts();
   }, []);
@@ -458,6 +472,194 @@ function Prompts() {
     }
   };
 
+  // A/B 테스트 목록 로드
+  const handleLoadABTests = async () => {
+    try {
+      setLoadingABTests(true);
+      const response = await fetch('/api/prompts/ab-tests');
+      const res = await response.json();
+
+      if (res.success) {
+        setABTests(res.data || []);
+        setShowABTest(true);
+      } else {
+        setMessage({ type: 'error', text: 'A/B 테스트 로드 실패' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'A/B 테스트 로드 실패: ' + error.message });
+    } finally {
+      setLoadingABTests(false);
+    }
+  };
+
+  // A/B 테스트 생성
+  const handleCreateABTest = async () => {
+    if (!selectedPrompt || !versions || versions.history.length === 0) {
+      setMessage({ type: 'error', text: '버전 히스토리가 필요합니다. 먼저 버전 히스토리를 로드하세요.' });
+      return;
+    }
+
+    const testName = window.prompt('A/B 테스트 이름을 입력하세요:', `${selectedPrompt.prompt_key} 버전 비교`);
+    if (!testName) return;
+
+    try {
+      setCreatingABTest(true);
+      const response = await fetch(`/api/prompts/${selectedPrompt.prompt_key}/ab-test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          test_name: testName,
+          version_a: 0, // 현재 버전
+          version_b: versions.history[0]?.version || 1 // 가장 최근 이전 버전
+        })
+      });
+      const res = await response.json();
+
+      if (res.success) {
+        setMessage({ type: 'success', text: 'A/B 테스트가 생성되었습니다.' });
+        handleLoadABTests();
+      } else {
+        setMessage({ type: 'error', text: res.error });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'A/B 테스트 생성 실패: ' + error.message });
+    } finally {
+      setCreatingABTest(false);
+    }
+  };
+
+  // A/B 테스트 종료
+  const handleCompleteABTest = async (testId, winner) => {
+    try {
+      const response = await fetch(`/api/prompts/ab-tests/${testId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ winner, apply_winner: winner !== 'tie' })
+      });
+      const res = await response.json();
+
+      if (res.success) {
+        setMessage({ type: 'success', text: `A/B 테스트가 종료되었습니다. 승자: ${winner}` });
+        handleLoadABTests();
+        loadPrompts();
+      } else {
+        setMessage({ type: 'error', text: res.error });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'A/B 테스트 종료 실패: ' + error.message });
+    }
+  };
+
+  // 피드백 목록 로드
+  const handleLoadFeedbackList = async () => {
+    if (!selectedPrompt) return;
+
+    try {
+      setLoadingFeedbackList(true);
+      const response = await fetch(`/api/prompts/${selectedPrompt.prompt_key}/feedback`);
+      const res = await response.json();
+
+      if (res.success) {
+        setFeedbackList(res.data.feedbacks || []);
+        setFeedbackStats(res.data.stats || null);
+        setShowFeedbackList(true);
+        setSelectedFeedbacks([]);
+      } else {
+        setMessage({ type: 'error', text: '피드백 로드 실패' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: '피드백 로드 실패: ' + error.message });
+    } finally {
+      setLoadingFeedbackList(false);
+    }
+  };
+
+  // 피드백 선택 토글
+  const handleToggleFeedbackSelect = (feedbackId) => {
+    setSelectedFeedbacks(prev => {
+      if (prev.includes(feedbackId)) {
+        return prev.filter(id => id !== feedbackId);
+      } else {
+        return [...prev, feedbackId];
+      }
+    });
+  };
+
+  // 단일 피드백 적용
+  const handleApplySingleFeedback = async (feedbackId) => {
+    if (!selectedPrompt) return;
+
+    try {
+      setApplyingFeedback(feedbackId);
+      const response = await fetch(`/api/prompts/${selectedPrompt.prompt_key}/feedback/${feedbackId}/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const res = await response.json();
+
+      if (res.success) {
+        setMessage({ type: 'success', text: '피드백이 적용되었습니다.' });
+        handleLoadFeedbackList();
+        loadPrompts();
+        // 프롬프트 내용 새로고침
+        const updatedPrompt = await promptsApi.get(selectedPrompt.prompt_key);
+        setFormData(prev => ({
+          ...prev,
+          prompt_text: updatedPrompt.data.prompt_text
+        }));
+      } else {
+        setMessage({ type: 'error', text: res.error });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: '피드백 적용 실패: ' + error.message });
+    } finally {
+      setApplyingFeedback(null);
+    }
+  };
+
+  // 선택된 피드백 일괄 적용
+  const handleApplySelectedFeedbacks = async () => {
+    if (!selectedPrompt || selectedFeedbacks.length === 0) return;
+
+    if (!window.confirm(`선택한 ${selectedFeedbacks.length}개의 피드백을 순차적으로 적용하시겠습니까?`)) return;
+
+    for (const feedbackId of selectedFeedbacks) {
+      await handleApplySingleFeedback(feedbackId);
+    }
+
+    setSelectedFeedbacks([]);
+    setMessage({ type: 'success', text: `${selectedFeedbacks.length}개의 피드백이 적용되었습니다.` });
+  };
+
+  // 새 피드백 저장
+  const handleSaveFeedback = async () => {
+    if (!selectedPrompt || !feedback.trim()) return;
+
+    try {
+      const response = await fetch(`/api/prompts/${selectedPrompt.prompt_key}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          feedback_type: 'user',
+          feedback_text: feedback.trim()
+        })
+      });
+      const res = await response.json();
+
+      if (res.success) {
+        setMessage({ type: 'success', text: '피드백이 저장되었습니다.' });
+        setFeedback('');
+        if (showFeedbackList) {
+          handleLoadFeedbackList();
+        }
+      } else {
+        setMessage({ type: 'error', text: res.error });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: '피드백 저장 실패: ' + error.message });
+    }
+  };
+
   // 상태 배지 스타일
   const getStatusBadgeStyle = (status) => {
     const styles = {
@@ -549,6 +751,14 @@ function Prompts() {
             style={{ background: '#ff9800', color: 'white', border: 'none' }}
           >
             {scanning ? '🔄 스캔 중...' : '🔍 자동 개선 스캔'}
+          </button>
+          <button
+            className={`btn ${showABTest ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={handleLoadABTests}
+            disabled={loadingABTests}
+            style={{ background: showABTest ? '#7b1fa2' : undefined, borderColor: showABTest ? '#7b1fa2' : undefined }}
+          >
+            {loadingABTests ? '🔄 로딩...' : '🧪 A/B 테스트'}
           </button>
           <button className="btn btn-secondary" onClick={handleRecalculateAll} disabled={recalculating}>
             {recalculating ? '🔄 계산 중...' : '📊 전체 메트릭스 재계산'}
@@ -689,6 +899,161 @@ function Prompts() {
                 borderRadius: '8px'
               }}>
                 ✅ 모든 프롬프트가 양호한 상태입니다!
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* A/B 테스트 패널 */}
+      {showABTest && (
+        <div className="card mb-4" style={{ border: '2px solid #7b1fa2' }}>
+          <div className="card-header" style={{ background: '#f3e5f5' }}>
+            <h3 style={{ fontSize: '1rem', color: '#7b1fa2' }}>
+              🧪 A/B 테스트 관리
+            </h3>
+            <div className="flex gap-2">
+              {selectedPrompt && versions && versions.history.length > 0 && (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={handleCreateABTest}
+                  disabled={creatingABTest}
+                  style={{ background: '#7b1fa2', borderColor: '#7b1fa2' }}
+                >
+                  {creatingABTest ? '생성 중...' : '➕ 새 테스트'}
+                </button>
+              )}
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => setShowABTest(false)}
+              >
+                ✕ 닫기
+              </button>
+            </div>
+          </div>
+
+          <div style={{ padding: '16px' }}>
+            {abTests.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '30px',
+                color: '#666'
+              }}>
+                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🧪</div>
+                <div>진행 중인 A/B 테스트가 없습니다.</div>
+                <div style={{ fontSize: '0.85rem', marginTop: '8px', color: '#999' }}>
+                  프롬프트를 선택하고 버전 히스토리를 로드한 후 새 테스트를 생성하세요.
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {abTests.map(test => (
+                  <div
+                    key={test.id}
+                    style={{
+                      padding: '16px',
+                      background: test.status === 'running' ? '#fff8e1' : '#f5f5f5',
+                      borderRadius: '8px',
+                      border: `1px solid ${test.status === 'running' ? '#ffb74d' : '#ddd'}`
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <div>
+                        <strong style={{ color: '#7b1fa2' }}>{test.test_name}</strong>
+                        <span style={{
+                          marginLeft: '8px',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          background: test.status === 'running' ? '#fff3e0' : '#e8f5e9',
+                          color: test.status === 'running' ? '#e65100' : '#2e7d32'
+                        }}>
+                          {test.status === 'running' ? '진행 중' : '완료'}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.8rem', color: '#666' }}>
+                        {test.prompt_key}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                      {/* 버전 A */}
+                      <div style={{
+                        padding: '12px',
+                        background: 'white',
+                        borderRadius: '6px',
+                        border: test.winner === 'A' ? '2px solid #4caf50' : '1px solid #ddd'
+                      }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1565c0' }}>
+                          버전 A {test.version_a === 0 ? '(현재)' : `(v${test.version_a})`}
+                          {test.winner === 'A' && <span style={{ marginLeft: '8px', color: '#4caf50' }}>🏆</span>}
+                        </div>
+                        <div style={{ fontSize: '0.85rem' }}>
+                          <div>생성: {test.version_a_count || 0}개</div>
+                          <div>승인율: {Math.round(test.version_a_approve_rate || 0)}%</div>
+                          <div>평균점수: {(test.version_a_avg_score || 0).toFixed(1)}</div>
+                        </div>
+                      </div>
+
+                      {/* 버전 B */}
+                      <div style={{
+                        padding: '12px',
+                        background: 'white',
+                        borderRadius: '6px',
+                        border: test.winner === 'B' ? '2px solid #4caf50' : '1px solid #ddd'
+                      }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#e65100' }}>
+                          버전 B (v{test.version_b})
+                          {test.winner === 'B' && <span style={{ marginLeft: '8px', color: '#4caf50' }}>🏆</span>}
+                        </div>
+                        <div style={{ fontSize: '0.85rem' }}>
+                          <div>생성: {test.version_b_count || 0}개</div>
+                          <div>승인율: {Math.round(test.version_b_approve_rate || 0)}%</div>
+                          <div>평균점수: {(test.version_b_avg_score || 0).toFixed(1)}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 액션 버튼 */}
+                    {test.status === 'running' && (
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <button
+                          className="btn btn-sm"
+                          style={{ background: '#1565c0', color: 'white', border: 'none' }}
+                          onClick={() => handleCompleteABTest(test.id, 'A')}
+                        >
+                          A 승리
+                        </button>
+                        <button
+                          className="btn btn-sm"
+                          style={{ background: '#e65100', color: 'white', border: 'none' }}
+                          onClick={() => handleCompleteABTest(test.id, 'B')}
+                        >
+                          B 승리
+                        </button>
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => handleCompleteABTest(test.id, 'tie')}
+                        >
+                          무승부
+                        </button>
+                      </div>
+                    )}
+
+                    {test.status === 'completed' && test.winner && (
+                      <div style={{
+                        textAlign: 'center',
+                        padding: '8px',
+                        background: '#e8f5e9',
+                        borderRadius: '4px',
+                        color: '#2e7d32',
+                        fontSize: '0.9rem'
+                      }}>
+                        {test.winner === 'tie' ? '🤝 무승부로 종료됨' : `🏆 버전 ${test.winner} 승리`}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -1003,7 +1368,7 @@ function Prompts() {
               </div>
 
               {/* AI 검증 및 피드백 버튼 */}
-              <div className="flex gap-2" style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+              <div className="flex gap-2" style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
                 <button
                   className="btn btn-secondary"
                   onClick={handleQuickValidate}
@@ -1025,6 +1390,16 @@ function Prompts() {
                 >
                   💬 사용자 피드백
                 </button>
+                {selectedPrompt && (
+                  <button
+                    className={`btn ${showPerformance ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={handleLoadPerformance}
+                    disabled={loadingPerformance}
+                    style={{ marginLeft: 'auto' }}
+                  >
+                    {loadingPerformance ? '🔄 로딩...' : '📊 성능 분석'}
+                  </button>
+                )}
               </div>
 
               {/* 사용자 피드백 입력 영역 */}
@@ -1049,6 +1424,151 @@ function Prompts() {
                   >
                     {improving ? '🔄 AI 개선 중...' : '🚀 피드백 AI 적용'}
                   </button>
+                </div>
+              )}
+
+              {/* 성능 분석 패널 */}
+              {showPerformance && performanceData && (
+                <div style={{ marginTop: '16px', padding: '16px', background: '#e3f2fd', borderRadius: '8px', border: '1px solid #90caf9' }}>
+                  <div className="flex-between" style={{ marginBottom: '16px' }}>
+                    <h4 style={{ margin: 0, color: '#1565c0' }}>📊 성능 분석</h4>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setShowPerformance(false)}
+                    >
+                      ✕ 닫기
+                    </button>
+                  </div>
+
+                  {/* 기본 통계 */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: '12px',
+                    marginBottom: '16px'
+                  }}>
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '12px',
+                      background: 'white',
+                      borderRadius: '8px',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                    }}>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1565c0' }}>
+                        {performanceData.items_generated || 0}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#666' }}>생성된 문항</div>
+                    </div>
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '12px',
+                      background: 'white',
+                      borderRadius: '8px',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                    }}>
+                      <div style={{
+                        fontSize: '1.5rem',
+                        fontWeight: 'bold',
+                        color: (performanceData.approve_rate || 0) >= 70 ? '#2e7d32' :
+                               (performanceData.approve_rate || 0) >= 50 ? '#f57c00' : '#c62828'
+                      }}>
+                        {Math.round(performanceData.approve_rate || 0)}%
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#666' }}>승인율</div>
+                    </div>
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '12px',
+                      background: 'white',
+                      borderRadius: '8px',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                    }}>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#7b1fa2' }}>
+                        {performanceData.avg_score?.toFixed(1) || '-'}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#666' }}>평균 점수</div>
+                    </div>
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '12px',
+                      background: 'white',
+                      borderRadius: '8px',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                    }}>
+                      <div style={{
+                        fontSize: '1.5rem',
+                        fontWeight: 'bold',
+                        color: performanceData.grade === 'A' ? '#2e7d32' :
+                               performanceData.grade === 'B' ? '#1565c0' :
+                               performanceData.grade === 'C' ? '#f57c00' : '#c62828'
+                      }}>
+                        {performanceData.grade || '-'}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#666' }}>등급</div>
+                    </div>
+                  </div>
+
+                  {/* 상세 메트릭스 */}
+                  {performanceData.layer_scores && (
+                    <div style={{ marginBottom: '16px' }}>
+                      <h5 style={{ marginBottom: '8px', color: '#1565c0' }}>레이어별 평균 점수</h5>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{
+                          flex: 1,
+                          padding: '8px',
+                          background: '#e8f5e9',
+                          borderRadius: '6px',
+                          textAlign: 'center'
+                        }}>
+                          <div style={{ fontSize: '0.75rem', color: '#2e7d32' }}>Layer 1 (구조)</div>
+                          <div style={{ fontWeight: 'bold', color: '#1b5e20' }}>
+                            {performanceData.layer_scores.layer1?.toFixed(1) || '-'}
+                          </div>
+                        </div>
+                        <div style={{
+                          flex: 1,
+                          padding: '8px',
+                          background: '#e3f2fd',
+                          borderRadius: '6px',
+                          textAlign: 'center'
+                        }}>
+                          <div style={{ fontSize: '0.75rem', color: '#1565c0' }}>Layer 2 (내용)</div>
+                          <div style={{ fontWeight: 'bold', color: '#0d47a1' }}>
+                            {performanceData.layer_scores.layer2?.toFixed(1) || '-'}
+                          </div>
+                        </div>
+                        <div style={{
+                          flex: 1,
+                          padding: '8px',
+                          background: '#f3e5f5',
+                          borderRadius: '6px',
+                          textAlign: 'center'
+                        }}>
+                          <div style={{ fontSize: '0.75rem', color: '#7b1fa2' }}>Layer 3 (수능)</div>
+                          <div style={{ fontWeight: 'bold', color: '#4a148c' }}>
+                            {performanceData.layer_scores.layer3?.toFixed(1) || '-'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 개선 필요 여부 */}
+                  {performanceData.needs_improvement && (
+                    <div style={{
+                      padding: '12px',
+                      background: '#fff3e0',
+                      borderRadius: '6px',
+                      border: '1px solid #ffb74d'
+                    }}>
+                      <div style={{ fontWeight: '600', color: '#e65100', marginBottom: '8px' }}>
+                        ⚠️ 개선이 권장됩니다
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: '#795548' }}>
+                        승인율이 70% 미만이거나 평균 점수가 낮습니다. AI 검증을 실행하여 개선 제안을 받아보세요.
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
