@@ -64,6 +64,13 @@ function Prompts() {
   const [selectedFeedbacks, setSelectedFeedbacks] = useState([]);
   const [applyingFeedback, setApplyingFeedback] = useState(null);
 
+  // 테스트 생성 관련 상태
+  const [showTestGeneration, setShowTestGeneration] = useState(false);
+  const [testCount, setTestCount] = useState(3);
+  const [generatingTest, setGeneratingTest] = useState(false);
+  const [testProgress, setTestProgress] = useState({ current: 0, total: 0 });
+  const [testResults, setTestResults] = useState(null);
+
   useEffect(() => {
     loadPrompts();
   }, []);
@@ -657,6 +664,100 @@ function Prompts() {
       }
     } catch (error) {
       setMessage({ type: 'error', text: '피드백 저장 실패: ' + error.message });
+    }
+  };
+
+  // 테스트 문항 생성
+  const handleGenerateTest = async () => {
+    if (!selectedPrompt) return;
+
+    // MASTER_PROMPT나 PASSAGE_MASTER는 직접 문항 생성 불가
+    if (selectedPrompt.prompt_key === 'MASTER_PROMPT' || selectedPrompt.prompt_key === 'PASSAGE_MASTER') {
+      setMessage({ type: 'error', text: '마스터 프롬프트로는 직접 문항을 생성할 수 없습니다. 문항별 프롬프트를 선택하세요.' });
+      return;
+    }
+
+    // 문항 번호 추출 (RC20, LC05, 20 등에서 숫자 추출)
+    let itemNo = selectedPrompt.prompt_key;
+    const rcMatch = itemNo.match(/^RC(\d+)/i);
+    const lcMatch = itemNo.match(/^LC(\d+)/i);
+    if (rcMatch) itemNo = rcMatch[1];
+    else if (lcMatch) itemNo = lcMatch[1];
+
+    setGeneratingTest(true);
+    setTestProgress({ current: 0, total: testCount });
+    setTestResults(null);
+
+    const results = {
+      total: testCount,
+      success: 0,
+      failure: 0,
+      items: [],
+      scores: [],
+      startTime: new Date()
+    };
+
+    try {
+      for (let i = 0; i < testCount; i++) {
+        setTestProgress({ current: i + 1, total: testCount });
+
+        try {
+          const response = await fetch('/api/items/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              item_no: itemNo,
+              topic: `테스트 생성 #${i + 1}`
+            })
+          });
+          const res = await response.json();
+
+          if (res.success && res.data) {
+            results.success++;
+            results.items.push({
+              index: i + 1,
+              status: 'success',
+              score: res.data.metrics?.quality_score || null,
+              grade: res.data.metrics?.quality_grade || null,
+              id: res.data.id
+            });
+            if (res.data.metrics?.quality_score) {
+              results.scores.push(res.data.metrics.quality_score);
+            }
+          } else {
+            results.failure++;
+            results.items.push({
+              index: i + 1,
+              status: 'failure',
+              error: res.error || '생성 실패'
+            });
+          }
+        } catch (err) {
+          results.failure++;
+          results.items.push({
+            index: i + 1,
+            status: 'failure',
+            error: err.message
+          });
+        }
+      }
+
+      results.endTime = new Date();
+      results.duration = Math.round((results.endTime - results.startTime) / 1000);
+      results.avgScore = results.scores.length > 0
+        ? (results.scores.reduce((a, b) => a + b, 0) / results.scores.length).toFixed(1)
+        : null;
+      results.successRate = ((results.success / results.total) * 100).toFixed(0);
+
+      setTestResults(results);
+      setMessage({
+        type: results.failure === 0 ? 'success' : 'info',
+        text: `테스트 완료: ${results.success}/${results.total} 성공 (${results.successRate}%)`
+      });
+    } catch (error) {
+      setMessage({ type: 'error', text: '테스트 생성 실패: ' + error.message });
+    } finally {
+      setGeneratingTest(false);
     }
   };
 
@@ -1400,7 +1501,159 @@ function Prompts() {
                     {loadingPerformance ? '🔄 로딩...' : '📊 성능 분석'}
                   </button>
                 )}
+                {selectedPrompt && selectedPrompt.prompt_key !== 'MASTER_PROMPT' && selectedPrompt.prompt_key !== 'PASSAGE_MASTER' && (
+                  <button
+                    className={`btn ${showTestGeneration ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setShowTestGeneration(!showTestGeneration)}
+                    disabled={generatingTest}
+                  >
+                    {generatingTest ? `🔄 생성 중 (${testProgress.current}/${testProgress.total})` : '🧪 테스트 생성'}
+                  </button>
+                )}
               </div>
+
+              {/* 테스트 생성 패널 */}
+              {showTestGeneration && (
+                <div style={{ marginTop: '16px', padding: '16px', background: '#f3e5f5', borderRadius: '8px', border: '1px solid #ce93d8' }}>
+                  <div className="flex-between" style={{ marginBottom: '12px' }}>
+                    <h4 style={{ margin: 0, color: '#7b1fa2' }}>🧪 테스트 문항 생성</h4>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setShowTestGeneration(false);
+                        setTestResults(null);
+                      }}
+                    >
+                      ✕ 닫기
+                    </button>
+                  </div>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                    현재 프롬프트로 테스트 문항을 여러 개 생성하여 품질을 검증합니다.
+                  </p>
+
+                  <div className="flex gap-2" style={{ alignItems: 'center', marginBottom: '16px' }}>
+                    <span style={{ fontWeight: 500 }}>생성 개수:</span>
+                    {[3, 5, 10].map(count => (
+                      <button
+                        key={count}
+                        className={`btn btn-sm ${testCount === count ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => setTestCount(count)}
+                        disabled={generatingTest}
+                        style={testCount === count ? { background: '#7b1fa2', borderColor: '#7b1fa2' } : {}}
+                      >
+                        {count}개
+                      </button>
+                    ))}
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleGenerateTest}
+                      disabled={generatingTest}
+                      style={{ marginLeft: 'auto', background: '#7b1fa2', borderColor: '#7b1fa2' }}
+                    >
+                      {generatingTest ? `🔄 생성 중... (${testProgress.current}/${testProgress.total})` : '🚀 테스트 시작'}
+                    </button>
+                  </div>
+
+                  {/* 테스트 결과 */}
+                  {testResults && (
+                    <div style={{ background: 'white', borderRadius: '8px', padding: '16px' }}>
+                      <h5 style={{ margin: '0 0 12px 0', color: '#7b1fa2' }}>📊 테스트 결과</h5>
+
+                      {/* 요약 통계 */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(4, 1fr)',
+                        gap: '12px',
+                        marginBottom: '16px'
+                      }}>
+                        <div style={{ textAlign: 'center', padding: '12px', background: '#f3e5f5', borderRadius: '6px' }}>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#7b1fa2' }}>{testResults.total}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#666' }}>전체</div>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '12px', background: '#e8f5e9', borderRadius: '6px' }}>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2e7d32' }}>{testResults.success}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#666' }}>성공</div>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '12px', background: '#ffebee', borderRadius: '6px' }}>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#c62828' }}>{testResults.failure}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#666' }}>실패</div>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '12px', background: '#fff3e0', borderRadius: '6px' }}>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ef6c00' }}>
+                            {testResults.avgScore || '-'}
+                          </div>
+                          <div style={{ fontSize: '0.8rem', color: '#666' }}>평균 점수</div>
+                        </div>
+                      </div>
+
+                      {/* 성공률 바 */}
+                      <div style={{ marginBottom: '16px' }}>
+                        <div className="flex-between" style={{ marginBottom: '4px' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>성공률</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: parseInt(testResults.successRate) >= 80 ? '#2e7d32' : '#ef6c00' }}>
+                            {testResults.successRate}%
+                          </span>
+                        </div>
+                        <div style={{ background: '#e0e0e0', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+                          <div style={{
+                            width: `${testResults.successRate}%`,
+                            height: '100%',
+                            background: parseInt(testResults.successRate) >= 80 ? '#4caf50' : parseInt(testResults.successRate) >= 50 ? '#ff9800' : '#f44336',
+                            transition: 'width 0.3s'
+                          }} />
+                        </div>
+                      </div>
+
+                      {/* 소요 시간 */}
+                      <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '16px' }}>
+                        ⏱️ 소요 시간: {testResults.duration}초
+                      </div>
+
+                      {/* 개별 결과 목록 */}
+                      <div style={{ borderTop: '1px solid #e0e0e0', paddingTop: '12px' }}>
+                        <h6 style={{ margin: '0 0 8px 0', color: '#666' }}>개별 결과</h6>
+                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                          {testResults.items.map((item, idx) => (
+                            <div
+                              key={idx}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '8px',
+                                borderRadius: '4px',
+                                marginBottom: '4px',
+                                background: item.status === 'success' ? '#e8f5e9' : '#ffebee'
+                              }}
+                            >
+                              <span style={{ width: '24px', fontWeight: 'bold', color: '#666' }}>#{item.index}</span>
+                              <span style={{
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                fontSize: '0.8rem',
+                                fontWeight: 500,
+                                background: item.status === 'success' ? '#c8e6c9' : '#ffcdd2',
+                                color: item.status === 'success' ? '#2e7d32' : '#c62828'
+                              }}>
+                                {item.status === 'success' ? '성공' : '실패'}
+                              </span>
+                              {item.score && (
+                                <span style={{ marginLeft: '8px', fontSize: '0.85rem' }}>
+                                  점수: <strong>{item.score}</strong> ({item.grade})
+                                </span>
+                              )}
+                              {item.error && (
+                                <span style={{ marginLeft: '8px', fontSize: '0.8rem', color: '#c62828' }}>
+                                  {item.error.length > 50 ? item.error.substring(0, 50) + '...' : item.error}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* 사용자 피드백 입력 영역 */}
               {showFeedback && (
