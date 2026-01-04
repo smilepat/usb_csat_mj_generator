@@ -9,6 +9,7 @@ import Charts from './pages/Charts';
 import Config from './pages/Config';
 import Logs from './pages/Logs';
 import Quality from './pages/Quality';
+import Library from './pages/Library';
 
 /**
  * Error Boundary 컴포넌트
@@ -167,6 +168,11 @@ function App() {
                   🎯 품질 대시보드
                 </NavLink>
               </li>
+              <li>
+                <NavLink to="/library" className={({ isActive }) => isActive ? 'active' : ''}>
+                  📚 라이브러리
+                </NavLink>
+              </li>
             </ul>
           </nav>
 
@@ -219,6 +225,7 @@ function App() {
             <Route path="/config" element={<Config />} />
             <Route path="/logs" element={<Logs />} />
             <Route path="/quality" element={<Quality />} />
+            <Route path="/library" element={<Library />} />
           </Routes>
         </main>
       </div>

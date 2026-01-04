@@ -212,5 +212,61 @@ export const logsApi = {
     }),
 };
 
+// 라이브러리 API
+export const libraryApi = {
+  // 목록 조회
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/library${query ? `?${query}` : ''}`);
+  },
+  // 상세 조회
+  get: (id) => request(`/library/${id}`),
+  // 통계
+  getStats: () => request('/library/stats'),
+  // 카테고리 목록
+  getCategories: () => request('/library/categories'),
+  // 항목 추가
+  create: (data) =>
+    request('/library', {
+      method: 'POST',
+      body: data,
+    }),
+  // 생성 요청에서 문항 저장
+  saveItemFromRequest: (requestId, data = {}) =>
+    request(`/library/item-from-request/${requestId}`, {
+      method: 'POST',
+      body: data,
+    }),
+  // 프롬프트 저장
+  savePrompt: (promptKey, data = {}) =>
+    request(`/library/prompt/${promptKey}`, {
+      method: 'POST',
+      body: data,
+    }),
+  // 수정
+  update: (id, data) =>
+    request(`/library/${id}`, {
+      method: 'PUT',
+      body: data,
+    }),
+  // 즐겨찾기 토글
+  toggleFavorite: (id, isFavorite) =>
+    request(`/library/${id}/favorite`, {
+      method: 'PUT',
+      body: { is_favorite: isFavorite },
+    }),
+  // 삭제
+  delete: (id) =>
+    request(`/library/${id}`, {
+      method: 'DELETE',
+    }),
+  // 내보내기
+  export: (ids, format = 'json') =>
+    request('/library/export', {
+      method: 'POST',
+      body: { ids, format },
+    }),
+};
+
 // 헬스 체크
 export const healthCheck = () => request('/health');

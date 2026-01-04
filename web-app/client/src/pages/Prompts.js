@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { promptsApi } from '../api';
+import { promptsApi, libraryApi } from '../api';
 import { formatKST } from '../utils/dateUtils';
 
 function Prompts() {
@@ -196,6 +196,20 @@ function Prompts() {
       setMessage({ type: 'success', text: '프롬프트가 삭제되었습니다.' });
       setSelectedPrompt(null);
       loadPrompts();
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message });
+    }
+  };
+
+  // 라이브러리에 저장
+  const handleSaveToLibrary = async () => {
+    if (!selectedPrompt) return;
+
+    try {
+      await libraryApi.savePrompt(selectedPrompt.prompt_key, {
+        category: formData.title || selectedPrompt.prompt_key
+      });
+      setMessage({ type: 'success', text: '라이브러리에 저장되었습니다!' });
     } catch (error) {
       setMessage({ type: 'error', text: error.message });
     }
@@ -1379,6 +1393,13 @@ function Prompts() {
                   )}
                   {selectedPrompt && (
                     <>
+                      <button
+                        className="btn btn-sm btn-secondary"
+                        onClick={handleSaveToLibrary}
+                        title="현재 프롬프트를 라이브러리에 저장"
+                      >
+                        📚 라이브러리 저장
+                      </button>
                       <button
                         className={`btn btn-sm ${showVersions ? 'btn-primary' : 'btn-secondary'}`}
                         onClick={handleLoadVersions}

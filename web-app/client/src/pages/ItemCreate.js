@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { itemsApi, promptsApi } from '../api';
+import { itemsApi, promptsApi, libraryApi } from '../api';
 import PromptPreview from '../components/PromptPreview';
 import { validateForm, countWords, isLCItem, isRCItem, isSetItem } from '../utils/validation';
 
@@ -153,12 +153,29 @@ function ItemCreate() {
         setShowResult(true);
         setShowPreview(false);
 
-        setMessage({
-          type: genRes.data.validationResult === 'PASS' ? 'success' : 'warning',
-          text: genRes.data.validationResult === 'PASS'
-            ? '문항이 성공적으로 생성되었습니다!'
-            : '문항 생성 완료 (검토 필요)'
-        });
+        // 생성 성공 시 자동으로 라이브러리에 저장
+        if (genRes.data.validationResult === 'PASS') {
+          try {
+            await libraryApi.saveItemFromRequest(res.data.requestId, {
+              category: `${formData.item_no}번 문항`
+            });
+            setMessage({
+              type: 'success',
+              text: '문항이 성공적으로 생성되어 라이브러리에 저장되었습니다!'
+            });
+          } catch (libError) {
+            console.error('라이브러리 저장 오류:', libError);
+            setMessage({
+              type: 'success',
+              text: '문항이 성공적으로 생성되었습니다! (라이브러리 저장은 수동으로 해주세요)'
+            });
+          }
+        } else {
+          setMessage({
+            type: 'warning',
+            text: '문항 생성 완료 (검토 필요 - 승인 후 라이브러리에 저장하세요)'
+          });
+        }
       } catch (genError) {
         setMessage({ type: 'error', text: '문항 생성 중 오류: ' + genError.message });
       }
@@ -254,6 +271,23 @@ function ItemCreate() {
   const handleEditPrompt = (editedData) => {
     console.log('프롬프트 편집됨:', editedData);
     // TODO: 편집된 프롬프트로 재검증 또는 직접 생성
+  };
+
+  // 라이브러리에 저장
+  const handleSaveToLibrary = async () => {
+    if (!generationResult?.requestId) return;
+
+    try {
+      setLoading(true);
+      await libraryApi.saveItemFromRequest(generationResult.requestId, {
+        category: `${formData.item_no}번 문항`
+      });
+      setMessage({ type: 'success', text: '라이브러리에 저장되었습니다!' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message });
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 새 문항 생성 (결과 화면에서)
@@ -521,6 +555,13 @@ function ItemCreate() {
         <div className="flex gap-2">
           <button
             className="btn btn-primary"
+            onClick={handleSaveToLibrary}
+            disabled={loading}
+          >
+            {loading ? '저장 중...' : '📚 라이브러리에 저장'}
+          </button>
+          <button
+            className="btn btn-secondary"
             onClick={handleCreateNew}
           >
             ➕ 새 문항 생성

@@ -345,6 +345,44 @@ async function initDatabase() {
     )
   `);
 
+  // LIBRARY 테이블 (승인된 문항 및 프롬프트 저장소)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS library (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL,
+      title TEXT,
+      category TEXT,
+      tags TEXT,
+
+      -- 문항 관련 필드
+      request_id TEXT,
+      item_no INTEGER,
+      passage TEXT,
+      question TEXT,
+      options TEXT,
+      answer TEXT,
+      explanation TEXT,
+
+      -- 프롬프트 관련 필드
+      prompt_id INTEGER,
+      prompt_key TEXT,
+      prompt_text TEXT,
+
+      -- 품질 정보
+      final_score REAL,
+      grade TEXT,
+
+      -- 메타데이터
+      notes TEXT,
+      is_favorite INTEGER DEFAULT 0,
+      source TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (request_id) REFERENCES item_requests(request_id),
+      FOREIGN KEY (prompt_id) REFERENCES prompts(id)
+    )
+  `);
+
   // ITEM_METRICS 테이블 (3겹 검증 시스템)
   db.run(`
     CREATE TABLE IF NOT EXISTS item_metrics (
@@ -404,6 +442,9 @@ async function initDatabase() {
   db.run(`CREATE INDEX IF NOT EXISTS idx_item_requests_prompt_version ON item_requests(prompt_id, prompt_version)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_ab_tests_prompt_id ON ab_tests(prompt_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_ab_tests_status ON ab_tests(status)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_library_type ON library(type)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_library_category ON library(category)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_library_is_favorite ON library(is_favorite)`);
 
   // 기본 설정 삽입 (Google Sheets CONFIG 시트 기준)
   const defaultConfigs = [
