@@ -24,6 +24,10 @@ function ItemCreate() {
   const [previewData, setPreviewData] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
+  // 생성 결과 표시 관련 상태
+  const [showResult, setShowResult] = useState(false);
+  const [generationResult, setGenerationResult] = useState(null);
+
   // 기본 프롬프트 매핑 상태
   const [defaultPrompts, setDefaultPrompts] = useState({});
 
@@ -136,14 +140,25 @@ function ItemCreate() {
       // 바로 생성 시작
       try {
         const genRes = await itemsApi.generate(res.data.requestId);
+
+        // 생성 결과 상세 조회
+        const detailRes = await itemsApi.getRequest(res.data.requestId);
+
+        // 생성 결과 저장 및 표시
+        setGenerationResult({
+          ...genRes.data,
+          requestId: res.data.requestId,
+          details: detailRes.data
+        });
+        setShowResult(true);
+        setShowPreview(false);
+
         setMessage({
           type: genRes.data.validationResult === 'PASS' ? 'success' : 'warning',
-          text: `문항 생성 완료: ${genRes.data.validationResult}`
+          text: genRes.data.validationResult === 'PASS'
+            ? '문항이 성공적으로 생성되었습니다!'
+            : '문항 생성 완료 (검토 필요)'
         });
-
-        setTimeout(() => {
-          navigate('/items');
-        }, 2000);
       } catch (genError) {
         setMessage({ type: 'error', text: '문항 생성 중 오류: ' + genError.message });
       }
@@ -184,14 +199,25 @@ function ItemCreate() {
       // 바로 생성 시작
       try {
         const genRes = await itemsApi.generate(res.data.requestId);
+
+        // 생성 결과 상세 조회
+        const detailRes = await itemsApi.getRequest(res.data.requestId);
+
+        // 생성 결과 저장 및 표시
+        setGenerationResult({
+          ...genRes.data,
+          requestId: res.data.requestId,
+          details: detailRes.data
+        });
+        setShowResult(true);
+        setShowPreview(false);
+
         setMessage({
           type: genRes.data.validationResult === 'PASS' ? 'success' : 'warning',
-          text: `문항 생성 완료: ${genRes.data.validationResult}`
+          text: genRes.data.validationResult === 'PASS'
+            ? '문항이 성공적으로 생성되었습니다!'
+            : '문항 생성 완료 (검토 필요)'
         });
-
-        setTimeout(() => {
-          navigate('/items');
-        }, 2000);
       } catch (genError) {
         setMessage({ type: 'error', text: '문항 생성 중 오류: ' + genError.message });
       }
