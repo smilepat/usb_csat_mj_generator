@@ -279,6 +279,87 @@ function Prompts() {
     }
   };
 
+  // AI 검증 결과의 제안사항을 피드백으로 반영
+  const [applyingSuggestions, setApplyingSuggestions] = useState(false);
+
+  const handleApplySuggestions = async () => {
+    if (!evaluationResult?.suggestions?.length || !selectedPrompt) {
+      setMessage({ type: 'error', text: '적용할 제안사항이 없습니다.' });
+      return;
+    }
+
+    // 제안사항들을 하나의 피드백 텍스트로 결합
+    const feedbackText = evaluationResult.suggestions
+      .map((s, idx) => `${idx + 1}. ${s}`)
+      .join('\n');
+
+    try {
+      setApplyingSuggestions(true);
+      setMessage({ type: 'info', text: 'AI 검증 결과를 프롬프트에 반영하고 있습니다...' });
+
+      const res = await promptsApi.improveWithFeedback(
+        formData.prompt_key,
+        formData.prompt_text,
+        `AI 검증 결과에서 도출된 개선 제안:\n${feedbackText}`
+      );
+
+      if (res.data?.improved_prompt) {
+        setFormData(prev => ({ ...prev, prompt_text: res.data.improved_prompt }));
+        setEditMode(true);
+        setMessage({
+          type: 'success',
+          text: `AI 검증 제안사항 ${evaluationResult.suggestions.length}개가 프롬프트에 반영되었습니다. 저장하려면 💾 저장 버튼을 클릭하세요.`
+        });
+        setEvaluationResult(null); // 검증 결과 초기화
+      } else {
+        setMessage({ type: 'warning', text: '개선 결과가 없습니다.' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: '제안사항 반영 실패: ' + error.message });
+    } finally {
+      setApplyingSuggestions(false);
+    }
+  };
+
+  // AI 검증 결과의 약점을 피드백으로 반영
+  const handleApplyWeaknesses = async () => {
+    if (!evaluationResult?.weaknesses?.length || !selectedPrompt) {
+      setMessage({ type: 'error', text: '적용할 개선점이 없습니다.' });
+      return;
+    }
+
+    const feedbackText = evaluationResult.weaknesses
+      .map((w, idx) => `${idx + 1}. ${w}`)
+      .join('\n');
+
+    try {
+      setApplyingSuggestions(true);
+      setMessage({ type: 'info', text: 'AI 검증에서 발견된 약점을 개선하고 있습니다...' });
+
+      const res = await promptsApi.improveWithFeedback(
+        formData.prompt_key,
+        formData.prompt_text,
+        `다음 약점들을 개선해주세요:\n${feedbackText}`
+      );
+
+      if (res.data?.improved_prompt) {
+        setFormData(prev => ({ ...prev, prompt_text: res.data.improved_prompt }));
+        setEditMode(true);
+        setMessage({
+          type: 'success',
+          text: `약점 ${evaluationResult.weaknesses.length}개가 개선되었습니다. 저장하려면 💾 저장 버튼을 클릭하세요.`
+        });
+        setEvaluationResult(null);
+      } else {
+        setMessage({ type: 'warning', text: '개선 결과가 없습니다.' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: '약점 개선 실패: ' + error.message });
+    } finally {
+      setApplyingSuggestions(false);
+    }
+  };
+
   // 사용자 피드백 토글
   const handleToggleFeedback = () => {
     setShowFeedback(!showFeedback);
@@ -2250,9 +2331,19 @@ function Prompts() {
 
               {/* 약점 */}
               {evaluationResult.weaknesses?.length > 0 && (
-                <div style={{ marginBottom: '16px' }}>
-                  <h4 style={{ color: 'var(--error-color)', marginBottom: '8px' }}>⚠️ 개선 필요</h4>
-                  <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                <div style={{ marginBottom: '16px', padding: '12px', background: '#fff5f5', borderRadius: '8px', border: '1px solid #feb2b2' }}>
+                  <div className="flex-between" style={{ marginBottom: '8px' }}>
+                    <h4 style={{ color: '#c53030', margin: 0 }}>⚠️ 개선 필요 ({evaluationResult.weaknesses.length}개)</h4>
+                    <button
+                      className="btn btn-sm"
+                      onClick={handleApplyWeaknesses}
+                      disabled={applyingSuggestions}
+                      style={{ background: '#c53030', color: 'white', border: 'none' }}
+                    >
+                      {applyingSuggestions ? '🔄 반영 중...' : '🔧 약점 개선하기'}
+                    </button>
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: '#742a2a' }}>
                     {evaluationResult.weaknesses.map((w, idx) => (
                       <li key={idx}>{w}</li>
                     ))}
@@ -2262,9 +2353,19 @@ function Prompts() {
 
               {/* 제안 */}
               {evaluationResult.suggestions?.length > 0 && (
-                <div style={{ marginBottom: '16px' }}>
-                  <h4 style={{ color: 'var(--primary-color)', marginBottom: '8px' }}>💡 개선 제안</h4>
-                  <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                <div style={{ marginBottom: '16px', padding: '12px', background: '#ebf8ff', borderRadius: '8px', border: '1px solid #90cdf4' }}>
+                  <div className="flex-between" style={{ marginBottom: '8px' }}>
+                    <h4 style={{ color: '#2b6cb0', margin: 0 }}>💡 개선 제안 ({evaluationResult.suggestions.length}개)</h4>
+                    <button
+                      className="btn btn-sm"
+                      onClick={handleApplySuggestions}
+                      disabled={applyingSuggestions}
+                      style={{ background: '#2b6cb0', color: 'white', border: 'none' }}
+                    >
+                      {applyingSuggestions ? '🔄 반영 중...' : '✨ 제안 반영하기'}
+                    </button>
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: '#2c5282' }}>
                     {evaluationResult.suggestions.map((s, idx) => (
                       <li key={idx}>{s}</li>
                     ))}
