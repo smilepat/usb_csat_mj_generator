@@ -189,6 +189,29 @@ router.post('/generate/:id', async (req, res) => {
       });
     }
 
+    // 프롬프트 버전 정보 조회 및 저장
+    let promptVersion = null;
+    let promptTextSnapshot = null;
+    if (row.prompt_id) {
+      const promptInfo = db.prepare(`
+        SELECT p.prompt_text,
+               COALESCE((SELECT MAX(version) FROM prompt_versions WHERE prompt_id = p.id), 0) + 1 as current_version
+        FROM prompts p WHERE p.id = ?
+      `).get(row.prompt_id);
+
+      if (promptInfo) {
+        promptVersion = promptInfo.current_version;
+        promptTextSnapshot = promptInfo.prompt_text;
+
+        // 프롬프트 버전 정보를 item_requests에 저장
+        db.prepare(`
+          UPDATE item_requests
+          SET prompt_version = ?, prompt_text_snapshot = ?
+          WHERE request_id = ?
+        `).run(promptVersion, promptTextSnapshot, id);
+      }
+    }
+
     // 상태 업데이트: RUNNING
     db.prepare(`
       UPDATE item_requests

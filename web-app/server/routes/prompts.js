@@ -14,6 +14,19 @@ const {
   recalculateAllPromptMetrics,
   updatePromptPerformance
 } = require('../services/promptMetricsService');
+const {
+  analyzePromptPerformance,
+  runAutoImprove,
+  scanAllPromptsForImprovement,
+  compareVersionPerformance
+} = require('../services/autoImproveService');
+const {
+  createABTest,
+  getABTests,
+  getABTestResults,
+  completeABTest,
+  deleteABTest
+} = require('../services/abTestingService');
 const logger = require('../services/logger');
 
 /**
@@ -866,6 +879,438 @@ router.delete('/:key/set-default', (req, res) => {
     res.json({
       success: true,
       message: `"${key}" 프롬프트의 기본값 설정이 해제되었습니다.`
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================
+// 자동 개선 (Auto-Improve) 엔드포인트
+// ============================================
+
+/**
+ * GET /api/prompts/auto-improve/scan
+ * 모든 프롬프트 스캔하여 개선 필요 목록 반환
+ */
+router.get('/auto-improve/scan', (req, res) => {
+  try {
+    const result = scanAllPromptsForImprovement();
+
+    logger.info('자동 개선 스캔 완료', 'system',
+      `스캔: ${result.scanned}개, 개선필요: ${result.needsImprovement}개`);
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    logger.error('자동 개선 스캔 오류', 'system', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/prompts/:key/auto-improve/analyze
+ * 특정 프롬프트 성능 분석
+ */
+router.get('/:key/auto-improve/analyze', (req, res) => {
+  try {
+    const { key } = req.params;
+    const db = getDb();
+
+    const prompt = db.prepare('SELECT id FROM prompts WHERE prompt_key = ?').get(key);
+    if (!prompt) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    const analysis = analyzePromptPerformance(prompt.id);
+
+    res.json({
+      success: true,
+      data: analysis
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/:key/auto-improve
+ * 자동 개선 프로세스 실행
+ */
+router.post('/:key/auto-improve', async (req, res) => {
+  try {
+    const { key } = req.params;
+    const { dryRun = false } = req.body;
+    const db = getDb();
+
+    const prompt = db.prepare('SELECT id FROM prompts WHERE prompt_key = ?').get(key);
+    if (!prompt) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    logger.info('자동 개선 프로세스 시작', key, `dryRun: ${dryRun}`);
+
+    const result = await runAutoImprove(prompt.id, dryRun);
+
+    if (result.success) {
+      logger.info('자동 개선 프로세스 완료', key, `action: ${result.action}`);
+    } else {
+      logger.warn('자동 개선 프로세스 실패', key, result.error);
+    }
+
+    res.json({
+      success: result.success,
+      data: result
+    });
+  } catch (error) {
+    logger.error('자동 개선 프로세스 오류', req.params.key, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/prompts/:key/version-performance
+ * 버전별 성능 비교
+ */
+router.get('/:key/version-performance', (req, res) => {
+  try {
+    const { key } = req.params;
+    const db = getDb();
+
+    const prompt = db.prepare('SELECT id FROM prompts WHERE prompt_key = ?').get(key);
+    if (!prompt) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    const performance = compareVersionPerformance(prompt.id);
+
+    res.json({
+      success: true,
+      data: performance
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================
+// 피드백 수집 엔드포인트
+// ============================================
+
+/**
+ * GET /api/prompts/:key/feedback
+ * 프롬프트 피드백 목록 조회
+ */
+router.get('/:key/feedback', (req, res) => {
+  try {
+    const { key } = req.params;
+    const { limit = 50, offset = 0 } = req.query;
+    const db = getDb();
+
+    const prompt = db.prepare('SELECT id FROM prompts WHERE prompt_key = ?').get(key);
+    if (!prompt) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    const feedbacks = db.prepare(`
+      SELECT * FROM prompt_feedback
+      WHERE prompt_id = ?
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?
+    `).all(prompt.id, parseInt(limit), parseInt(offset));
+
+    const total = db.prepare(`
+      SELECT COUNT(*) as count FROM prompt_feedback WHERE prompt_id = ?
+    `).get(prompt.id);
+
+    // 피드백 통계
+    const stats = db.prepare(`
+      SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN applied = 1 THEN 1 ELSE 0 END) as applied_count,
+        SUM(CASE WHEN feedback_type = 'auto_improve' THEN 1 ELSE 0 END) as auto_improve_count,
+        SUM(CASE WHEN source = 'user' THEN 1 ELSE 0 END) as user_count
+      FROM prompt_feedback
+      WHERE prompt_id = ?
+    `).get(prompt.id);
+
+    res.json({
+      success: true,
+      data: {
+        feedbacks,
+        stats,
+        pagination: {
+          total: total.count,
+          limit: parseInt(limit),
+          offset: parseInt(offset)
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/:key/feedback
+ * 프롬프트 피드백 추가
+ */
+router.post('/:key/feedback', (req, res) => {
+  try {
+    const { key } = req.params;
+    const {
+      feedback_type = 'user',
+      feedback_text,
+      request_id,
+      item_score
+    } = req.body;
+
+    if (!feedback_text || feedback_text.trim().length === 0) {
+      return res.status(400).json({ success: false, error: '피드백 내용이 필요합니다.' });
+    }
+
+    const db = getDb();
+    const prompt = db.prepare('SELECT id FROM prompts WHERE prompt_key = ?').get(key);
+    if (!prompt) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    // 현재 버전 조회
+    const versionInfo = db.prepare(`
+      SELECT COALESCE(MAX(version), 0) as current_version
+      FROM prompt_versions WHERE prompt_id = ?
+    `).get(prompt.id);
+
+    db.prepare(`
+      INSERT INTO prompt_feedback (
+        prompt_id, prompt_key, prompt_version, feedback_type,
+        feedback_text, source, request_id, item_score
+      ) VALUES (?, ?, ?, ?, ?, 'user', ?, ?)
+    `).run(
+      prompt.id,
+      key,
+      versionInfo.current_version + 1,
+      feedback_type,
+      feedback_text,
+      request_id || null,
+      item_score || null
+    );
+
+    logger.info('프롬프트 피드백 추가', key, `type: ${feedback_type}`);
+
+    res.json({
+      success: true,
+      message: '피드백이 저장되었습니다.'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/:key/feedback/:feedbackId/apply
+ * 피드백을 적용하여 프롬프트 개선
+ */
+router.post('/:key/feedback/:feedbackId/apply', async (req, res) => {
+  try {
+    const { key, feedbackId } = req.params;
+    const db = getDb();
+
+    const prompt = db.prepare('SELECT * FROM prompts WHERE prompt_key = ?').get(key);
+    if (!prompt) {
+      return res.status(404).json({ success: false, error: '프롬프트를 찾을 수 없습니다.' });
+    }
+
+    const feedback = db.prepare(`
+      SELECT * FROM prompt_feedback WHERE id = ? AND prompt_id = ?
+    `).get(parseInt(feedbackId), prompt.id);
+
+    if (!feedback) {
+      return res.status(404).json({ success: false, error: '피드백을 찾을 수 없습니다.' });
+    }
+
+    if (feedback.applied) {
+      return res.status(400).json({ success: false, error: '이미 적용된 피드백입니다.' });
+    }
+
+    // 피드백을 기반으로 개선 실행
+    logger.info('피드백 기반 개선 시작', key, `feedback_id: ${feedbackId}`);
+
+    const improvement = await improvePromptWithFeedback(
+      key,
+      prompt.prompt_text,
+      feedback.feedback_text
+    );
+
+    if (!improvement.success) {
+      return res.status(500).json({ success: false, error: improvement.error });
+    }
+
+    // 버전 히스토리 저장
+    const latestVersion = db.prepare(
+      'SELECT MAX(version) as max_version FROM prompt_versions WHERE prompt_id = ?'
+    ).get(prompt.id);
+
+    const newVersion = (latestVersion?.max_version || 0) + 1;
+
+    db.prepare(`
+      INSERT INTO prompt_versions (prompt_id, prompt_key, version, prompt_text, change_reason)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(
+      prompt.id,
+      key,
+      newVersion,
+      prompt.prompt_text,
+      `피드백 #${feedbackId} 적용`
+    );
+
+    // 프롬프트 업데이트
+    db.prepare(`
+      UPDATE prompts SET prompt_text = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+    `).run(improvement.data.improved_prompt, prompt.id);
+
+    // 피드백 적용 상태 업데이트
+    db.prepare(`
+      UPDATE prompt_feedback SET applied = 1 WHERE id = ?
+    `).run(parseInt(feedbackId));
+
+    logger.info('피드백 기반 개선 완료', key, `버전 ${newVersion}으로 업데이트`);
+
+    res.json({
+      success: true,
+      message: '피드백이 적용되어 프롬프트가 개선되었습니다.',
+      data: {
+        new_version: newVersion,
+        changes: improvement.data.changes_made
+      }
+    });
+  } catch (error) {
+    logger.error('피드백 적용 오류', req.params.key, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================
+// A/B 테스팅 엔드포인트
+// ============================================
+
+/**
+ * GET /api/prompts/ab-tests
+ * A/B 테스트 목록 조회
+ */
+router.get('/ab-tests', (req, res) => {
+  try {
+    const { status = 'all' } = req.query;
+    const tests = getABTests(status);
+
+    res.json({
+      success: true,
+      data: tests
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/prompts/ab-tests/:testId
+ * A/B 테스트 상세 결과 조회
+ */
+router.get('/ab-tests/:testId', (req, res) => {
+  try {
+    const { testId } = req.params;
+    const result = getABTestResults(parseInt(testId));
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/:key/ab-test
+ * A/B 테스트 생성
+ */
+router.post('/:key/ab-test', (req, res) => {
+  try {
+    const { key } = req.params;
+    const { test_name, version_a, version_b } = req.body;
+
+    if (version_a === undefined || version_b === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'version_a와 version_b가 필요합니다. (0은 현재 버전을 의미)'
+      });
+    }
+
+    const test = createABTest(
+      key,
+      test_name || `${key} A/B Test`,
+      parseInt(version_a),
+      parseInt(version_b)
+    );
+
+    logger.info('A/B 테스트 생성', key, `테스트 ID: ${test.testId}`);
+
+    res.json({
+      success: true,
+      message: 'A/B 테스트가 생성되었습니다.',
+      data: test
+    });
+  } catch (error) {
+    logger.error('A/B 테스트 생성 오류', req.params.key, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/ab-tests/:testId/complete
+ * A/B 테스트 종료
+ */
+router.post('/ab-tests/:testId/complete', (req, res) => {
+  try {
+    const { testId } = req.params;
+    const { winner, apply_winner = false } = req.body;
+
+    if (!winner || !['A', 'B', 'tie'].includes(winner)) {
+      return res.status(400).json({
+        success: false,
+        error: "winner는 'A', 'B', 'tie' 중 하나여야 합니다."
+      });
+    }
+
+    const result = completeABTest(parseInt(testId), winner, apply_winner);
+
+    logger.info('A/B 테스트 종료', `testId:${testId}`, `승자: ${winner}`);
+
+    res.json({
+      success: true,
+      message: 'A/B 테스트가 종료되었습니다.',
+      data: result
+    });
+  } catch (error) {
+    logger.error('A/B 테스트 종료 오류', `testId:${req.params.testId}`, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/prompts/ab-tests/:testId
+ * A/B 테스트 삭제
+ */
+router.delete('/ab-tests/:testId', (req, res) => {
+  try {
+    const { testId } = req.params;
+    deleteABTest(parseInt(testId));
+
+    res.json({
+      success: true,
+      message: 'A/B 테스트가 삭제되었습니다.'
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

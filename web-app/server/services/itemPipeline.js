@@ -29,11 +29,14 @@ const { saveItemMetrics } = require('./metricsService');
 async function generateItemPipeline(req) {
   const config = getConfig();
   const maxRetry = parseInt(config.MAX_RETRY || '3');
+  const db = getDb();
 
   // 0단계: 필요하면 지문 먼저 생성
   try {
     req = await generatePassageIfNeeded(req, logger);
   } catch (e) {
+    // 실패 히스토리 저장
+    saveGenerationHistory(req.requestId, 0, null, null, 'FAIL', '지문 생성 중 오류: ' + e.message, null, e.message);
     return {
       rawJson: '',
       normalized: null,
@@ -114,6 +117,9 @@ async function generateItemPipeline(req) {
         }
       }
 
+      // 성공 히스토리 저장
+      saveGenerationHistory(req.requestId, attempt, raw, normalized, 'PASS', 'OK', null, null);
+
       return {
         rawJson: raw,
         normalized: normalized,
@@ -128,6 +134,9 @@ async function generateItemPipeline(req) {
     } catch (e) {
       logger.warn('generateItemPipeline', req.requestId, `시도 ${attempt}/${maxRetry} 실패: ${e.message}`);
 
+      // 실패 히스토리 저장
+      saveGenerationHistory(req.requestId, attempt, null, null, 'FAIL', e.message, null, e.message);
+
       if (attempt === maxRetry) {
         return {
           rawJson: '',
@@ -139,6 +148,32 @@ async function generateItemPipeline(req) {
         };
       }
     }
+  }
+}
+
+/**
+ * 생성 시도 히스토리 저장
+ */
+function saveGenerationHistory(requestId, attemptNo, rawJson, normalizedJson, result, log, metrics, errorMessage) {
+  try {
+    const db = getDb();
+    db.prepare(`
+      INSERT INTO item_generation_history (
+        request_id, attempt_no, raw_json, normalized_json,
+        validation_result, validation_log, error_message
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      requestId,
+      attemptNo,
+      rawJson || '',
+      normalizedJson ? JSON.stringify(normalizedJson) : '',
+      result,
+      log,
+      errorMessage || ''
+    );
+  } catch (e) {
+    // 히스토리 저장 실패는 무시 (메인 프로세스에 영향 주지 않음)
+    logger.warn('saveGenerationHistory', requestId, `히스토리 저장 실패: ${e.message}`);
   }
 }
 

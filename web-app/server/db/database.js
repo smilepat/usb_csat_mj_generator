@@ -119,11 +119,27 @@ async function initDatabase() {
       passage_source TEXT,
       topic TEXT,
       prompt_id INTEGER,
+      prompt_version INTEGER,
+      prompt_text_snapshot TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (prompt_id) REFERENCES prompts(id)
     )
   `);
+
+  // item_requests에 prompt_version 컬럼 추가 (기존 DB 마이그레이션)
+  try {
+    db.run(`ALTER TABLE item_requests ADD COLUMN prompt_version INTEGER`);
+  } catch (e) {
+    // 이미 컬럼이 존재하면 무시
+  }
+
+  // item_requests에 prompt_text_snapshot 컬럼 추가
+  try {
+    db.run(`ALTER TABLE item_requests ADD COLUMN prompt_text_snapshot TEXT`);
+  } catch (e) {
+    // 이미 컬럼이 존재하면 무시
+  }
 
   // ITEM_JSON 테이블
   db.run(`
@@ -273,6 +289,62 @@ async function initDatabase() {
     )
   `);
 
+  // FEEDBACK 테이블 (프롬프트 피드백 수집)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS prompt_feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      prompt_id INTEGER NOT NULL,
+      prompt_key TEXT,
+      prompt_version INTEGER,
+      feedback_type TEXT,
+      feedback_text TEXT,
+      source TEXT DEFAULT 'user',
+      request_id TEXT,
+      item_score REAL,
+      applied INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (prompt_id) REFERENCES prompts(id)
+    )
+  `);
+
+  // AB_TESTS 테이블 (A/B 테스팅)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS ab_tests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      prompt_id INTEGER NOT NULL,
+      prompt_key TEXT,
+      test_name TEXT,
+      version_a INTEGER NOT NULL,
+      version_b INTEGER NOT NULL,
+      status TEXT DEFAULT 'active',
+      winner TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      completed_at DATETIME,
+      FOREIGN KEY (prompt_id) REFERENCES prompts(id)
+    )
+  `);
+
+  // ITEM_GENERATION_HISTORY 테이블 (시도별 히스토리 보존)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS item_generation_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      request_id TEXT NOT NULL,
+      attempt_no INTEGER NOT NULL,
+      raw_json TEXT,
+      normalized_json TEXT,
+      validation_result TEXT,
+      validation_log TEXT,
+      layer1_score INTEGER,
+      layer2_score INTEGER,
+      layer3_score INTEGER,
+      final_score REAL,
+      grade TEXT,
+      error_message TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (request_id) REFERENCES item_requests(request_id)
+    )
+  `);
+
   // ITEM_METRICS 테이블 (3겹 검증 시스템)
   db.run(`
     CREATE TABLE IF NOT EXISTS item_metrics (
@@ -326,6 +398,12 @@ async function initDatabase() {
   db.run(`CREATE INDEX IF NOT EXISTS idx_item_requests_prompt_id ON item_requests(prompt_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_prompt_versions_prompt_id ON prompt_versions(prompt_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_prompt_versions_prompt_key ON prompt_versions(prompt_key)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_prompt_feedback_prompt_id ON prompt_feedback(prompt_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_prompt_feedback_prompt_key ON prompt_feedback(prompt_key)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_item_generation_history_request_id ON item_generation_history(request_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_item_requests_prompt_version ON item_requests(prompt_id, prompt_version)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_ab_tests_prompt_id ON ab_tests(prompt_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_ab_tests_status ON ab_tests(status)`);
 
   // 기본 설정 삽입 (Google Sheets CONFIG 시트 기준)
   const defaultConfigs = [
