@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { chartsApi } from '../api';
+import { formatKSTDate } from '../utils/dateUtils';
 
 function Charts() {
   const [charts, setCharts] = useState([]);
@@ -130,7 +131,7 @@ function Charts() {
                     <td style={{ fontFamily: 'monospace' }}>{chart.chart_id}</td>
                     <td>{chart.chart_name || '-'}</td>
                     <td className="text-muted" style={{ fontSize: '0.85rem' }}>
-                      {new Date(chart.created_at).toLocaleDateString('ko-KR')}
+                      {formatKSTDate(chart.created_at)}
                     </td>
                     <td>
                       <div className="flex gap-2">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { setsApi } from '../api';
+import { formatKSTDate } from '../utils/dateUtils';
 
 function ItemSets() {
   const [sets, setSets] = useState([]);
@@ -165,7 +166,7 @@ function ItemSets() {
                       {set.profile || '-'}
                     </td>
                     <td className="text-muted" style={{ fontSize: '0.85rem' }}>
-                      {new Date(set.created_at).toLocaleDateString('ko-KR')}
+                      {formatKSTDate(set.created_at)}
                     </td>
                     <td>
                       <div className="flex gap-2">

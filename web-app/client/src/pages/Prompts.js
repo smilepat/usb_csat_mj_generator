@@ -880,7 +880,7 @@ function Prompts() {
                       <div>
                         <strong style={{ color: '#2e7d32' }}>현재 버전</strong>
                         <span style={{ marginLeft: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                          {versions.current.created_at}
+                          {formatKST(versions.current.created_at)}
                         </span>
                       </div>
                       <span className="badge" style={{ background: '#2e7d32', color: 'white' }}>CURRENT</span>
@@ -910,7 +910,7 @@ function Prompts() {
                             <div>
                               <strong>버전 {ver.version}</strong>
                               <span style={{ marginLeft: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                {ver.created_at}
+                                {formatKST(ver.created_at)}
                               </span>
                             </div>
                             <button

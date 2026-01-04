@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { configApi } from '../api';
+import { formatKST } from '../utils/dateUtils';
 
 function Config() {
   const [configs, setConfigs] = useState([]);
@@ -231,7 +232,7 @@ OPENAI_API_KEY=your_openai_api_key_here`}
                   <td>{config.value}</td>
                   <td className="text-muted">{config.description || '-'}</td>
                   <td className="text-muted" style={{ fontSize: '0.85rem' }}>
-                    {new Date(config.updated_at).toLocaleString('ko-KR')}
+                    {formatKST(config.updated_at)}
                   </td>
                 </tr>
               ))}

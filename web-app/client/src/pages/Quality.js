@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatKSTDate } from '../utils/dateUtils';
 
 const API_BASE = 'http://localhost:3001';
 
@@ -288,7 +289,7 @@ function Quality() {
                     <td>{getGradeBadge(m.grade)}</td>
                     <td>{getRecommendationBadge(m.recommendation)}</td>
                     <td className="text-muted" style={{ fontSize: '0.85rem' }}>
-                      {new Date(m.created_at).toLocaleDateString('ko-KR')}
+                      {formatKSTDate(m.created_at)}
                     </td>
                   </tr>
                 ))}
