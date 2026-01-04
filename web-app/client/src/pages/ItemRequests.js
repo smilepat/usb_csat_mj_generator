@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { itemsApi } from '../api';
+import { formatKST } from '../utils/dateUtils';
 
 function ItemRequests() {
   const [requests, setRequests] = useState([]);
@@ -172,7 +173,7 @@ function ItemRequests() {
                     <td>{req.level || '-'}</td>
                     <td>{req.set_id || '-'}</td>
                     <td className="text-muted" style={{ fontSize: '0.85rem' }}>
-                      {new Date(req.created_at).toLocaleString('ko-KR')}
+                      {formatKST(req.created_at)}
                     </td>
                     <td>
                       <div className="flex gap-2">

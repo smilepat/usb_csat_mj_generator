@@ -23,6 +23,8 @@ const logger = require('../services/logger');
 router.get('/', (req, res) => {
   try {
     const db = getDb();
+    // 기본 쿼리 - 정렬은 클라이언트에서 처리
+    // 정렬 우선순위: MASTER_PROMPT → PASSAGE_MASTER → LC01~LC17 → RC18~RC45 → 순수숫자 → P1~P45 → 기타
     const rows = db.prepare(`
       SELECT p.*, pm.total_score, pm.grade, pm.needs_improvement,
              pm.items_generated, pm.approve_rate
@@ -30,11 +32,23 @@ router.get('/', (req, res) => {
       LEFT JOIN prompt_metrics pm ON p.id = pm.prompt_id
       ORDER BY
         CASE
-          WHEN p.prompt_key = 'MASTER_PROMPT' THEN 1
-          WHEN p.prompt_key = 'PASSAGE_MASTER' THEN 2
-          WHEN p.prompt_key LIKE 'P%' THEN 3
-          ELSE 4
+          WHEN p.prompt_key = 'MASTER_PROMPT' THEN 0
+          WHEN p.prompt_key = 'PASSAGE_MASTER' THEN 1
+          WHEN p.prompt_key GLOB 'LC[0-9]*' THEN 2
+          WHEN p.prompt_key GLOB 'RC[0-9]*' THEN 3
+          WHEN p.prompt_key GLOB '[0-9]*' AND p.prompt_key NOT GLOB '*[a-zA-Z]*' THEN 4
+          WHEN p.prompt_key GLOB 'P[0-9]*' THEN 5
+          ELSE 6
         END,
+        CAST(
+          CASE
+            WHEN p.prompt_key GLOB 'LC[0-9]*' THEN SUBSTR(p.prompt_key, 3)
+            WHEN p.prompt_key GLOB 'RC[0-9]*' THEN SUBSTR(p.prompt_key, 3)
+            WHEN p.prompt_key GLOB 'P[0-9]*' THEN SUBSTR(p.prompt_key, 2)
+            WHEN p.prompt_key GLOB '[0-9]*' THEN p.prompt_key
+            ELSE '0'
+          END AS INTEGER
+        ),
         p.prompt_key
     `).all();
     res.json({ success: true, data: rows });

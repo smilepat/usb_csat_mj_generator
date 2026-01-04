@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { logsApi } from '../api';
+import { formatKST } from '../utils/dateUtils';
 
 function Logs() {
   const [activeTab, setActiveTab] = useState('logs');
@@ -185,7 +186,7 @@ function Logs() {
                   {logs.map(log => (
                     <tr key={log.id}>
                       <td className="text-muted" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                        {new Date(log.timestamp).toLocaleString('ko-KR')}
+                        {formatKST(log.timestamp)}
                       </td>
                       <td>{getLevelBadge(log.level)}</td>
                       <td style={{ fontSize: '0.85rem' }}>{log.tag || '-'}</td>
@@ -221,7 +222,7 @@ function Logs() {
                   {errors.map(error => (
                     <tr key={error.id}>
                       <td className="text-muted" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                        {new Date(error.timestamp).toLocaleString('ko-KR')}
+                        {formatKST(error.timestamp)}
                       </td>
                       <td style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
                         {error.request_id ? error.request_id.slice(0, 8) + '...' : '-'}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { promptsApi } from '../api';
+import { formatKST } from '../utils/dateUtils';
 
 function Prompts() {
   const [prompts, setPrompts] = useState([]);
@@ -44,61 +45,42 @@ function Prompts() {
   }, []);
 
   // 프롬프트 정렬 순서 결정 함수
+  // 정렬 우선순위: MASTER_PROMPT → PASSAGE_MASTER → LC01~LC17 → RC18~RC45 → 순수숫자 → P1~P45 → 기타
   const getPromptSortOrder = (key) => {
-    // 1순위: MASTER_PROMPT
+    // 그룹 0: MASTER_PROMPT (마스터)
     if (key === 'MASTER_PROMPT') return { group: 0, order: 0 };
-    // 2순위: PASSAGE_MASTER
+
+    // 그룹 1: PASSAGE_MASTER (지문 마스터)
     if (key === 'PASSAGE_MASTER') return { group: 1, order: 0 };
 
-    // 3순위: LC01-LC17 (듣기 문항)
-    const lcMatch = key.match(/^LC(\d+)$/i);
+    // 그룹 2: LC01~LC17 (듣기 문항) - LC16_17, LC16-17 포함
+    const lcMatch = key.match(/^LC(\d+)/i);
     if (lcMatch) {
       const num = parseInt(lcMatch[1]);
-      // LC16-17은 세트로 취급
-      if (num === 16 || num === 17) return { group: 2, order: 16, subOrder: num };
       return { group: 2, order: num, subOrder: 0 };
     }
 
-    // 4순위: RC18-RC45 (독해 문항)
-    const rcMatch = key.match(/^RC(\d+)$/i);
+    // 그룹 3: RC18~RC45 (독해 문항) - RC41_42, RC43_45 등 포함
+    const rcMatch = key.match(/^RC(\d+)/i);
     if (rcMatch) {
       const num = parseInt(rcMatch[1]);
-      // RC41-42, RC43-45는 세트로 취급
-      if (num >= 41 && num <= 42) return { group: 3, order: 41, subOrder: num };
-      if (num >= 43 && num <= 45) return { group: 3, order: 43, subOrder: num };
       return { group: 3, order: num, subOrder: 0 };
     }
 
-    // 5순위: 순수 숫자 (1, 2, 3, ... 45) - 기존 형식
+    // 그룹 4: 순수 숫자 (1, 2, 3, ... ) - 기존 형식
     if (/^\d+$/.test(key)) {
       const num = parseInt(key);
-      // 듣기(1-17) vs 독해(18-45) 구분
-      if (num >= 1 && num <= 17) {
-        if (num === 16 || num === 17) return { group: 2, order: 16, subOrder: num };
-        return { group: 2, order: num, subOrder: 0 };
-      }
-      if (num >= 18 && num <= 45) {
-        if (num >= 41 && num <= 42) return { group: 3, order: 41, subOrder: num };
-        if (num >= 43 && num <= 45) return { group: 3, order: 43, subOrder: num };
-        return { group: 3, order: num, subOrder: 0 };
-      }
       return { group: 4, order: num, subOrder: 0 };
     }
 
-    // 6순위: P + 숫자 (지문용 프롬프트) - P1-P45
-    const pMatch = key.match(/^P(\d+)$/i);
+    // 그룹 5: P + 숫자 (지문용 프롬프트) - P1~P45, P41_45 등 포함
+    const pMatch = key.match(/^P(\d+)/i);
     if (pMatch) {
       const num = parseInt(pMatch[1]);
-      // P16-17은 세트로 취급
-      if (num === 16 || num === 17) return { group: 5, order: 16, subOrder: num };
-      // P41-42는 세트로 취급
-      if (num >= 41 && num <= 42) return { group: 5, order: 41, subOrder: num };
-      // P43-45는 세트로 취급
-      if (num >= 43 && num <= 45) return { group: 5, order: 43, subOrder: num };
       return { group: 5, order: num, subOrder: 0 };
     }
 
-    // 7순위: 기타 (알파벳 순)
+    // 그룹 6: 기타 (알파벳 순)
     return { group: 6, order: 0, subOrder: 0, alpha: key };
   };
 
@@ -423,51 +405,49 @@ function Prompts() {
   };
 
   const getPromptTypeLabel = (key) => {
+    // 그룹 0: MASTER_PROMPT
     if (key === 'MASTER_PROMPT') return '🎯 마스터';
+
+    // 그룹 1: PASSAGE_MASTER
     if (key === 'PASSAGE_MASTER') return '📄 지문 마스터';
 
-    // LC01-LC17 형식
-    const lcMatch = key.match(/^LC(\d+)$/i);
+    // 그룹 2: LC01~LC17 (듣기) - LC16_17 등 세트 포함
+    const lcMatch = key.match(/^LC(\d+)/i);
     if (lcMatch) {
-      const num = parseInt(lcMatch[1]);
-      if (num === 16 || num === 17) return `🎧 LC16-17 세트`;
-      return `🎧 듣기`;
+      // LC16_17, LC16-17 등 세트형 패턴 감지
+      if (/^LC16[_-]?17$/i.test(key)) return '🎧 LC16-17 세트';
+      return '🎧 듣기';
     }
 
-    // RC18-RC45 형식
-    const rcMatch = key.match(/^RC(\d+)$/i);
+    // 그룹 3: RC18~RC45 (독해) - RC41_42, RC43_45 등 세트 포함
+    const rcMatch = key.match(/^RC(\d+)/i);
     if (rcMatch) {
-      const num = parseInt(rcMatch[1]);
-      if (num >= 41 && num <= 42) return `📖 RC41-42 세트`;
-      if (num >= 43 && num <= 45) return `📖 RC43-45 세트`;
-      return `📖 독해`;
+      // RC41_42, RC41-42 등 세트형 패턴 감지
+      if (/^RC41[_-]?42$/i.test(key)) return '📖 RC41-42 세트';
+      if (/^RC43[_-]?45$/i.test(key)) return '📖 RC43-45 세트';
+      return '📖 독해';
     }
 
-    // 순수 숫자 (기존 형식)
+    // 그룹 4: 순수 숫자 (기존 형식)
     if (/^\d+$/.test(key)) {
       const num = parseInt(key);
-      if (num >= 1 && num <= 17) {
-        if (num === 16 || num === 17) return `🎧 LC16-17 세트`;
-        return `🎧 듣기`;
-      }
-      if (num >= 18 && num <= 45) {
-        if (num >= 41 && num <= 42) return `📖 RC41-42 세트`;
-        if (num >= 43 && num <= 45) return `📖 RC43-45 세트`;
-        return `📖 독해`;
-      }
-      return `📋 ${key}`;
+      if (num >= 1 && num <= 17) return '🎧 듣기';
+      if (num >= 18 && num <= 45) return '📖 독해';
+      return `📋 기타`;
     }
 
-    // P + 숫자 (지문용 프롬프트)
-    const pMatch = key.match(/^P(\d+)$/i);
+    // 그룹 5: P + 숫자 (지문용 프롬프트) - P41_45 등 세트 포함
+    const pMatch = key.match(/^P(\d+)/i);
     if (pMatch) {
-      const num = parseInt(pMatch[1]);
-      if (num === 16 || num === 17) return `📝 P16-17 세트`;
-      if (num >= 41 && num <= 42) return `📝 P41-42 세트`;
-      if (num >= 43 && num <= 45) return `📝 P43-45 세트`;
-      return `📝 지문용`;
+      // P16_17, P41_45 등 세트형 패턴 감지
+      if (/^P16[_-]?17$/i.test(key)) return '📝 P16-17 세트';
+      if (/^P41[_-]?42$/i.test(key)) return '📝 P41-42 세트';
+      if (/^P41[_-]?45$/i.test(key)) return '📝 P41-45 세트';
+      if (/^P43[_-]?45$/i.test(key)) return '📝 P43-45 세트';
+      return '📝 지문용';
     }
 
+    // 그룹 6: 기타
     if (key.startsWith('P')) return '📝 지문용';
     return '기타';
   };

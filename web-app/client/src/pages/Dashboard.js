@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { itemsApi, logsApi, healthCheck } from '../api';
+import { formatKST } from '../utils/dateUtils';
 
 function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -173,7 +174,7 @@ function Dashboard() {
                     <td>RC{item.item_no}</td>
                     <td>{getStatusBadge(item.status)}</td>
                     <td className="text-muted" style={{ fontSize: '0.85rem' }}>
-                      {new Date(item.created_at).toLocaleString('ko-KR')}
+                      {formatKST(item.created_at)}
                     </td>
                   </tr>
                 ))}
