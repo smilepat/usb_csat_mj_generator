@@ -571,6 +571,130 @@ function Prompts() {
         </div>
       )}
 
+      {/* 자동 개선 스캔 결과 패널 */}
+      {showScanResults && scanResults && (
+        <div className="card mb-4" style={{ border: '2px solid #ff9800' }}>
+          <div className="card-header" style={{ background: '#fff3e0' }}>
+            <h3 style={{ fontSize: '1rem', color: '#e65100' }}>
+              🔍 자동 개선 스캔 결과
+            </h3>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => setShowScanResults(false)}
+            >
+              ✕ 닫기
+            </button>
+          </div>
+
+          <div style={{ padding: '16px' }}>
+            {/* 요약 통계 */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '12px',
+              marginBottom: '16px'
+            }}>
+              <div style={{
+                textAlign: 'center',
+                padding: '12px',
+                background: '#e3f2fd',
+                borderRadius: '8px'
+              }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1565c0' }}>
+                  {scanResults.scanned || 0}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#1976d2' }}>스캔된 프롬프트</div>
+              </div>
+              <div style={{
+                textAlign: 'center',
+                padding: '12px',
+                background: scanResults.needsImprovement?.length > 0 ? '#fff3e0' : '#e8f5e9',
+                borderRadius: '8px'
+              }}>
+                <div style={{
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold',
+                  color: scanResults.needsImprovement?.length > 0 ? '#e65100' : '#2e7d32'
+                }}>
+                  {scanResults.needsImprovement?.length || 0}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: scanResults.needsImprovement?.length > 0 ? '#ef6c00' : '#388e3c' }}>
+                  개선 필요
+                </div>
+              </div>
+              <div style={{
+                textAlign: 'center',
+                padding: '12px',
+                background: '#e8f5e9',
+                borderRadius: '8px'
+              }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2e7d32' }}>
+                  {(scanResults.scanned || 0) - (scanResults.needsImprovement?.length || 0)}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#388e3c' }}>양호</div>
+              </div>
+            </div>
+
+            {/* 개선 필요 프롬프트 목록 */}
+            {scanResults.needsImprovement?.length > 0 ? (
+              <div>
+                <h4 style={{ marginBottom: '12px', color: '#e65100' }}>⚠️ 개선이 필요한 프롬프트</h4>
+                <div style={{ maxHeight: '300px', overflow: 'auto' }}>
+                  {scanResults.needsImprovement.map((item, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '12px',
+                        background: '#fff8e1',
+                        borderRadius: '6px',
+                        marginBottom: '8px',
+                        border: '1px solid #ffe082',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => {
+                        const prompt = prompts.find(p => p.prompt_key === item.prompt_key);
+                        if (prompt) {
+                          handleSelect(prompt);
+                          setShowScanResults(false);
+                        }
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <strong style={{ color: '#f57c00' }}>{item.prompt_key}</strong>
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          background: item.approve_rate < 50 ? '#ffebee' : '#fff3e0',
+                          color: item.approve_rate < 50 ? '#c62828' : '#e65100'
+                        }}>
+                          승인율 {Math.round(item.approve_rate || 0)}%
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: '#795548' }}>
+                        {item.reasons?.map((reason, i) => (
+                          <div key={i}>• {reason}</div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                padding: '20px',
+                color: '#2e7d32',
+                background: '#e8f5e9',
+                borderRadius: '8px'
+              }}>
+                ✅ 모든 프롬프트가 양호한 상태입니다!
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '20px' }}>
         {/* 프롬프트 목록 */}
         <div className="card" style={{ height: 'fit-content', maxHeight: '80vh', overflow: 'auto' }}>
