@@ -797,34 +797,48 @@ function Prompts() {
         setTestProgress({ current: i + 1, total: testCount });
 
         try {
-          const response = await fetch('/api/items/generate', {
+          // 1단계: 요청 생성
+          const createResponse = await fetch('/api/items/requests', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               item_no: itemNo,
-              topic: `테스트 생성 #${i + 1}`
+              topic: `테스트 생성 #${i + 1}`,
+              prompt_id: selectedPrompt.id
             })
           });
-          const res = await response.json();
+          const createRes = await createResponse.json();
+
+          if (!createRes.success || !createRes.data?.requestId) {
+            throw new Error(createRes.error || '요청 생성 실패');
+          }
+
+          // 2단계: 문항 생성 실행
+          const generateResponse = await fetch(`/api/items/generate/${createRes.data.requestId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          const res = await generateResponse.json();
 
           if (res.success && res.data) {
             results.success++;
             results.items.push({
               index: i + 1,
               status: 'success',
-              score: res.data.metrics?.quality_score || null,
-              grade: res.data.metrics?.quality_grade || null,
-              id: res.data.id
+              score: res.data.metrics?.totalScore || res.data.metrics?.quality_score || null,
+              grade: res.data.metrics?.grade || res.data.metrics?.quality_grade || null,
+              id: res.data.requestId,
+              validationResult: res.data.validationResult
             });
-            if (res.data.metrics?.quality_score) {
-              results.scores.push(res.data.metrics.quality_score);
+            if (res.data.metrics?.totalScore) {
+              results.scores.push(res.data.metrics.totalScore);
             }
           } else {
             results.failure++;
             results.items.push({
               index: i + 1,
               status: 'failure',
-              error: res.error || '생성 실패'
+              error: res.error || res.data?.validationLog || '생성 실패'
             });
           }
         } catch (err) {
