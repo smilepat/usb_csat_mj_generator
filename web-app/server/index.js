@@ -24,7 +24,9 @@ const PORT = process.env.PORT || 3001;
 
 // 미들웨어
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: process.env.NODE_ENV === 'production'
+    ? process.env.CLIENT_URL || true
+    : 'http://localhost:3000',
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
