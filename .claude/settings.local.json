@@ -32,7 +32,9 @@
       "Bash(git -C /c/csat_mj_generator log --oneline -15)",
       "Bash(git -C /c/csat_mj_generator diff HEAD~3 HEAD --stat)",
       "Bash(cmd /c \"cd /d c:\\\\csat_mj_generator\\\\web-app && npm start\")",
-      "Bash(/c/csat_mj_generator/web-app/client/node_modules/.bin/react-scripts start)"
+      "Bash(/c/csat_mj_generator/web-app/client/node_modules/.bin/react-scripts start)",
+      "Bash(where powershell)",
+      "Bash(powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"\n$source = ''E:\\\\csat_mj_generator\\\\csat_mj_generator''\n$destination = ''E:\\\\csat_mj_generator\\\\csat_mj_generator.zip''\n\nif \\(Test-Path $destination\\) { Remove-Item $destination -Force }\n\n$tempDir = Join-Path $env:TEMP ''csat_zip_temp''\nif \\(Test-Path $tempDir\\) { Remove-Item $tempDir -Recurse -Force }\nNew-Item -ItemType Directory -Path $tempDir -Force | Out-Null\n\n$items = Get-ChildItem -Path $source -Recurse | Where-Object { \n    $_FullName -notlike ''*\\\\node_modules\\\\*'' -and \n    $_FullName -notlike ''*\\\\.git\\\\*'' -and\n    $_Name -ne ''node_modules'' -and\n    $_Name -ne ''.git''\n}\n\nforeach \\($item in $items\\) {\n    $relativePath = $item.FullName.Substring\\($source.Length + 1\\)\n    $targetPath = Join-Path $tempDir $relativePath\n    \n    if \\($item.PSIsContainer\\) {\n        New-Item -ItemType Directory -Path $targetPath -Force -ErrorAction SilentlyContinue | Out-Null\n    } else {\n        $targetDir = Split-Path $targetPath -Parent\n        if \\(!\\(Test-Path $targetDir\\)\\) {\n            New-Item -ItemType Directory -Path $targetDir -Force | Out-Null\n        }\n        Copy-Item $item.FullName -Destination $targetPath -Force\n    }\n}\n\nCompress-Archive -Path \\(Join-Path $tempDir ''*''\\) -DestinationPath $destination -Force\nRemove-Item $tempDir -Recurse -Force\n\nWrite-Host ''ZIP created:'' $destination\n\\(Get-Item $destination\\).Length / 1MB\n\")"
     ]
   }
 }
