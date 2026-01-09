@@ -17,7 +17,10 @@ const {
   validateChartItem,
   getChartData,
   validateItemSet,
-  checkSetPattern
+  checkSetPattern,
+  validateFormat,
+  validateListeningItem,
+  isListeningItem
 } = require('./validators');
 const { saveItemMetrics } = require('./metricsService');
 
@@ -117,18 +120,46 @@ async function generateItemPipeline(req) {
         }
       }
 
+      // LC1-17: 듣기 문항
+      if (isListeningItem(req.itemNo)) {
+        const vl = validateListeningItem(normalized, req.itemNo);
+        if (!vl || vl.pass === false) {
+          throw new Error(vl && vl.log ? vl.log : `LC${req.itemNo} Listening Validation 실패`);
+        }
+        // 경고가 있으면 로그에 기록
+        if (vl.warnings && vl.warnings.length > 0) {
+          logger.warn('LC 문항 경고', req.requestId, vl.warnings.join('; '));
+        }
+      }
+
+      // 7) 형식 검증 (LLM 미사용 - 규칙/형식 검사)
+      const formatResult = validateFormat(normalized, req.itemNo);
+      if (!formatResult.pass) {
+        // 형식 오류는 FAIL 처리
+        throw new Error('형식 검증 실패: ' + formatResult.errors.join('; '));
+      }
+      // 형식 경고가 있으면 로그에 기록
+      if (formatResult.warnings && formatResult.warnings.length > 0) {
+        logger.warn('형식 검증 경고', req.requestId, formatResult.warnings.join('; '));
+      }
+
       // 성공 히스토리 저장
-      saveGenerationHistory(req.requestId, attempt, raw, normalized, 'PASS', 'OK', null, null);
+      const validationLog = formatResult.warnings.length > 0
+        ? `OK (경고 ${formatResult.warnings.length}건)`
+        : 'OK';
+      saveGenerationHistory(req.requestId, attempt, raw, normalized, 'PASS', validationLog, null, null);
 
       return {
         rawJson: raw,
         normalized: normalized,
         validationResult: 'PASS',
-        validationLog: 'OK',
+        validationLog: validationLog,
+        validationWarnings: formatResult.warnings || [],
         repairLog: '',
         difficultyEst: normalized.difficultyEst || '중(추정)',
         distractorScore: normalized.distractorScore || '중간',
-        finalJson: normalized
+        finalJson: normalized,
+        formatStats: formatResult.stats || {}
       };
 
     } catch (e) {
