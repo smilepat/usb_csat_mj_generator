@@ -12,6 +12,11 @@ const logger = require('../services/logger');
 const { validatePromptBundle, generateSuggestions } = require('../services/promptValidator');
 const { updatePromptPerformance } = require('../services/promptMetricsService');
 const { getMetricsByRequestId } = require('../services/metricsService');
+const {
+  evaluateItem,
+  evaluateItemFull,
+  quickItemCheck
+} = require('../services/itemEvaluator');
 
 /**
  * GET /api/items/requests
@@ -471,6 +476,128 @@ router.get('/outputs', (req, res) => {
       }
     });
   } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/items/evaluate/:id
+ * 생성된 문항에 대한 LLM 품질 평가
+ */
+router.post('/evaluate/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { skipLLM = false } = req.body;
+    const db = getDb();
+
+    // 요청 조회
+    const request = db.prepare('SELECT * FROM item_requests WHERE request_id = ?').get(id);
+    if (!request) {
+      return res.status(404).json({ success: false, error: '요청을 찾을 수 없습니다.' });
+    }
+
+    // 생성된 문항 조회
+    const output = db.prepare('SELECT * FROM item_output WHERE request_id = ?').get(id);
+    if (!output) {
+      return res.status(400).json({ success: false, error: '생성된 문항이 없습니다. 먼저 문항을 생성하세요.' });
+    }
+
+    // 문항 객체 구성
+    const itemObj = {
+      passage: output.passage || '',
+      question: output.question || '',
+      options: [
+        output.option_1,
+        output.option_2,
+        output.option_3,
+        output.option_4,
+        output.option_5
+      ],
+      answer: output.answer,
+      explanation: output.explanation || ''
+    };
+
+    // 평가 실행
+    const evalResult = await evaluateItemFull(itemObj, request.item_no, skipLLM);
+
+    if (!evalResult.success) {
+      return res.status(500).json({ success: false, error: evalResult.error });
+    }
+
+    // 평가 결과 저장 (item_metrics 테이블에 업데이트)
+    try {
+      db.prepare(`
+        UPDATE item_metrics
+        SET llm_evaluation = ?, llm_score = ?, llm_grade = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE request_id = ?
+      `).run(
+        JSON.stringify(evalResult.data),
+        evalResult.data.total_score || 0,
+        evalResult.data.grade || '',
+        id
+      );
+    } catch (dbError) {
+      logger.warn('LLM 평가 결과 저장 실패', id, dbError.message);
+    }
+
+    res.json({
+      success: true,
+      data: evalResult.data
+    });
+  } catch (error) {
+    logger.error('문항 평가 오류', req.params.id, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/items/evaluate-quick/:id
+ * 생성된 문항에 대한 빠른 규칙 기반 검사 (LLM 미사용)
+ */
+router.post('/evaluate-quick/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDb();
+
+    // 요청 조회
+    const request = db.prepare('SELECT * FROM item_requests WHERE request_id = ?').get(id);
+    if (!request) {
+      return res.status(404).json({ success: false, error: '요청을 찾을 수 없습니다.' });
+    }
+
+    // 생성된 문항 조회
+    const output = db.prepare('SELECT * FROM item_output WHERE request_id = ?').get(id);
+    if (!output) {
+      return res.status(400).json({ success: false, error: '생성된 문항이 없습니다.' });
+    }
+
+    // 문항 객체 구성
+    const itemObj = {
+      passage: output.passage || '',
+      question: output.question || '',
+      options: [
+        output.option_1,
+        output.option_2,
+        output.option_3,
+        output.option_4,
+        output.option_5
+      ],
+      answer: output.answer,
+      explanation: output.explanation || ''
+    };
+
+    // 빠른 검사 실행
+    const quickResult = quickItemCheck(itemObj, request.item_no);
+
+    res.json({
+      success: true,
+      data: {
+        item_no: request.item_no,
+        ...quickResult
+      }
+    });
+  } catch (error) {
+    logger.error('빠른 평가 오류', req.params.id, error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
