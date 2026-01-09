@@ -13,7 +13,7 @@ VS Code + Claude Code 환경에서 재구성한 개선용 앱입니다.
 |------|------|
 | **로컬 저장소** | `C:\csat_mj_generator` |
 | **GitHub Repository** | https://github.com/smilepat/csat_mj_generator |
-| **Replit 앱** | https://replit.com/@PatHwang/CSATMJ-Generator |
+| **Replit 앱** | 사용하지 않음 |
 | **앱 명칭** | 수능문항생성-검증-개선 시스템 |
 
 > **Note**: 이 GitHub 저장소는 Replit 앱과 연결되어 있습니다. Replit에서 직접 앱을 실행하고 편집할 수 있습니다.

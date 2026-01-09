@@ -3,8 +3,14 @@
  * 검증기 모듈 통합 export
  */
 
-const { validateCommon } = require('./common');
-const { countUnderlinedSegments, validateGrammarItem } = require('./grammar');
+const { validateCommon, getFieldMappings, FIELD_MAPPINGS } = require('./common');
+const { 
+  countUnderlinedSegments, 
+  countUnderlinedSegmentsLegacy,
+  validateGrammarItem,
+  getSupportedFormats,
+  UNDERLINE_FORMATS 
+} = require('./grammar');
 const { countBlanks, checkPassageDiffApprox, validateGapItem } = require('./gap');
 const { getChartData, validateChartItem } = require('./chart');
 const { ALLOWED_SET_PATTERNS, checkSetPattern, validateItemSet } = require('./set');
@@ -22,10 +28,15 @@ const {
 module.exports = {
   // Common
   validateCommon,
+  getFieldMappings,
+  FIELD_MAPPINGS,
 
   // Grammar (RC29)
   countUnderlinedSegments,
+  countUnderlinedSegmentsLegacy,
   validateGrammarItem,
+  getSupportedFormats,
+  UNDERLINE_FORMATS,
 
   // Gap (RC31-33)
   countBlanks,
