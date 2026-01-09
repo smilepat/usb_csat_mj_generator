@@ -17,9 +17,18 @@ const {
   validateChartItem,
   getChartData,
   validateItemSet,
-  checkSetPattern
+  checkSetPattern,
+  validateFormat,
+  validateListeningItem,
+  isListeningItem
 } = require('./validators');
 const { saveItemMetrics } = require('./metricsService');
+const {
+  evaluateItemFull,
+  quickItemCheck,
+  shouldRegenerate,
+  getRegenerationReason
+} = require('./itemEvaluator');
 
 /**
  * 단일 문항 생성 파이프라인
@@ -117,18 +126,86 @@ async function generateItemPipeline(req) {
         }
       }
 
+      // LC1-17: 듣기 문항
+      if (isListeningItem(req.itemNo)) {
+        const vl = validateListeningItem(normalized, req.itemNo);
+        if (!vl || vl.pass === false) {
+          throw new Error(vl && vl.log ? vl.log : `LC${req.itemNo} Listening Validation 실패`);
+        }
+        // 경고가 있으면 로그에 기록
+        if (vl.warnings && vl.warnings.length > 0) {
+          logger.warn('LC 문항 경고', req.requestId, vl.warnings.join('; '));
+        }
+      }
+
+      // 7) 형식 검증 (LLM 미사용 - 규칙/형식 검사)
+      const formatResult = validateFormat(normalized, req.itemNo);
+      if (!formatResult.pass) {
+        // 형식 오류는 FAIL 처리
+        throw new Error('형식 검증 실패: ' + formatResult.errors.join('; '));
+      }
+      // 형식 경고가 있으면 로그에 기록
+      if (formatResult.warnings && formatResult.warnings.length > 0) {
+        logger.warn('형식 검증 경고', req.requestId, formatResult.warnings.join('; '));
+      }
+
+      // 8) 2차 LLM 기반 내용 품질 평가 (규칙 기반 통과 후)
+      // 설정에서 LLM 평가 활성화 여부 확인
+      const enableLLMEvaluation = config.ENABLE_LLM_EVALUATION !== 'false';
+      let itemEvaluation = null;
+      let shouldRetry = false;
+
+      if (enableLLMEvaluation) {
+        // 규칙 기반 빠른 검사 먼저 수행
+        const quickCheck = quickItemCheck(normalized, req.itemNo);
+
+        if (!quickCheck.passed) {
+          // 규칙 기반에서 심각한 문제 발견 시 재시도
+          logger.warn('문항 빠른 검사 실패', req.requestId, quickCheck.issues.join('; '));
+          throw new Error('문항 내용 검사 실패: ' + quickCheck.issues.join('; '));
+        }
+
+        // LLM 평가 실행 (마지막 시도에서만 또는 설정에 따라)
+        const runFullEval = attempt === maxRetry || config.ALWAYS_RUN_LLM_EVAL === 'true';
+
+        if (runFullEval) {
+          try {
+            const evalResult = await evaluateItemFull(normalized, req.itemNo, false);
+            if (evalResult.success) {
+              itemEvaluation = evalResult.data;
+
+              // 재생성 필요 여부 확인
+              if (shouldRegenerate(evalResult) && attempt < maxRetry) {
+                const reason = getRegenerationReason(evalResult);
+                logger.warn('LLM 평가 재생성 권고', req.requestId, reason);
+                throw new Error('LLM 평가 재생성 권고: ' + reason);
+              }
+            }
+          } catch (evalError) {
+            // LLM 평가 실패는 경고만 (문항 생성 자체는 성공으로 처리)
+            logger.warn('LLM 평가 실패', req.requestId, evalError.message);
+          }
+        }
+      }
+
       // 성공 히스토리 저장
-      saveGenerationHistory(req.requestId, attempt, raw, normalized, 'PASS', 'OK', null, null);
+      const validationLog = formatResult.warnings.length > 0
+        ? `OK (경고 ${formatResult.warnings.length}건)`
+        : 'OK';
+      saveGenerationHistory(req.requestId, attempt, raw, normalized, 'PASS', validationLog, null, null);
 
       return {
         rawJson: raw,
         normalized: normalized,
         validationResult: 'PASS',
-        validationLog: 'OK',
+        validationLog: validationLog,
+        validationWarnings: formatResult.warnings || [],
         repairLog: '',
         difficultyEst: normalized.difficultyEst || '중(추정)',
         distractorScore: normalized.distractorScore || '중간',
-        finalJson: normalized
+        finalJson: normalized,
+        formatStats: formatResult.stats || {},
+        itemEvaluation: itemEvaluation
       };
 
     } catch (e) {

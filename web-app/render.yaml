@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: csat-item-generator
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && cd client && npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PROVIDER
+        value: gemini
+      - key: GEMINI_MODEL
+        value: gemini-2.5-pro
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini
+      - key: TEMP_BASE
+        value: "0.4"
+      - key: MAX_RETRY
+        value: "3"
+      - key: LOG_LEVEL
+        value: INFO
