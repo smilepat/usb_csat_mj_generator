@@ -175,13 +175,266 @@ const PASSAGE_PROMPT_RULES = [
 
 /**
  * ============================================================
- * 문항 번호별 키워드 매핑 (18번 ~ 45번)
+ * 문항 번호별 키워드 매핑 (LC 1-17, RC 18-45)
  * - requiredAny: 하나라도 매칭되면 통과
  * - requiredAll: 모두 매칭되어야 통과 (필요시 사용)
  * - additionalRules: 추가 세부 검증 규칙
  * ============================================================
  */
 const ITEM_KEYWORD_MAP = {
+  // ========== LC 1번: 짧은 대화 목적 ==========
+  1: {
+    requiredAny: [/대화|dialogue|목적|purpose|듣기|listen/i],
+    message: "LC1번 프롬프트에 '대화 목적/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(짧은|short|간단한|brief)/i.test(text),
+        message: "LC1번은 짧은 대화 형식이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+      {
+        check: (text) => /(음성|audio|스크립트|script|대본)/i.test(text),
+        message: "LC1번 듣기 스크립트 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 2번: 의견/주장 ==========
+  2: {
+    requiredAny: [/의견|opinion|주장|claim|생각|think|듣기|listen/i],
+    message: "LC2번 프롬프트에 '의견/주장/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(화자|speaker|말하는\s*사람)/i.test(text),
+        message: "LC2번 화자 의견 파악 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 3번: 대화 주제 ==========
+  3: {
+    requiredAny: [/주제|topic|대화.*내용|what.*about|듣기|listen/i],
+    message: "LC3번 프롬프트에 '대화 주제/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(무엇|what|주제|topic)/i.test(text),
+        message: "LC3번 대화 주제 파악 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 4번: 그림 내용 일치 ==========
+  4: {
+    requiredAny: [/그림|picture|image|일치|match|듣기|listen/i],
+    message: "LC4번 프롬프트에 '그림 일치/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(시각|visual|묘사|describe)/i.test(text),
+        message: "LC4번 그림 묘사 일치 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 5번: 화자 할 일 ==========
+  5: {
+    requiredAny: [/할\s*일|task|action|무엇.*할|what.*do|듣기|listen/i],
+    message: "LC5번 프롬프트에 '할 일/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(남자|여자|man|woman|화자|speaker)/i.test(text),
+        message: "LC5번 특정 화자의 할 일 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 6번: 금액/숫자 ==========
+  6: {
+    requiredAny: [/금액|price|cost|숫자|number|얼마|how\s*much|듣기|listen/i],
+    message: "LC6번 프롬프트에 '금액/숫자/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(계산|calculate|총액|total|할인|discount)/i.test(text),
+        message: "LC6번 금액 계산 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 7번: 이유 ==========
+  7: {
+    requiredAny: [/이유|reason|why|왜|듣기|listen/i],
+    message: "LC7번 프롬프트에 '이유/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(~않|not|거절|refuse|취소|cancel)/i.test(text),
+        message: "LC7번 행동의 이유 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 8번: 언급되지 않은 것 ==========
+  8: {
+    requiredAny: [/언급|mention|not.*mention|않은|듣기|listen/i],
+    message: "LC8번 프롬프트에 '언급되지 않은 것/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(제외|except|않은|not)/i.test(text),
+        message: "LC8번 '언급되지 않은 것' 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 9번: 두 사람 관계 ==========
+  9: {
+    requiredAny: [/관계|relationship|두\s*사람|between|듣기|listen/i],
+    message: "LC9번 프롬프트에 '두 사람 관계/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(직업|job|역할|role|의사|doctor|선생|teacher)/i.test(text),
+        message: "LC9번 직업/역할 관계 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 10번: 내용 일치 ==========
+  10: {
+    requiredAny: [/일치|match|내용|content|correct|듣기|listen/i],
+    message: "LC10번 프롬프트에 '내용 일치/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(사실|fact|정보|information)/i.test(text),
+        message: "LC10번 사실 정보 일치 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 11번: 도표 (듣기) ==========
+  11: {
+    requiredAny: [/도표|chart|table|graph|듣기|listen/i],
+    message: "LC11번 프롬프트에 '도표/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(데이터|data|수치|figure|숫자|number)/i.test(text),
+        message: "LC11번 도표 데이터 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 12번: 적절한 응답 (짧은 대화) ==========
+  12: {
+    requiredAny: [/응답|response|대답|answer|reply|듣기|listen/i],
+    message: "LC12번 프롬프트에 '적절한 응답/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(마지막|last|다음|next|이어질)/i.test(text),
+        message: "LC12번 다음에 이어질 응답 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 13번: 적절한 응답 (짧은 대화) ==========
+  13: {
+    requiredAny: [/응답|response|대답|answer|reply|듣기|listen/i],
+    message: "LC13번 프롬프트에 '적절한 응답/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(마지막|last|다음|next|이어질)/i.test(text),
+        message: "LC13번 다음에 이어질 응답 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 14번: 적절한 응답 (긴 대화) ==========
+  14: {
+    requiredAny: [/응답|response|대답|answer|reply|듣기|listen/i],
+    message: "LC14번 프롬프트에 '적절한 응답/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(긴\s*대화|long.*dialogue|상황|situation)/i.test(text),
+        message: "LC14번 긴 대화 상황 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 15번: 상황에 적절한 말 ==========
+  15: {
+    requiredAny: [/상황|situation|적절한\s*말|appropriate|듣기|listen/i],
+    message: "LC15번 프롬프트에 '상황에 적절한 말/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(상황\s*설명|context|배경)/i.test(text),
+        message: "LC15번 상황 설명 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 16번: 세트 문항 (담화 1) ==========
+  16: {
+    requiredAny: [/담화|discourse|lecture|강의|세트|set|듣기|listen/i],
+    message: "LC16번 프롬프트에 '담화/세트/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(세트|set|연계|연결|16.*17|두\s*문항)/i.test(text),
+        message: "LC16-17번 세트 문항 구조 지침이 필요합니다.",
+        severity: SEVERITY.ERROR,
+      },
+      {
+        check: (text) => /(긴\s*담화|long.*discourse|강연|lecture)/i.test(text),
+        message: "LC16번 긴 담화 형식 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
+  // ========== LC 17번: 세트 문항 (담화 2) ==========
+  17: {
+    requiredAny: [/담화|discourse|lecture|강의|세트|set|듣기|listen/i],
+    message: "LC17번 프롬프트에 '담화/세트/듣기' 관련 단서가 부족합니다.",
+    severity: SEVERITY.WARN,
+    additionalRules: [
+      {
+        check: (text) => /(세트|set|연계|연결|16.*17|두\s*문항)/i.test(text),
+        message: "LC16-17번 세트 문항 구조 지침이 필요합니다.",
+        severity: SEVERITY.ERROR,
+      },
+      {
+        check: (text) => /(세부\s*내용|detail|구체적)/i.test(text),
+        message: "LC17번 세부 내용 파악 지침이 권장됩니다.",
+        severity: SEVERITY.WARN,
+      },
+    ],
+  },
+
   // ========== 18번: 글의 목적 ==========
   18: {
     requiredAny: [/목적|purpose|의도|intention|why.*write|글.*쓴\s*이유/i],
@@ -482,13 +735,13 @@ const ITEM_KEYWORD_MAP = {
     additionalRules: [
       {
         check: (text) => /(①|②|③|④|⑤|\[1\]|\[2\]|\[3\]|\[4\]|\[5\])/i.test(text),
-        message: "35번 문장 번호 표시 형식 지침이 권장됩니다.",
-        severity: SEVERITY.WARN,
+        message: "35번 문장 번호 표시 형식 지침이 필요합니다(필수).",
+        severity: SEVERITY.ERROR,
       },
       {
-        check: (text) => /(5\s*문장|five\s*sentences)/i.test(text),
-        message: "35번 5개 문장 구조 지침이 권장됩니다.",
-        severity: SEVERITY.WARN,
+        check: (text) => /(5\s*문장|five\s*sentences|5개)/i.test(text),
+        message: "35번 5개 문장 구조 지침이 필요합니다(필수).",
+        severity: SEVERITY.ERROR,
       },
     ],
   },
