@@ -448,9 +448,12 @@ async function initDatabase() {
 
   // 기본 설정 삽입 (Google Sheets CONFIG 시트 기준)
   const defaultConfigs = [
-    ['PROVIDER', 'gemini', 'gemini / openai 선택 (기본값: gemini)'],
+    ['PROVIDER', 'azure', 'gemini / openai / azure 선택 (기본값: azure)'],
     ['GEMINI_MODEL', 'gemini-2.5-pro', 'Gemini 모델 ID (v1beta 기준 models/… 중 뒷부분만)'],
     ['OPENAI_MODEL', 'gpt-4.1-mini', 'OpenAI 모델 이름'],
+    ['AZURE_OPENAI_ENDPOINT', '', 'Azure OpenAI 엔드포인트 URL'],
+    ['AZURE_OPENAI_DEPLOYMENT', '', 'Azure OpenAI 배포 이름'],
+    ['AZURE_OPENAI_API_VERSION', '2024-12-01-preview', 'Azure OpenAI API 버전'],
     ['TEMP_BASE', '0.4', '공통 temperature'],
     ['TEMP_HIGH', '0.7', '높은 temperature (창의적 생성용)'],
     ['MAX_RETRY', '3', 'retry 횟수'],

@@ -20,8 +20,10 @@ async function callLLM(systemText, userText, config) {
     return await callGemini(systemText, userText, config);
   } else if (provider === 'openai') {
     return await callOpenAI(systemText, userText, config);
+  } else if (provider === 'azure') {
+    return await callAzureOpenAI(systemText, userText, config);
   } else {
-    throw new Error(`지원하지 않는 PROVIDER: ${provider}. 'gemini' 또는 'openai'를 사용하세요.`);
+    throw new Error(`지원하지 않는 PROVIDER: ${provider}. 'gemini', 'openai', 또는 'azure'를 사용하세요.`);
   }
 }
 
@@ -110,6 +112,55 @@ async function callOpenAI(systemText, userText, config) {
 }
 
 /**
+ * Azure OpenAI API 호출
+ */
+async function callAzureOpenAI(systemText, userText, config) {
+  const endpoint = config.AZURE_OPENAI_ENDPOINT || process.env.AZURE_OPENAI_ENDPOINT;
+  const apiKey = config.AZURE_OPENAI_API_KEY || process.env.AZURE_OPENAI_API_KEY;
+  const deployment = config.AZURE_OPENAI_DEPLOYMENT || process.env.AZURE_OPENAI_DEPLOYMENT;
+  const apiVersion = config.AZURE_OPENAI_API_VERSION || process.env.AZURE_OPENAI_API_VERSION || '2024-12-01-preview';
+
+  if (!endpoint) {
+    throw new Error('AZURE_OPENAI_ENDPOINT가 설정되지 않았습니다.');
+  }
+  if (!apiKey) {
+    throw new Error('AZURE_OPENAI_API_KEY가 설정되지 않았습니다.');
+  }
+  if (!deployment) {
+    throw new Error('AZURE_OPENAI_DEPLOYMENT가 설정되지 않았습니다.');
+  }
+
+  const temperature = parseFloat(config.TEMP_BASE || '0.4');
+
+  // Azure OpenAI URL 형식: {endpoint}/openai/deployments/{deployment}/chat/completions?api-version={api-version}
+  const baseUrl = endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint;
+  const url = `${baseUrl}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
+
+  const payload = {
+    temperature: temperature,
+    messages: [
+      { role: 'system', content: systemText },
+      { role: 'user', content: userText }
+    ]
+  };
+
+  const response = await httpRequest(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': apiKey
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.choices || !response.choices[0]?.message?.content) {
+    throw new Error('Azure OpenAI 응답 형식이 예상과 다릅니다: ' + JSON.stringify(response).slice(0, 300));
+  }
+
+  return response.choices[0].message.content;
+}
+
+/**
  * HTTP 요청 유틸리티
  */
 function httpRequest(url, options) {
@@ -157,5 +208,6 @@ function httpRequest(url, options) {
 module.exports = {
   callLLM,
   callGemini,
-  callOpenAI
+  callOpenAI,
+  callAzureOpenAI
 };
