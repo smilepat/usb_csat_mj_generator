@@ -135,7 +135,18 @@ button {
   border-radius: 4px;
   font-size: 0.9rem;
   font-weight: 500;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 버튼 클릭 효과 */
+.btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.btn:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .btn-primary {
@@ -143,8 +154,12 @@ button {
   color: white;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: var(--primary-dark);
+}
+
+.btn-primary:active:not(:disabled) {
+  background: #104a8e;
 }
 
 .btn-secondary {
@@ -152,8 +167,12 @@ button {
   color: var(--text-primary);
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
   background: #e8eaed;
+}
+
+.btn-secondary:active:not(:disabled) {
+  background: #dfe1e5;
 }
 
 .btn-success {
@@ -161,8 +180,25 @@ button {
   color: white;
 }
 
-.btn-success:hover {
+.btn-success:hover:not(:disabled) {
   background: #2d9249;
+}
+
+.btn-success:active:not(:disabled) {
+  background: #27813f;
+}
+
+.btn-warning {
+  background: var(--warning-color);
+  color: #000;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: #f9ab00;
+}
+
+.btn-warning:active:not(:disabled) {
+  background: #ea9a00;
 }
 
 .btn-danger {
@@ -170,8 +206,12 @@ button {
   color: white;
 }
 
-.btn-danger:hover {
+.btn-danger:hover:not(:disabled) {
   background: #d33426;
+}
+
+.btn-danger:active:not(:disabled) {
+  background: #c5221f;
 }
 
 .btn-sm {
@@ -182,6 +222,8 @@ button {
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* 테이블 */

@@ -11,6 +11,7 @@ function PromptPreview({ data, onEdit, onConfirm, onCancel, onApplySuggestions }
   const [editedSystem, setEditedSystem] = useState('');
   const [editedUser, setEditedUser] = useState('');
   const [applyingFix, setApplyingFix] = useState(false);
+  const [buttonScale, setButtonScale] = useState(1);
 
   if (!data) return null;
 
@@ -44,6 +45,10 @@ function PromptPreview({ data, onEdit, onConfirm, onCancel, onApplySuggestions }
     if (!window.confirm('AI가 경고와 제안을 분석하여 프롬프트를 자동으로 개선합니다.\n\n계속하시겠습니까?')) {
       return;
     }
+
+    // 버튼 클릭 애니메이션
+    setButtonScale(0.9);
+    setTimeout(() => setButtonScale(1), 150);
 
     setApplyingFix(true);
     try {
@@ -89,7 +94,15 @@ function PromptPreview({ data, onEdit, onConfirm, onCancel, onApplySuggestions }
                 className="btn btn-sm btn-warning"
                 onClick={handleApplySuggestions}
                 disabled={applyingFix}
-                style={{ fontSize: '0.85rem' }}
+                style={{
+                  fontSize: '0.85rem',
+                  transition: 'all 0.2s ease',
+                  transform: applyingFix ? 'scale(0.95)' : 'scale(1)',
+                  cursor: applyingFix ? 'wait' : 'pointer'
+                }}
+                onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+                onMouseUp={(e) => !applyingFix && (e.currentTarget.style.transform = 'scale(1)')}
+                onMouseLeave={(e) => !applyingFix && (e.currentTarget.style.transform = 'scale(1)')}
               >
                 {applyingFix ? '🔄 적용 중...' : '🤖 AI 자동 수정'}
               </button>
@@ -106,7 +119,14 @@ function PromptPreview({ data, onEdit, onConfirm, onCancel, onApplySuggestions }
       {/* 제안 목록 */}
       {suggestions && suggestions.length > 0 && (
         <div className="card" style={{ borderLeft: '4px solid var(--primary-color)', marginBottom: '16px' }}>
-          <h4 style={{ color: 'var(--primary-color)', marginBottom: '8px' }}>💡 제안</h4>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <h4 style={{ color: 'var(--primary-color)', margin: 0 }}>💡 제안</h4>
+            {onApplySuggestions && warnings && warnings.length > 0 && (
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                👆 위의 "AI 자동 수정" 버튼으로 제안을 적용할 수 있습니다
+              </span>
+            )}
+          </div>
           <ul style={{ margin: 0, paddingLeft: '20px' }}>
             {suggestions.map((sug, idx) => (
               <li key={idx}>{sug}</li>
