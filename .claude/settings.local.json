@@ -28,7 +28,9 @@
       "Bash(powershell.exe:*)",
       "Bash(cmd:*)",
       "Bash(mkdir:*)",
-      "Bash(sleep:*)"
+      "Bash(sleep:*)",
+      "Bash(del nul)",
+      "Bash(tar:*)"
     ]
   }
 }
