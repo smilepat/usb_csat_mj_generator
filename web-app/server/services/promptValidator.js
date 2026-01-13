@@ -121,6 +121,10 @@ const FORBIDDEN_PATTERNS = [
 
 /**
  * MASTER_PROMPT 참조 여부 검증
+ *
+ * 주의: MASTER_PROMPT는 시스템(promptBuilder.js)에서 자동으로 병합되므로
+ * ITEM_PROMPT에 명시적으로 참조할 필요가 없습니다.
+ * 이 검증은 정보 제공용이며, 경고만 표시합니다.
  */
 function validateMasterPromptReference(promptText) {
   const errors = [];
@@ -129,8 +133,10 @@ function validateMasterPromptReference(promptText) {
   // MASTER_PROMPT 또는 시스템 프롬프트 참조 확인
   const hasMasterRef = /master|시스템|system|공통/i.test(promptText);
 
+  // 참조가 없어도 시스템이 자동 병합하므로 정보성 메시지만 표시
   if (!hasMasterRef) {
-    warnings.push('[A1] MASTER_PROMPT 참조가 명시되지 않았습니다.');
+    // 경고 제거: 시스템이 자동으로 MASTER_PROMPT를 병합하므로 문제 없음
+    // warnings.push('[A1] MASTER_PROMPT 참조가 명시되지 않았습니다.');
   }
 
   return { errors, warnings };
