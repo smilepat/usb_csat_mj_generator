@@ -8,13 +8,53 @@ const logger = require('./logger');
 
 /**
  * MASTER_PROMPT 읽기
+ *
+ * 우선순위:
+ * 1. active=1 + is_default=1 (최우선)
+ * 2. active=1
+ * 3. is_default=1
+ * 4. 아무거나
  */
 function readMasterPrompt() {
   const db = getDb();
-  const row = db.prepare(`
+
+  // 1. 활성화 + 기본값 프롬프트 찾기 (최우선)
+  let row = db.prepare(`
     SELECT prompt_text FROM prompts
-    WHERE prompt_key = 'MASTER_PROMPT' AND active = 1
+    WHERE prompt_key = 'MASTER_PROMPT' AND active = 1 AND is_default = 1
+    ORDER BY updated_at DESC
+    LIMIT 1
   `).get();
+
+  // 2. 활성화된 프롬프트 찾기
+  if (!row) {
+    row = db.prepare(`
+      SELECT prompt_text FROM prompts
+      WHERE prompt_key = 'MASTER_PROMPT' AND active = 1
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get();
+  }
+
+  // 3. 기본값 프롬프트 찾기 (비활성화 포함)
+  if (!row) {
+    row = db.prepare(`
+      SELECT prompt_text FROM prompts
+      WHERE prompt_key = 'MASTER_PROMPT' AND is_default = 1
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get();
+  }
+
+  // 4. 아무 프롬프트나 찾기
+  if (!row) {
+    row = db.prepare(`
+      SELECT prompt_text FROM prompts
+      WHERE prompt_key = 'MASTER_PROMPT'
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get();
+  }
 
   if (!row || !row.prompt_text) {
     throw new Error('MASTER_PROMPT를 찾을 수 없습니다.');
@@ -42,6 +82,16 @@ function itemNoToPromptKey(itemNo) {
 
 /**
  * ITEM_PROMPT 읽기
+ *
+ * 우선순위:
+ * 1. 새 형식 키 (RC18) + active=1 + is_default=1
+ * 2. 새 형식 키 (RC18) + active=1
+ * 3. 새 형식 키 (RC18) + is_default=1
+ * 4. 새 형식 키 (RC18)
+ * 5. 기존 형식 키 (18) + active=1 + is_default=1
+ * 6. 기존 형식 키 (18) + active=1
+ * 7. 기존 형식 키 (18) + is_default=1
+ * 8. 기존 형식 키 (18)
  */
 function readItemPrompt(itemNo) {
   const db = getDb();
@@ -50,33 +100,81 @@ function readItemPrompt(itemNo) {
   const newKey = itemNoToPromptKey(itemNo);
   const oldKey = String(itemNo);
 
-  // 1. 새 형식 키로 활성화된 프롬프트 찾기
+  // 1. 새 형식 키로 활성화 + 기본값 프롬프트 찾기 (최우선)
   let row = db.prepare(`
     SELECT prompt_text FROM prompts
-    WHERE prompt_key = ? AND active = 1
+    WHERE prompt_key = ? AND active = 1 AND is_default = 1
+    ORDER BY updated_at DESC
+    LIMIT 1
   `).get(newKey);
 
-  // 2. 새 형식 키로 비활성화된 프롬프트 찾기
-  if (!row) {
-    row = db.prepare(`
-      SELECT prompt_text FROM prompts
-      WHERE prompt_key = ?
-    `).get(newKey);
-  }
-
-  // 3. 기존 형식 키로 활성화된 프롬프트 찾기
+  // 2. 새 형식 키로 활성화된 프롬프트 찾기
   if (!row) {
     row = db.prepare(`
       SELECT prompt_text FROM prompts
       WHERE prompt_key = ? AND active = 1
-    `).get(oldKey);
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get(newKey);
   }
 
-  // 4. 기존 형식 키로 비활성화된 프롬프트 찾기
+  // 3. 새 형식 키로 기본값 프롬프트 찾기 (비활성화 포함)
+  if (!row) {
+    row = db.prepare(`
+      SELECT prompt_text FROM prompts
+      WHERE prompt_key = ? AND is_default = 1
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get(newKey);
+  }
+
+  // 4. 새 형식 키로 아무 프롬프트나 찾기
   if (!row) {
     row = db.prepare(`
       SELECT prompt_text FROM prompts
       WHERE prompt_key = ?
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get(newKey);
+  }
+
+  // 5. 기존 형식 키로 활성화 + 기본값 프롬프트 찾기
+  if (!row) {
+    row = db.prepare(`
+      SELECT prompt_text FROM prompts
+      WHERE prompt_key = ? AND active = 1 AND is_default = 1
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get(oldKey);
+  }
+
+  // 6. 기존 형식 키로 활성화된 프롬프트 찾기
+  if (!row) {
+    row = db.prepare(`
+      SELECT prompt_text FROM prompts
+      WHERE prompt_key = ? AND active = 1
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get(oldKey);
+  }
+
+  // 7. 기존 형식 키로 기본값 프롬프트 찾기 (비활성화 포함)
+  if (!row) {
+    row = db.prepare(`
+      SELECT prompt_text FROM prompts
+      WHERE prompt_key = ? AND is_default = 1
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get(oldKey);
+  }
+
+  // 8. 기존 형식 키로 아무 프롬프트나 찾기
+  if (!row) {
+    row = db.prepare(`
+      SELECT prompt_text FROM prompts
+      WHERE prompt_key = ?
+      ORDER BY updated_at DESC
+      LIMIT 1
     `).get(oldKey);
   }
 
@@ -89,13 +187,53 @@ function readItemPrompt(itemNo) {
 
 /**
  * 지문 생성용 마스터 프롬프트 읽기
+ *
+ * 우선순위:
+ * 1. active=1 + is_default=1 (최우선)
+ * 2. active=1
+ * 3. is_default=1
+ * 4. 아무거나
  */
 function readPassageMasterPrompt() {
   const db = getDb();
-  const row = db.prepare(`
+
+  // 1. 활성화 + 기본값 프롬프트 찾기 (최우선)
+  let row = db.prepare(`
     SELECT prompt_text FROM prompts
-    WHERE prompt_key = 'PASSAGE_MASTER' AND active = 1
+    WHERE prompt_key = 'PASSAGE_MASTER' AND active = 1 AND is_default = 1
+    ORDER BY updated_at DESC
+    LIMIT 1
   `).get();
+
+  // 2. 활성화된 프롬프트 찾기
+  if (!row) {
+    row = db.prepare(`
+      SELECT prompt_text FROM prompts
+      WHERE prompt_key = 'PASSAGE_MASTER' AND active = 1
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get();
+  }
+
+  // 3. 기본값 프롬프트 찾기 (비활성화 포함)
+  if (!row) {
+    row = db.prepare(`
+      SELECT prompt_text FROM prompts
+      WHERE prompt_key = 'PASSAGE_MASTER' AND is_default = 1
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get();
+  }
+
+  // 4. 아무 프롬프트나 찾기
+  if (!row) {
+    row = db.prepare(`
+      SELECT prompt_text FROM prompts
+      WHERE prompt_key = 'PASSAGE_MASTER'
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `).get();
+  }
 
   if (!row || !row.prompt_text) {
     throw new Error('PASSAGE_MASTER 프롬프트를 찾을 수 없습니다.');

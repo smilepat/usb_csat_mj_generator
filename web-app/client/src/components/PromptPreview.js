@@ -5,15 +5,16 @@ import React, { useState } from 'react';
  * - 프롬프트 미리보기 및 1차 검증 결과 표시
  * - 편집 기능 지원
  */
-function PromptPreview({ data, onEdit, onConfirm, onCancel }) {
+function PromptPreview({ data, onEdit, onConfirm, onCancel, onApplySuggestions }) {
   const [activeTab, setActiveTab] = useState('system');
   const [editMode, setEditMode] = useState(false);
   const [editedSystem, setEditedSystem] = useState('');
   const [editedUser, setEditedUser] = useState('');
+  const [applyingFix, setApplyingFix] = useState(false);
 
   if (!data) return null;
 
-  const { valid, errors, warnings, suggestions, preview, stats } = data;
+  const { valid, errors, warnings, suggestions, preview, stats, itemNo } = data;
 
   const handleStartEdit = () => {
     setEditedSystem(preview?.system || '');
@@ -33,6 +34,25 @@ function PromptPreview({ data, onEdit, onConfirm, onCancel }) {
 
   const handleCancelEdit = () => {
     setEditMode(false);
+  };
+
+  const handleApplySuggestions = async () => {
+    if (!onApplySuggestions || !warnings || warnings.length === 0) {
+      return;
+    }
+
+    if (!window.confirm('AI가 경고와 제안을 분석하여 프롬프트를 자동으로 개선합니다.\n\n계속하시겠습니까?')) {
+      return;
+    }
+
+    setApplyingFix(true);
+    try {
+      await onApplySuggestions(itemNo, warnings, suggestions);
+    } catch (error) {
+      alert('자동 개선 실패: ' + error.message);
+    } finally {
+      setApplyingFix(false);
+    }
   };
 
   return (
@@ -62,7 +82,19 @@ function PromptPreview({ data, onEdit, onConfirm, onCancel }) {
       {/* 경고 목록 */}
       {warnings && warnings.length > 0 && (
         <div className="card" style={{ borderLeft: '4px solid #fbbc04', marginBottom: '16px' }}>
-          <h4 style={{ color: '#fbbc04', marginBottom: '8px' }}>⚡ 경고</h4>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <h4 style={{ color: '#fbbc04', margin: 0 }}>⚡ 경고</h4>
+            {onApplySuggestions && (
+              <button
+                className="btn btn-sm btn-warning"
+                onClick={handleApplySuggestions}
+                disabled={applyingFix}
+                style={{ fontSize: '0.85rem' }}
+              >
+                {applyingFix ? '🔄 적용 중...' : '🤖 AI 자동 수정'}
+              </button>
+            )}
+          </div>
           <ul style={{ margin: 0, paddingLeft: '20px' }}>
             {warnings.map((warn, idx) => (
               <li key={idx} style={{ color: '#b08800' }}>{warn}</li>

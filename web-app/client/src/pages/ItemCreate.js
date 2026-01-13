@@ -290,6 +290,41 @@ function ItemCreate() {
     // TODO: 편집된 프롬프트로 재검증 또는 직접 생성
   };
 
+  // 경고/제안 자동 적용
+  const handleApplySuggestions = async (itemNo, warnings, suggestions) => {
+    try {
+      setMessage({ type: 'info', text: 'AI가 프롬프트를 분석하고 개선하는 중...' });
+
+      const res = await itemsApi.applySuggestions(itemNo, warnings, suggestions);
+
+      if (res.success) {
+        setMessage({
+          type: 'success',
+          text: `프롬프트가 자동으로 개선되었습니다! (${res.data.changes_made.length}개 변경사항)\n\n프롬프트 목록 페이지에서 "${res.data.prompt_key}"를 확인하세요.`
+        });
+
+        // 개선 결과를 콘솔에 출력 (디버깅용)
+        console.log('개선된 프롬프트:', res.data.improved_prompt);
+        console.log('변경 사항:', res.data.changes_made);
+        console.log('개선 요약:', res.data.improvement_summary);
+
+        // 알림 표시
+        if (window.confirm(
+          `프롬프트가 개선되었습니다!\n\n` +
+          `변경사항:\n${res.data.changes_made.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n\n` +
+          `프롬프트 목록 페이지로 이동하시겠습니까?`
+        )) {
+          navigate('/prompts');
+        } else {
+          // 미리보기 새로고침
+          handlePreview();
+        }
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: '자동 개선 실패: ' + error.message });
+    }
+  };
+
   // 라이브러리에 저장
   const handleSaveToLibrary = async () => {
     if (!generationResult?.requestId) return;
@@ -644,6 +679,7 @@ function ItemCreate() {
           onEdit={handleEditPrompt}
           onConfirm={handleConfirmGenerate}
           onCancel={handleCancelPreview}
+          onApplySuggestions={handleApplySuggestions}
         />
 
         {loading && (

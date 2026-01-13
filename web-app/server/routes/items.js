@@ -438,11 +438,95 @@ router.post('/preview-prompt', (req, res) => {
         warnings: validationResult.warnings,
         suggestions,
         preview: validationResult.preview,
-        stats: validationResult.stats
+        stats: validationResult.stats,
+        itemNo: item_no
       }
     });
   } catch (error) {
     logger.error('프롬프트 미리보기 오류', 'preview-prompt', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/items/apply-suggestions
+ * 경고/제안을 프롬프트에 자동 적용
+ */
+router.post('/apply-suggestions', async (req, res) => {
+  try {
+    const { item_no, warnings, suggestions } = req.body;
+
+    if (!item_no) {
+      return res.status(400).json({ success: false, error: 'item_no는 필수입니다.' });
+    }
+
+    if (!warnings || warnings.length === 0) {
+      return res.status(400).json({ success: false, error: '적용할 경고가 없습니다.' });
+    }
+
+    // 프롬프트 키 결정
+    const { readItemPrompt } = require('../services/promptBuilder');
+    const { improvePromptWithFeedback } = require('../services/promptEvaluator');
+
+    let itemNo = item_no;
+    if (typeof item_no === 'string' && item_no.includes('-')) {
+      // 세트 문항 (예: "41-42")
+      itemNo = parseInt(item_no.split('-')[0]);
+    }
+
+    // 현재 프롬프트 읽기
+    let currentPrompt;
+    try {
+      currentPrompt = readItemPrompt(itemNo);
+    } catch (error) {
+      return res.status(404).json({
+        success: false,
+        error: `문항 ${item_no}의 프롬프트를 찾을 수 없습니다.`
+      });
+    }
+
+    // 경고와 제안을 피드백으로 변환
+    const feedback = [
+      '다음 검증 결과를 바탕으로 프롬프트를 개선해주세요:',
+      '',
+      '⚡ 경고:',
+      ...warnings.map((w, i) => `${i + 1}. ${w}`),
+      '',
+      '💡 제안:',
+      ...suggestions.map((s, i) => `${i + 1}. ${s}`)
+    ].join('\n');
+
+    logger.info('프롬프트 자동 개선 시작', `item_no:${item_no}`, `경고: ${warnings.length}개, 제안: ${suggestions.length}개`);
+
+    // LLM을 사용하여 프롬프트 개선
+    const promptKey = itemNo >= 1 && itemNo <= 17
+      ? `LC${String(itemNo).padStart(2, '0')}`
+      : itemNo >= 18 && itemNo <= 45
+        ? `RC${itemNo}`
+        : String(itemNo);
+
+    const result = await improvePromptWithFeedback(promptKey, currentPrompt, feedback);
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result.error || '프롬프트 개선에 실패했습니다.'
+      });
+    }
+
+    logger.info('프롬프트 자동 개선 완료', `item_no:${item_no}`, `변경사항: ${result.data.changes_made.length}개`);
+
+    res.json({
+      success: true,
+      data: {
+        improved_prompt: result.data.improved_prompt,
+        changes_made: result.data.changes_made,
+        improvement_summary: result.data.improvement_summary,
+        prompt_key: promptKey
+      }
+    });
+  } catch (error) {
+    logger.error('프롬프트 자동 개선 오류', `item_no:${req.body.item_no}`, error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

@@ -1,0 +1,15 @@
+{
+  "watch": ["server"],
+  "ext": "js,json",
+  "ignore": ["server/logs/*", "*.test.js", "node_modules"],
+  "delay": "1000",
+  "verbose": true,
+  "events": {
+    "restart": "echo 서버가 재시작되었습니다...",
+    "crash": "echo 서버가 비정상 종료되었습니다. 10초 후 재시작..."
+  },
+  "restartable": "rs",
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

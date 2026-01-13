@@ -80,7 +80,7 @@ async function startServer() {
     await initDatabase();
     console.log('데이터베이스 초기화 완료');
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`
 ╔═══════════════════════════════════════════════════╗
 ║     🎓 수능 문항 생성-검증 시스템                    ║
@@ -91,10 +91,42 @@ async function startServer() {
 ╚═══════════════════════════════════════════════════╝
       `);
     });
+
+    // 서버 오류 처리
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`포트 ${PORT}가 이미 사용 중입니다.`);
+        process.exit(1);
+      } else {
+        console.error('서버 오류:', error);
+      }
+    });
+
   } catch (error) {
     console.error('서버 시작 실패:', error);
     process.exit(1);
   }
 }
+
+// 프로세스 종료 처리
+process.on('uncaughtException', (error) => {
+  console.error('처리되지 않은 예외:', error);
+  // 서버는 계속 실행되도록 함 (종료하지 않음)
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('처리되지 않은 Promise 거부:', reason);
+  // 서버는 계속 실행되도록 함 (종료하지 않음)
+});
+
+process.on('SIGTERM', () => {
+  console.log('SIGTERM 신호 수신, 서버 종료 중...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT 신호 수신, 서버 종료 중...');
+  process.exit(0);
+});
 
 startServer();

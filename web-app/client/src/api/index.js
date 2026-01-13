@@ -144,6 +144,11 @@ export const itemsApi = {
       method: 'POST',
       body: data,
     }),
+  applySuggestions: (itemNo, warnings, suggestions) =>
+    request('/items/apply-suggestions', {
+      method: 'POST',
+      body: { item_no: itemNo, warnings, suggestions },
+    }),
 };
 
 // 세트 API
