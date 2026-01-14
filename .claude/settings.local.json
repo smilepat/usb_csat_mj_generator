@@ -30,7 +30,10 @@
       "Bash(mkdir:*)",
       "Bash(sleep:*)",
       "Bash(del nul)",
-      "Bash(tar:*)"
+      "Bash(tar:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(timeout:*)"
     ]
   }
 }
