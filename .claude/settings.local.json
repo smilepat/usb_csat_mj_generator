@@ -30,7 +30,9 @@
       "Bash(mkdir:*)",
       "Bash(sleep:*)",
       "Bash(del nul)",
-      "Bash(tar:*)"
+      "Bash(tar:*)",
+      "Bash(del \"F:\\\\csat_mj_generator\\\\compare_sync.ps1\")",
+      "Bash(del \"F:\\\\csat_mj_generator\\\\sync_to_d.ps1\")"
     ]
   }
 }
