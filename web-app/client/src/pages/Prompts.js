@@ -71,6 +71,11 @@ function Prompts() {
   const [testProgress, setTestProgress] = useState({ current: 0, total: 0 });
   const [testResults, setTestResults] = useState(null);
 
+  // 라이브러리 불러오기 관련 상태
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [libraryPrompts, setLibraryPrompts] = useState([]);
+  const [loadingLibrary, setLoadingLibrary] = useState(false);
+
   useEffect(() => {
     loadPrompts();
   }, []);
@@ -213,6 +218,34 @@ function Prompts() {
     } catch (error) {
       setMessage({ type: 'error', text: error.message });
     }
+  };
+
+  // 라이브러리에서 프롬프트 불러오기
+  const handleLoadLibrary = async () => {
+    try {
+      setLoadingLibrary(true);
+      const res = await libraryApi.getAll({ type: 'prompt', limit: 100 });
+      setLibraryPrompts(res.data.items || []);
+      setShowLibrary(true);
+    } catch (error) {
+      setMessage({ type: 'error', text: '라이브러리 로드 실패: ' + error.message });
+    } finally {
+      setLoadingLibrary(false);
+    }
+  };
+
+  // 라이브러리에서 프롬프트 적용
+  const handleApplyLibraryPrompt = (libraryItem) => {
+    setFormData({
+      prompt_key: libraryItem.prompt_key || '',
+      title: libraryItem.title || '',
+      prompt_text: libraryItem.prompt_text || '',
+      active: true
+    });
+    setSelectedPrompt(null);
+    setEditMode(true);
+    setShowLibrary(false);
+    setMessage({ type: 'success', text: '라이브러리 프롬프트를 불러왔습니다. 필요시 수정 후 저장하세요.' });
   };
 
   const handleNew = () => {
@@ -972,6 +1005,9 @@ function Prompts() {
           </button>
           <button className="btn btn-secondary" onClick={handleRecalculateAll} disabled={recalculating}>
             {recalculating ? '🔄 계산 중...' : '📊 전체 메트릭스 재계산'}
+          </button>
+          <button className="btn btn-secondary" onClick={handleLoadLibrary} disabled={loadingLibrary}>
+            {loadingLibrary ? '🔄 로딩...' : '📚 라이브러리에서 불러오기'}
           </button>
           <button className="btn btn-primary" onClick={handleNew}>
             ➕ 새 프롬프트
@@ -2455,6 +2491,76 @@ function Prompts() {
           <li>점수가 7점 미만인 경우 개선된 프롬프트를 제안합니다</li>
         </ul>
       </div>
+
+      {/* 라이브러리 프롬프트 모달 */}
+      {showLibrary && (
+        <div className="modal-overlay" onClick={() => setShowLibrary(false)}>
+          <div className="modal-content" style={{ maxWidth: '900px', maxHeight: '80vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📚 라이브러리에서 프롬프트 불러오기</h3>
+              <button className="btn-close" onClick={() => setShowLibrary(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              {libraryPrompts.length === 0 ? (
+                <div className="text-center text-muted" style={{ padding: '40px' }}>
+                  라이브러리에 저장된 프롬프트가 없습니다.
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>제목</th>
+                        <th>프롬프트 키</th>
+                        <th>카테고리</th>
+                        <th>등급</th>
+                        <th>저장일</th>
+                        <th>작업</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {libraryPrompts.map(item => (
+                        <tr key={item.id}>
+                          <td>{item.title || '제목 없음'}</td>
+                          <td><code>{item.prompt_key || 'N/A'}</code></td>
+                          <td>{item.category || '-'}</td>
+                          <td>
+                            {item.grade && (
+                              <span className={`badge badge-${
+                                item.grade === 'A' ? 'success' :
+                                item.grade === 'B' ? 'primary' :
+                                item.grade === 'C' ? 'warning' : 'secondary'
+                              }`}>
+                                {item.grade}
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                            {new Date(item.created_at).toLocaleDateString('ko-KR')}
+                          </td>
+                          <td>
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => handleApplyLibraryPrompt(item)}
+                            >
+                              불러오기
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowLibrary(false)}>
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
