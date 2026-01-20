@@ -430,12 +430,17 @@ function ItemCreate() {
             fontSize: '1rem',
             whiteSpace: 'pre-wrap'
           }}>
-            {/* RC31~33 빈칸 문항은 gapped_passage 우선 표시 */}
+            {/* RC31~33 빈칸 문항은 gapped_passage 우선 표시, LC 문항은 lc_script 표시 */}
             {(() => {
               const itemNo = parseInt(formData.item_no);
               const fj = generationResult.finalJson;
+              // RC31~33 빈칸 문항
               if (itemNo >= 31 && itemNo <= 33 && fj?.gapped_passage) {
                 return fj.gapped_passage;
+              }
+              // LC 문항 (1~17번)은 lc_script 필드 사용
+              if (itemNo >= 1 && itemNo <= 17) {
+                return output.lc_script || fj?.lc_script || output.passage || fj?.passage || '(지문 없음)';
               }
               return output.passage || fj?.passage || '(지문 없음)';
             })()}
