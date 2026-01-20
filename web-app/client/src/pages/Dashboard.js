@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { itemsApi, logsApi, healthCheck } from '../api';
+import { itemsApi, logsApi, healthCheck, promptsApi } from '../api';
 import { formatKST } from '../utils/dateUtils';
 
 function Dashboard() {
@@ -11,6 +11,8 @@ function Dashboard() {
   const [showProcessGuide, setShowProcessGuide] = useState(false);
   const [showPromptGuide, setShowPromptGuide] = useState(false);
   const [showOntology, setShowOntology] = useState(false);
+  const [promptAlerts, setPromptAlerts] = useState(null);
+  const [showAlertDetail, setShowAlertDetail] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -49,6 +51,14 @@ function Dashboard() {
       const logStatsRes = await logsApi.getStats();
       setLogStats(logStatsRes.data);
 
+      // 프롬프트 개선 알림
+      try {
+        const alertsRes = await promptsApi.getFeedbackSummary();
+        setPromptAlerts(alertsRes.data);
+      } catch (alertError) {
+        console.warn('프롬프트 알림 로드 실패:', alertError);
+      }
+
     } catch (error) {
       console.error('데이터 로드 오류:', error);
       setServerStatus('offline');
@@ -66,6 +76,20 @@ function Dashboard() {
     };
     const info = statusMap[status] || { class: 'badge-pending', text: status };
     return <span className={`badge ${info.class}`}>{info.text}</span>;
+  };
+
+  const getIssueLabel = (pattern) => {
+    const labels = {
+      'low_approve_rate': '낮은 승인율',
+      'layer1_failures': '구조 오류',
+      'layer2_failures': '내용 품질',
+      'layer3_failures': 'CSAT 기준 미달',
+      'consecutive_fails': '연속 실패',
+      'distractor_issues': '오답지 문제',
+      'length_issues': '길이 문제',
+      'declining_performance': '성능 하락'
+    };
+    return labels[pattern] || pattern;
   };
 
   if (loading) {
@@ -142,6 +166,139 @@ function Dashboard() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 프롬프트 개선 알림 */}
+      {promptAlerts && promptAlerts.totalPromptsWithIssues > 0 && (
+        <div className="card" style={{ borderLeft: '4px solid #ff9800' }}>
+          <div className="card-header">
+            <h2>🔔 프롬프트 개선 알림</h2>
+            <span style={{
+              backgroundColor: promptAlerts.criticalPrompts > 0 ? '#f44336' : '#ff9800',
+              color: 'white',
+              padding: '4px 12px',
+              borderRadius: '12px',
+              fontSize: '0.85rem'
+            }}>
+              {promptAlerts.totalPromptsWithIssues}개 프롬프트 주의 필요
+            </span>
+          </div>
+
+          {/* 요약 통계 */}
+          <div style={{
+            display: 'flex',
+            gap: '24px',
+            marginBottom: '16px',
+            padding: '12px',
+            backgroundColor: '#fff8e1',
+            borderRadius: '8px'
+          }}>
+            {promptAlerts.criticalPrompts > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.5rem' }}>❌</span>
+                <div>
+                  <div style={{ fontWeight: 'bold', color: '#d32f2f' }}>{promptAlerts.criticalPrompts}</div>
+                  <div style={{ fontSize: '0.8rem', color: '#666' }}>즉시 개선 필요</div>
+                </div>
+              </div>
+            )}
+            {promptAlerts.warningPrompts > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+                <div>
+                  <div style={{ fontWeight: 'bold', color: '#f57c00' }}>{promptAlerts.warningPrompts}</div>
+                  <div style={{ fontSize: '0.8rem', color: '#666' }}>주의 필요</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 주의가 필요한 프롬프트 목록 */}
+          {promptAlerts.promptsNeedingAttention && promptAlerts.promptsNeedingAttention.length > 0 && (
+            <div>
+              <h4 style={{ marginBottom: '12px', color: '#666' }}>개선이 필요한 프롬프트:</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {promptAlerts.promptsNeedingAttention.slice(0, 5).map((prompt, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px',
+                      backgroundColor: prompt.criticalCount > 0 ? '#ffebee' : '#fff3e0',
+                      borderRadius: '6px',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => setShowAlertDetail(prompt)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{
+                        fontWeight: 'bold',
+                        color: prompt.criticalCount > 0 ? '#d32f2f' : '#f57c00'
+                      }}>
+                        RC{prompt.itemNo}
+                      </span>
+                      <span style={{ fontSize: '0.85rem', color: '#666' }}>
+                        승인율: {prompt.stats?.approveRate?.toFixed(1) || 0}%
+                      </span>
+                      <span style={{ fontSize: '0.85rem', color: '#666' }}>
+                        ({prompt.stats?.totalCount || 0}건 생성)
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {prompt.criticalCount > 0 && (
+                        <span style={{
+                          backgroundColor: '#d32f2f',
+                          color: 'white',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem'
+                        }}>
+                          {prompt.criticalCount} CRITICAL
+                        </span>
+                      )}
+                      {prompt.warningCount > 0 && (
+                        <span style={{
+                          backgroundColor: '#ff9800',
+                          color: 'white',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem'
+                        }}>
+                          {prompt.warningCount} WARNING
+                        </span>
+                      )}
+                      <span style={{ color: '#1976d2', fontSize: '0.85rem' }}>자세히 보기 →</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 자주 발생하는 문제 */}
+          {promptAlerts.topIssues && promptAlerts.topIssues.length > 0 && (
+            <div style={{ marginTop: '16px' }}>
+              <h4 style={{ marginBottom: '8px', color: '#666' }}>자주 발생하는 문제:</h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {promptAlerts.topIssues.map((issue, idx) => (
+                  <span
+                    key={idx}
+                    style={{
+                      padding: '4px 12px',
+                      backgroundColor: '#e3f2fd',
+                      borderRadius: '16px',
+                      fontSize: '0.85rem'
+                    }}
+                  >
+                    {getIssueLabel(issue.pattern)} ({issue.count})
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1051,6 +1208,206 @@ function Dashboard() {
                 • <strong>의존 관계 (depends-on)</strong>: ItemPipeline → PromptBuilder, LLMClient, Validators<br/>
                 • <strong>순환 관계 (feedback-to)</strong>: Metrics → PromptImprovement → Better Items
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 프롬프트 알림 상세 모달 */}
+      {showAlertDetail && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+          onClick={() => setShowAlertDetail(null)}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '800px',
+              maxHeight: '85vh',
+              overflow: 'auto',
+              margin: '20px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0 }}>
+                📊 RC{showAlertDetail.itemNo} 프롬프트 분석
+              </h2>
+              <button
+                onClick={() => setShowAlertDetail(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  padding: '4px 8px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 통계 요약 */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '12px',
+              marginBottom: '24px'
+            }}>
+              <div style={{ padding: '16px', backgroundColor: '#f5f5f5', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{showAlertDetail.stats?.totalCount || 0}</div>
+                <div style={{ fontSize: '0.85rem', color: '#666' }}>총 생성</div>
+              </div>
+              <div style={{ padding: '16px', backgroundColor: '#e8f5e9', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2e7d32' }}>
+                  {showAlertDetail.stats?.approveRate?.toFixed(1) || 0}%
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#666' }}>승인율</div>
+              </div>
+              <div style={{ padding: '16px', backgroundColor: '#ffebee', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#c62828' }}>
+                  {showAlertDetail.stats?.rejectCount || 0}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#666' }}>거부</div>
+              </div>
+              <div style={{ padding: '16px', backgroundColor: '#fff3e0', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#e65100' }}>
+                  {showAlertDetail.alertCount || 0}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#666' }}>알림 수</div>
+              </div>
+            </div>
+
+            {/* 경고 목록 */}
+            {showAlertDetail.alerts && showAlertDetail.alerts.length > 0 && (
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ marginBottom: '12px' }}>🚨 발견된 문제</h3>
+                {showAlertDetail.alerts.map((alert, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: '16px',
+                      marginBottom: '12px',
+                      backgroundColor: alert.type === 'CRITICAL' ? '#ffebee' : alert.type === 'WARNING' ? '#fff3e0' : '#e3f2fd',
+                      borderLeft: `4px solid ${alert.type === 'CRITICAL' ? '#d32f2f' : alert.type === 'WARNING' ? '#ff9800' : '#2196f3'}`,
+                      borderRadius: '4px'
+                    }}
+                  >
+                    <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>{alert.title}</div>
+                    <div style={{ marginBottom: '8px', color: '#555' }}>{alert.message}</div>
+                    <div style={{
+                      padding: '12px',
+                      backgroundColor: 'rgba(255,255,255,0.7)',
+                      borderRadius: '4px'
+                    }}>
+                      <strong>💡 개선 방향:</strong> {alert.suggestion}
+                    </div>
+                    {alert.improvements && alert.improvements.length > 0 && (
+                      <ul style={{ marginTop: '8px', marginBottom: 0, paddingLeft: '20px' }}>
+                        {alert.improvements.map((imp, i) => (
+                          <li key={i} style={{ fontSize: '0.9rem', color: '#555' }}>{imp}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 개선 제안 */}
+            {showAlertDetail.suggestions && (
+              <div>
+                {showAlertDetail.suggestions.immediateActions?.length > 0 && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <h3 style={{ color: '#d32f2f', marginBottom: '12px' }}>🔴 즉시 조치 필요</h3>
+                    {showAlertDetail.suggestions.immediateActions.map((action, idx) => (
+                      <div key={idx} style={{
+                        padding: '12px',
+                        backgroundColor: '#ffebee',
+                        borderRadius: '6px',
+                        marginBottom: '8px'
+                      }}>
+                        <strong>{action.issue}</strong>: {action.action}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {showAlertDetail.suggestions.shortTermActions?.length > 0 && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <h3 style={{ color: '#ff9800', marginBottom: '12px' }}>🟠 단기 개선</h3>
+                    {showAlertDetail.suggestions.shortTermActions.map((action, idx) => (
+                      <div key={idx} style={{
+                        padding: '12px',
+                        backgroundColor: '#fff3e0',
+                        borderRadius: '6px',
+                        marginBottom: '8px'
+                      }}>
+                        <strong>{action.issue}</strong>: {action.action}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {showAlertDetail.suggestions.promptPatches?.length > 0 && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <h3 style={{ color: '#1976d2', marginBottom: '12px' }}>📝 프롬프트 수정 제안</h3>
+                    {showAlertDetail.suggestions.promptPatches.map((patch, idx) => (
+                      <div key={idx} style={{
+                        padding: '12px',
+                        backgroundColor: '#e3f2fd',
+                        borderRadius: '6px',
+                        marginBottom: '8px'
+                      }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                          [{patch.target}] {patch.currentIssue}
+                        </div>
+                        <pre style={{
+                          backgroundColor: '#fff',
+                          padding: '12px',
+                          borderRadius: '4px',
+                          fontSize: '0.85rem',
+                          whiteSpace: 'pre-wrap',
+                          margin: 0
+                        }}>
+                          {patch.patch}
+                        </pre>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 프롬프트 관리로 이동 버튼 */}
+            <div style={{ textAlign: 'center', marginTop: '24px' }}>
+              <a
+                href={`/prompts?highlight=${showAlertDetail.itemNo}`}
+                className="btn btn-primary"
+                style={{ marginRight: '12px' }}
+              >
+                💬 프롬프트 편집하러 가기
+              </a>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowAlertDetail(null)}
+              >
+                닫기
+              </button>
             </div>
           </div>
         </div>

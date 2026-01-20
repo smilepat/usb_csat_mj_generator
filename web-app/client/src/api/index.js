@@ -109,6 +109,10 @@ export const promptsApi = {
     request(`/prompts/${key}/set-default`, {
       method: 'DELETE',
     }),
+  // 피드백 분석
+  getFeedbackSummary: () => request('/prompts/feedback-analysis/summary'),
+  getAllAlerts: () => request('/prompts/feedback-analysis/alerts'),
+  getPromptFeedbackAnalysis: (key) => request(`/prompts/${key}/feedback-analysis`),
 };
 
 // 문항 요청 API

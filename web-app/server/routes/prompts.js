@@ -27,6 +27,13 @@ const {
   completeABTest,
   deleteABTest
 } = require('../services/abTestingService');
+const {
+  analyzePromptHistory,
+  generateAlerts,
+  generateImprovementSuggestions,
+  getAllPromptAlerts,
+  getFeedbackSummary
+} = require('../services/promptFeedbackAnalyzer');
 const logger = require('../services/logger');
 
 /**
@@ -123,6 +130,46 @@ router.get('/metrics/summary', (req, res) => {
     const summary = getPromptMetricsSummary();
     res.json({ success: true, data: summary });
   } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================
+// 피드백 분석 엔드포인트 (/:key 라우트보다 먼저 정의)
+// ============================================
+
+/**
+ * GET /api/prompts/feedback-analysis/summary
+ * 전체 피드백 분석 요약 (Dashboard용)
+ */
+router.get('/feedback-analysis/summary', (req, res) => {
+  try {
+    const summary = getFeedbackSummary();
+    res.json({ success: true, data: summary });
+  } catch (error) {
+    logger.error('피드백 분석 요약 조회 오류', 'system', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/prompts/feedback-analysis/alerts
+ * 모든 프롬프트 경고 알림 조회
+ */
+router.get('/feedback-analysis/alerts', (req, res) => {
+  try {
+    const alerts = getAllPromptAlerts();
+    res.json({
+      success: true,
+      data: {
+        totalAlerts: alerts.length,
+        criticalCount: alerts.filter(a => a.criticalCount > 0).length,
+        warningCount: alerts.filter(a => a.warningCount > 0 && a.criticalCount === 0).length,
+        alerts
+      }
+    });
+  } catch (error) {
+    logger.error('프롬프트 경고 조회 오류', 'system', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -999,6 +1046,55 @@ router.delete('/:key/set-default', (req, res) => {
 // ============================================
 // 자동 개선 (Auto-Improve) - /:key 하위 라우트
 // ============================================
+
+/**
+ * GET /api/prompts/:key/feedback-analysis
+ * 특정 프롬프트의 생성 기록 분석 및 개선 제안
+ */
+router.get('/:key/feedback-analysis', (req, res) => {
+  try {
+    const { key } = req.params;
+
+    // 프롬프트 히스토리 분석
+    const analysis = analyzePromptHistory(key);
+
+    if (!analysis.hasData) {
+      return res.json({
+        success: true,
+        data: {
+          promptKey: key,
+          hasData: false,
+          message: '생성 기록이 없습니다. 문항을 생성한 후 분석할 수 있습니다.'
+        }
+      });
+    }
+
+    // 경고 생성
+    const alerts = generateAlerts(analysis);
+
+    // 개선 제안 생성
+    const suggestions = generateImprovementSuggestions(analysis, alerts);
+
+    res.json({
+      success: true,
+      data: {
+        promptKey: key,
+        hasData: true,
+        analysis: {
+          stats: analysis.stats,
+          avgScores: analysis.avgScores,
+          patterns: analysis.patterns
+        },
+        alerts,
+        suggestions,
+        recentItems: analysis.recentItems
+      }
+    });
+  } catch (error) {
+    logger.error('프롬프트 피드백 분석 오류', req.params.key, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 /**
  * GET /api/prompts/:key/auto-improve/analyze
