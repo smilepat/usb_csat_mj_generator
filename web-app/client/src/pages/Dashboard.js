@@ -10,6 +10,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showProcessGuide, setShowProcessGuide] = useState(false);
   const [showPromptGuide, setShowPromptGuide] = useState(false);
+  const [showOntology, setShowOntology] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -219,6 +220,12 @@ function Dashboard() {
             onClick={() => setShowPromptGuide(true)}
           >
             💬 프롬프트 개선 프로세스
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowOntology(true)}
+          >
+            🔗 시스템 온톨로지
           </button>
         </div>
       </div>
@@ -617,6 +624,433 @@ function Dashboard() {
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 시스템 온톨로지 모달 */}
+      {showOntology && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+          onClick={() => setShowOntology(false)}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '1100px',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              margin: '20px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0 }}>🔗 CSAT Item Generator 시스템 온톨로지</h2>
+              <button
+                onClick={() => setShowOntology(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  padding: '4px 8px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 핵심 개념 다이어그램 */}
+            <div style={{ marginBottom: '24px' }}>
+              <h3>📊 핵심 개념 구조 (Core Concepts)</h3>
+              <div style={{
+                padding: '20px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px',
+                fontFamily: 'monospace',
+                fontSize: '0.85rem',
+                lineHeight: '1.6',
+                overflow: 'auto'
+              }}>
+                <pre style={{ margin: 0 }}>{`┌─────────────────────────────────────────────────────────────────────────────┐
+│                         CSAT Item Generator Ontology                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐  │
+│  │   Prompt    │───▶│   Request   │───▶│    Item     │───▶│   Output    │  │
+│  │  (템플릿)    │    │  (요청)      │    │  (문항)      │    │  (결과물)    │  │
+│  └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘  │
+│         │                  │                  │                  │          │
+│         ▼                  ▼                  ▼                  ▼          │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐  │
+│  │  Metrics    │    │  Pipeline   │    │  Validator  │    │   Library   │  │
+│  │  (성능지표)   │    │  (파이프라인) │    │  (검증기)    │    │  (보관소)    │  │
+│  └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘`}</pre>
+              </div>
+            </div>
+
+            {/* 개념 정의 테이블 */}
+            <div style={{ marginBottom: '24px' }}>
+              <h3>📖 개념 정의 (Concept Definitions)</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#e3f2fd' }}>
+                    <th style={{ padding: '10px', textAlign: 'left', borderBottom: '2px solid #1976d2' }}>개념</th>
+                    <th style={{ padding: '10px', textAlign: 'left', borderBottom: '2px solid #1976d2' }}>정의</th>
+                    <th style={{ padding: '10px', textAlign: 'left', borderBottom: '2px solid #1976d2' }}>주요 속성</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>Prompt</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>문항 생성 지시문 템플릿</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontFamily: 'monospace', fontSize: '0.8rem' }}>key, title, text, active</td>
+                  </tr>
+                  <tr style={{ backgroundColor: '#fafafa' }}>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>Request</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>문항 생성 요청 인스턴스</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontFamily: 'monospace', fontSize: '0.8rem' }}>request_id, item_no, status</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>Item</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>생성된 문항 데이터</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontFamily: 'monospace', fontSize: '0.8rem' }}>raw_json, normalized, final</td>
+                  </tr>
+                  <tr style={{ backgroundColor: '#fafafa' }}>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>Output</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>최종 형식화된 출력물</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontFamily: 'monospace', fontSize: '0.8rem' }}>question, options, answer</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>Metrics</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>성능 측정 데이터</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontFamily: 'monospace', fontSize: '0.8rem' }}>score, grade, approve_rate</td>
+                  </tr>
+                  <tr style={{ backgroundColor: '#fafafa' }}>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>Validator</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>품질 검증 규칙 세트</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontFamily: 'monospace', fontSize: '0.8rem' }}>common, grammar, gap, format</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>Pipeline</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>생성 워크플로우</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontFamily: 'monospace', fontSize: '0.8rem' }}>passage→prompt→LLM→parse</td>
+                  </tr>
+                  <tr style={{ backgroundColor: '#fafafa' }}>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>Library</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>승인된 문항 저장소</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontFamily: 'monospace', fontSize: '0.8rem' }}>재사용 가능 고품질 문항</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* 기능 간 연관 관계 */}
+            <div style={{ marginBottom: '24px' }}>
+              <h3>🔗 기능 간 연관 관계 (Ontological Relations)</h3>
+              <div style={{
+                padding: '20px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px',
+                fontFamily: 'monospace',
+                fontSize: '0.8rem',
+                lineHeight: '1.6',
+                overflow: 'auto'
+              }}>
+                <pre style={{ margin: 0 }}>{`┌──────────────┐  composes   ┌──────────────────┐  invokes    ┌──────────────┐
+│ MASTER_PROMPT│────────────▶│  PromptBuilder   │────────────▶│   LLMClient  │
+│  (공통 규칙)  │             │  (프롬프트 구성)   │             │  (API 호출)   │
+└──────────────┘             └──────────────────┘             └──────────────┘
+       │                              │                              │
+       │ extends                      │ uses                         │ returns
+       ▼                              ▼                              ▼
+┌──────────────┐  selected    ┌──────────────────┐  parses    ┌──────────────┐
+│ Type Prompt  │─────────────▶│  ItemPipeline    │───────────▶│   JsonUtils  │
+│ (LC/RC 템플릿)│             │  (생성 파이프라인)  │             │  (JSON 파싱)  │
+└──────────────┘             └──────────────────┘             └──────────────┘
+                                      │                              │
+                                      │ validates                    │ normalizes
+                                      ▼                              ▼
+                              ┌──────────────────┐  evaluates  ┌──────────────┐
+                              │   Validators     │────────────▶│ ItemEvaluator│
+                              │  (규칙 기반 검증)  │             │ (LLM 품질평가) │
+                              └──────────────────┘             └──────────────┘
+                                      │                              │
+                                      │ stores                       │ scores
+                                      ▼                              ▼
+                              ┌──────────────────┐  tracks     ┌──────────────┐
+                              │    Database      │────────────▶│   Metrics    │
+                              │  (SQLite/SQL.js) │             │  (성능 추적)   │
+                              └──────────────────┘             └──────────────┘`}</pre>
+              </div>
+            </div>
+
+            {/* 관계 유형 설명 */}
+            <div style={{ marginBottom: '24px' }}>
+              <h3>📋 관계 유형 설명</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#e8f5e9' }}>
+                    <th style={{ padding: '10px', textAlign: 'left', borderBottom: '2px solid #4caf50' }}>관계</th>
+                    <th style={{ padding: '10px', textAlign: 'left', borderBottom: '2px solid #4caf50' }}>소스 → 타겟</th>
+                    <th style={{ padding: '10px', textAlign: 'left', borderBottom: '2px solid #4caf50' }}>의미</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#1565c0' }}>composes</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>MASTER → PromptBuilder</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>공통 규칙이 모든 프롬프트에 합성됨</td>
+                  </tr>
+                  <tr style={{ backgroundColor: '#fafafa' }}>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#1565c0' }}>extends</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>Type Prompt → MASTER</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>문항별 템플릿이 마스터를 확장함</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#1565c0' }}>selected</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>Type Prompt → Pipeline</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>문항 번호에 따라 적절한 템플릿 선택</td>
+                  </tr>
+                  <tr style={{ backgroundColor: '#fafafa' }}>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#1565c0' }}>invokes</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>PromptBuilder → LLMClient</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>구성된 프롬프트로 LLM API 호출</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#1565c0' }}>validates</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>Pipeline → Validators</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>생성 결과에 규칙 기반 검증 적용</td>
+                  </tr>
+                  <tr style={{ backgroundColor: '#fafafa' }}>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#1565c0' }}>evaluates</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>Validators → ItemEvaluator</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>규칙 통과 후 LLM 품질 평가</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#1565c0' }}>tracks</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>Database → Metrics</td>
+                    <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>프롬프트/문항 성능 추적</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* 레이어 아키텍처 */}
+            <div style={{ marginBottom: '24px' }}>
+              <h3>🏗️ 레이어 아키텍처</h3>
+              <div style={{ display: 'grid', gap: '12px' }}>
+                <div style={{ padding: '16px', backgroundColor: '#e3f2fd', borderRadius: '8px', border: '2px solid #1976d2' }}>
+                  <strong style={{ color: '#1565c0' }}>Layer 1: Presentation (프레젠테이션 계층)</strong>
+                  <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: '#333' }}>
+                    React Components: Dashboard, ItemCreate, Prompts, ItemRequests, Config<br/>
+                    Context: AppContext (전역 상태), ThemeContext (테마)
+                  </p>
+                </div>
+                <div style={{ padding: '16px', backgroundColor: '#e8f5e9', borderRadius: '8px', border: '2px solid #4caf50' }}>
+                  <strong style={{ color: '#2e7d32' }}>Layer 2: API (API 계층)</strong>
+                  <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: '#333' }}>
+                    Routes: /prompts, /items, /config, /sets, /charts, /logs, /metrics<br/>
+                    Middleware: auth, errorHandler, validate, apiVersion
+                  </p>
+                </div>
+                <div style={{ padding: '16px', backgroundColor: '#fff3e0', borderRadius: '8px', border: '2px solid #ff9800' }}>
+                  <strong style={{ color: '#e65100' }}>Layer 3: Business Logic (비즈니스 로직 계층)</strong>
+                  <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: '#333' }}>
+                    Core: itemPipeline, promptBuilder, passageGenerator, llmClient, jsonUtils<br/>
+                    Validators: common, format, grammar, gap, chart, listening, set<br/>
+                    Quality: itemEvaluator, promptEvaluator, metricsService
+                  </p>
+                </div>
+                <div style={{ padding: '16px', backgroundColor: '#fce4ec', borderRadius: '8px', border: '2px solid #e91e63' }}>
+                  <strong style={{ color: '#c2185b' }}>Layer 4: Data Access (데이터 접근 계층)</strong>
+                  <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: '#333' }}>
+                    Repositories: baseRepository, promptRepository, itemRepository<br/>
+                    Database: SQL.js (SQLite in-memory with file persistence)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 검증 계층 구조 */}
+            <div style={{ marginBottom: '24px' }}>
+              <h3>🛡️ 검증 계층 구조 (Validation Layers)</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px' }}>
+                <div style={{ padding: '16px', backgroundColor: '#e8f5e9', borderRadius: '8px', border: '1px solid #c8e6c9' }}>
+                  <strong style={{ color: '#2e7d32' }}>Layer 1: Format Validation</strong>
+                  <ul style={{ margin: '8px 0 0', paddingLeft: '18px', fontSize: '0.85rem' }}>
+                    <li>JSON 구조 유효성</li>
+                    <li>필수 필드 존재 여부</li>
+                    <li>언어 혼용 규칙</li>
+                    <li>지문 길이 범위 검사</li>
+                  </ul>
+                </div>
+                <div style={{ padding: '16px', backgroundColor: '#fff3e0', borderRadius: '8px', border: '1px solid #ffe0b2' }}>
+                  <strong style={{ color: '#e65100' }}>Layer 2: Common Validation</strong>
+                  <ul style={{ margin: '8px 0 0', paddingLeft: '18px', fontSize: '0.85rem' }}>
+                    <li>5개 선택지 존재</li>
+                    <li>correct_answer 1-5 범위</li>
+                    <li>선택지 중복 여부</li>
+                    <li>LLM 메타정보 누출 검사</li>
+                  </ul>
+                </div>
+                <div style={{ padding: '16px', backgroundColor: '#fce4ec', borderRadius: '8px', border: '1px solid #f8bbd0' }}>
+                  <strong style={{ color: '#c2185b' }}>Layer 3: Type-Specific</strong>
+                  <ul style={{ margin: '8px 0 0', paddingLeft: '18px', fontSize: '0.85rem' }}>
+                    <li>RC29 (어법): 밑줄 5개</li>
+                    <li>RC31-33 (빈칸): 빈칸 위치</li>
+                    <li>RC25 (차트): 데이터 일치</li>
+                    <li>LC01-17: 대화 턴, 시간</li>
+                  </ul>
+                </div>
+                <div style={{ padding: '16px', backgroundColor: '#e3f2fd', borderRadius: '8px', border: '1px solid #bbdefb' }}>
+                  <strong style={{ color: '#1565c0' }}>Layer 4: Quality (LLM)</strong>
+                  <ul style={{ margin: '8px 0 0', paddingLeft: '18px', fontSize: '0.85rem' }}>
+                    <li>정답 적합성 (30점)</li>
+                    <li>오답 설계 품질 (25점)</li>
+                    <li>변별력 (20점)</li>
+                    <li>자연스러움 (10점)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* 프롬프트 계층 구조 */}
+            <div style={{ marginBottom: '24px' }}>
+              <h3>📝 프롬프트 계층 구조</h3>
+              <div style={{
+                padding: '20px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px',
+                fontFamily: 'monospace',
+                fontSize: '0.8rem',
+                lineHeight: '1.6',
+                overflow: 'auto'
+              }}>
+                <pre style={{ margin: 0 }}>{`                    ┌─────────────────────────┐
+                    │     MASTER_PROMPT       │
+                    │   (공통 규칙 - 저작권,    │
+                    │    출력 형식, 어휘 수준)  │
+                    └───────────┬─────────────┘
+                                │ inherits
+            ┌───────────────────┼───────────────────┐
+            ▼                   ▼                   ▼
+    ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
+    │  LC Prompts   │   │  RC Prompts   │   │  Set Prompts  │
+    │   (듣기 1-17)  │   │  (독해 18-45) │   │  (연계 문항)   │
+    └───────┬───────┘   └───────┬───────┘   └───────────────┘
+            │                   │
+    ┌───────┴───────┐   ┌───────┴───────────────────┐
+    ▼               ▼   ▼                           ▼
+┌───────┐       ┌───────┐                       ┌───────┐
+│ LC01  │  ...  │ LC17  │   RC18 ... RC40 ...   │ RC45  │
+│목적파악│       │세트듣기│                       │장문독해│
+└───────┘       └───────┘                       └───────┘`}</pre>
+              </div>
+            </div>
+
+            {/* 데이터 흐름 */}
+            <div style={{ marginBottom: '24px' }}>
+              <h3>📊 데이터 생명주기</h3>
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '8px',
+                alignItems: 'center',
+                padding: '16px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px',
+                fontSize: '0.85rem'
+              }}>
+                <div style={{ padding: '10px 14px', backgroundColor: '#e3f2fd', borderRadius: '6px', border: '1px solid #90caf9' }}>
+                  <strong>1. Creation</strong><br/>
+                  <span style={{ fontSize: '0.75rem' }}>요청 등록</span>
+                </div>
+                <span style={{ fontSize: '1.2rem' }}>→</span>
+                <div style={{ padding: '10px 14px', backgroundColor: '#e8f5e9', borderRadius: '6px', border: '1px solid #a5d6a7' }}>
+                  <strong>2. Generation</strong><br/>
+                  <span style={{ fontSize: '0.75rem' }}>LLM 생성</span>
+                </div>
+                <span style={{ fontSize: '1.2rem' }}>→</span>
+                <div style={{ padding: '10px 14px', backgroundColor: '#fff3e0', borderRadius: '6px', border: '1px solid #ffcc80' }}>
+                  <strong>3. Validation</strong><br/>
+                  <span style={{ fontSize: '0.75rem' }}>4계층 검증</span>
+                </div>
+                <span style={{ fontSize: '1.2rem' }}>→</span>
+                <div style={{ padding: '10px 14px', backgroundColor: '#fce4ec', borderRadius: '6px', border: '1px solid #f48fb1' }}>
+                  <strong>4. Evaluation</strong><br/>
+                  <span style={{ fontSize: '0.75rem' }}>품질 평가</span>
+                </div>
+                <span style={{ fontSize: '1.2rem' }}>→</span>
+                <div style={{ padding: '10px 14px', backgroundColor: '#f3e5f5', borderRadius: '6px', border: '1px solid #ce93d8' }}>
+                  <strong>5. Storage</strong><br/>
+                  <span style={{ fontSize: '0.75rem' }}>결과 저장</span>
+                </div>
+                <span style={{ fontSize: '1.2rem' }}>→</span>
+                <div style={{ padding: '10px 14px', backgroundColor: '#e0f7fa', borderRadius: '6px', border: '1px solid #80deea' }}>
+                  <strong>6. Archive</strong><br/>
+                  <span style={{ fontSize: '0.75rem' }}>라이브러리</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 온톨로지 요약 */}
+            <div style={{ padding: '16px', backgroundColor: '#e8eaf6', borderRadius: '8px', border: '2px solid #5c6bc0' }}>
+              <h3 style={{ margin: '0 0 12px 0', color: '#3949ab' }}>🎯 온톨로지 핵심 요약</h3>
+              <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: '1.8' }}>
+                이 시스템은 <strong>"프롬프트 중심 문항 생성 시스템"</strong>으로, 모든 기능이 프롬프트를 축으로 연결되어 있습니다.
+              </p>
+              <div style={{
+                marginTop: '12px',
+                padding: '12px',
+                backgroundColor: 'white',
+                borderRadius: '6px',
+                fontFamily: 'monospace',
+                fontSize: '0.8rem',
+                textAlign: 'center'
+              }}>
+                <pre style={{ margin: 0 }}>{`                         ┌─────────────────┐
+                         │    PROMPT       │
+                         │   (중심 엔티티)   │
+                         └────────┬────────┘
+                                  │
+        ┌─────────────┬───────────┼───────────┬─────────────┐
+        ▼             ▼           ▼           ▼             ▼
+   ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐
+   │ Version │  │ Metrics │  │ Request │  │Validator│  │Evaluator│
+   └─────────┘  └─────────┘  └─────────┘  └─────────┘  └─────────┘
+        └─────────────┴───────────┴───────────┴─────────────┘
+                                  │
+                                  ▼
+                         ┌─────────────────┐
+                         │  Feedback Loop  │
+                         │   (개선 사이클)   │
+                         └─────────────────┘`}</pre>
+              </div>
+              <p style={{ margin: '12px 0 0', fontSize: '0.85rem', color: '#555' }}>
+                <strong>주요 온톨로지 관계:</strong><br/>
+                • <strong>계층적 관계 (is-a)</strong>: MASTER_PROMPT → LC/RC Prompt → 개별 문항 프롬프트<br/>
+                • <strong>구성 관계 (has-a)</strong>: ItemRequest → Passage, ItemNo, PromptId, Status<br/>
+                • <strong>의존 관계 (depends-on)</strong>: ItemPipeline → PromptBuilder, LLMClient, Validators<br/>
+                • <strong>순환 관계 (feedback-to)</strong>: Metrics → PromptImprovement → Better Items
+              </p>
             </div>
           </div>
         </div>

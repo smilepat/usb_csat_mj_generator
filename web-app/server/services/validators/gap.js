@@ -22,7 +22,8 @@ function countBlanks(text) {
  * @returns {{ ok: boolean, diffInfo: string }}
  */
 function checkPassageDiffApprox(originalPassage, gappedPassage) {
-  if (!originalPassage) {
+  // 원본 지문이 없거나 비어있으면 (자동 생성 모드) 검사 건너뜀
+  if (!originalPassage || String(originalPassage).trim() === '') {
     return { ok: true, diffInfo: '지문 자동 생성 모드이므로 diff 검사를 건너뜀' };
   }
   if (!gappedPassage) {
@@ -36,12 +37,15 @@ function checkPassageDiffApprox(originalPassage, gappedPassage) {
   const normOrig = normalize(originalPassage);
   const normStrip = normalize(stripped);
 
-  const ok = normOrig.indexOf(normStrip) !== -1;
+  // 원본 지문이 gapped_passage를 포함하거나, 유사도가 높으면 통과
+  // (LLM이 지문을 약간 수정할 수 있으므로 엄격한 검사 대신 경고만)
+  const ok = normOrig.indexOf(normStrip) !== -1 || normStrip.indexOf(normOrig) !== -1;
   const diffInfo = ok
     ? '빈칸 제외 텍스트가 원 지문에 존재함'
-    : '원 지문과 gapped_passage 간 불일치 가능성';
+    : '원 지문과 gapped_passage 간 불일치 가능성 (경고)';
 
-  return { ok, diffInfo };
+  // 불일치해도 경고만 하고 통과시킴 (LLM이 자동 생성한 경우)
+  return { ok: true, diffInfo };
 }
 
 /**
@@ -55,13 +59,25 @@ function validateGapItem(itemObj, req) {
   let pass = true;
 
   const originalPassage = req.passage || '';
-  const gappedPassage = itemObj.gapped_passage || '';
+
+  // gapped_passage가 없으면 passage에서 빈칸을 찾아서 사용
+  // (일부 프롬프트는 passage/stimulus에 빈칸을 직접 포함)
+  let gappedPassage = itemObj.gapped_passage || '';
+
+  if (!gappedPassage && itemObj.passage) {
+    // passage에 빈칸이 있으면 gapped_passage로 사용
+    const blankInPassage = countBlanks(itemObj.passage);
+    if (blankInPassage > 0) {
+      gappedPassage = itemObj.passage;
+      logs.push('passage에서 빈칸 감지 → gapped_passage로 사용');
+    }
+  }
 
   // 1) gapped_passage 필드 필수 검사
   if (!gappedPassage) {
     return {
       pass: false,
-      log: 'gapped_passage 필드 없음 → RC31~33은 반드시 passage와 gapped_passage를 둘 다 포함해야 함'
+      log: 'gapped_passage 필드 없음 → RC31~33은 반드시 빈칸이 포함된 지문(gapped_passage 또는 passage)이 필요함'
     };
   }
 

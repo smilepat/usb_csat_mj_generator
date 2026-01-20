@@ -1,0 +1,611 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CSAT Item Generator API",
+    "description": "수능 영어 문항 생성-검증 시스템 API",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001/api",
+      "description": "Development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "서버 상태 확인"
+    },
+    {
+      "name": "Auth",
+      "description": "인증 관련"
+    },
+    {
+      "name": "Prompts",
+      "description": "프롬프트 관리"
+    },
+    {
+      "name": "Items",
+      "description": "문항 생성 및 관리"
+    },
+    {
+      "name": "Config",
+      "description": "시스템 설정"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "서버 상태 확인",
+        "responses": {
+          "200": {
+            "description": "서버 정상",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "로그인",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "로그인 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "로그아웃",
+        "responses": {
+          "200": {
+            "description": "로그아웃 성공"
+          }
+        }
+      }
+    },
+    "/auth/check": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "인증 상태 확인",
+        "responses": {
+          "200": {
+            "description": "인증 상태",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "authenticated": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prompts": {
+      "get": {
+        "tags": ["Prompts"],
+        "summary": "모든 프롬프트 조회",
+        "responses": {
+          "200": {
+            "description": "프롬프트 목록",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Prompt"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Prompts"],
+        "summary": "새 프롬프트 생성",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "생성 성공"
+          }
+        }
+      }
+    },
+    "/prompts/{key}": {
+      "get": {
+        "tags": ["Prompts"],
+        "summary": "특정 프롬프트 조회",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "프롬프트 키"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "프롬프트 정보"
+          },
+          "404": {
+            "description": "프롬프트 없음"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Prompts"],
+        "summary": "프롬프트 수정",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "수정 성공"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Prompts"],
+        "summary": "프롬프트 삭제",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "삭제 성공"
+          }
+        }
+      }
+    },
+    "/items/requests": {
+      "get": {
+        "tags": ["Items"],
+        "summary": "문항 요청 목록 조회",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["PENDING", "RUNNING", "OK", "FAIL"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "요청 목록",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Items"],
+        "summary": "새 문항 요청 생성",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemRequestInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "요청 생성 성공"
+          },
+          "400": {
+            "description": "잘못된 요청"
+          }
+        }
+      }
+    },
+    "/items/requests/{id}": {
+      "get": {
+        "tags": ["Items"],
+        "summary": "특정 요청 조회",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "요청 정보"
+          },
+          "404": {
+            "description": "요청 없음"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Items"],
+        "summary": "요청 삭제",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "삭제 성공"
+          }
+        }
+      }
+    },
+    "/items/generate/{id}": {
+      "post": {
+        "tags": ["Items"],
+        "summary": "문항 생성 실행",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "생성 결과"
+          }
+        }
+      }
+    },
+    "/config": {
+      "get": {
+        "tags": ["Config"],
+        "summary": "시스템 설정 조회",
+        "responses": {
+          "200": {
+            "description": "설정 정보"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Config"],
+        "summary": "설정 업데이트",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "업데이트 성공"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "example": "ok"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "environment": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {}
+          },
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "limit": {
+                "type": "integer"
+              },
+              "offset": {
+                "type": "integer"
+              },
+              "hasMore": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "Prompt": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "prompt_key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "prompt_text": {
+            "type": "string"
+          },
+          "active": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PromptInput": {
+        "type": "object",
+        "required": ["prompt_key", "prompt_text"],
+        "properties": {
+          "prompt_key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "prompt_text": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ItemRequestInput": {
+        "type": "object",
+        "required": ["item_no"],
+        "properties": {
+          "item_no": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 45,
+            "description": "문항 번호 (1-17: 듣기, 18-45: 독해)"
+          },
+          "passage": {
+            "type": "string",
+            "description": "지문 텍스트"
+          },
+          "level": {
+            "type": "string",
+            "enum": ["상", "중", "하"],
+            "description": "난이도"
+          },
+          "extra": {
+            "type": "string",
+            "description": "추가 지시사항"
+          },
+          "topic": {
+            "type": "string",
+            "description": "주제"
+          },
+          "prompt_id": {
+            "type": "integer",
+            "description": "사용할 프롬프트 ID"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      },
+      "SessionAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "connect.sid"
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    },
+    {
+      "SessionAuth": []
+    }
+  ]
+}

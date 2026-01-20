@@ -430,9 +430,66 @@ function ItemCreate() {
             fontSize: '1rem',
             whiteSpace: 'pre-wrap'
           }}>
-            {output.passage || generationResult.finalJson?.passage || '(지문 없음)'}
+            {/* RC31~33 빈칸 문항은 gapped_passage 우선 표시 */}
+            {(() => {
+              const itemNo = parseInt(formData.item_no);
+              const fj = generationResult.finalJson;
+              if (itemNo >= 31 && itemNo <= 33 && fj?.gapped_passage) {
+                return fj.gapped_passage;
+              }
+              return output.passage || fj?.passage || '(지문 없음)';
+            })()}
           </div>
         </div>
+
+        {/* RC38, RC39 주어진 문장 (given_sentence) */}
+        {(() => {
+          const itemNo = parseInt(formData.item_no);
+          const fj = generationResult.finalJson;
+          if ((itemNo === 38 || itemNo === 39) && fj?.given_sentence) {
+            return (
+              <div className="card" style={{ marginBottom: '16px' }}>
+                <h3 style={{ marginBottom: '12px', color: '#1e40af' }}>📌 주어진 문장</h3>
+                <div style={{
+                  background: '#fef3c7',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  border: '2px solid #f59e0b',
+                  lineHeight: '1.8',
+                  fontSize: '1rem',
+                  fontWeight: 500
+                }}>
+                  {fj.given_sentence}
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
+
+        {/* RC40 요약문 (summary with blanks) */}
+        {(() => {
+          const itemNo = parseInt(formData.item_no);
+          const fj = generationResult.finalJson;
+          if (itemNo === 40 && fj?.summary) {
+            return (
+              <div className="card" style={{ marginBottom: '16px' }}>
+                <h3 style={{ marginBottom: '12px', color: '#1e40af' }}>📝 요약문 (빈칸 포함)</h3>
+                <div style={{
+                  background: '#fef3c7',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  border: '2px solid #f59e0b',
+                  lineHeight: '1.8',
+                  fontSize: '1rem'
+                }}>
+                  {fj.summary}
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         {/* 발문 */}
         <div className="card" style={{ marginBottom: '16px' }}>

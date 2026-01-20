@@ -1,0 +1,497 @@
+[
+  {
+    "id": 193,
+    "prompt_key": "1",
+    "title": "LC1 Purpose",
+    "prompt_text": "[LC1 Purpose] Create a short 2–3 turn dialogue where the purpose of one speaker's speech can be inferred (e.g., to ask, to request, to confirm, to complain, to inform). Do NOT use explicit cues like \"I'm calling to…\". Question: \"What is the purpose of the woman's (or man's) speech?\" Provide 5 purpose options; only one must match the dialogue. Length: about 60–80 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력 목표**: 상위권 학생이 마지막까지 고민하도록 설계\n\n### 개별 선택지 역할\n① **정답**: 글의 주된 의사소통 목적을 정확히 반영\n② **오답 (부분 일치)**: 글에 언급된 부차적 내용을 목적으로 오인하게 함\n③ **오답 (과잉 일반화)**: 글의 범위를 넘어서는 포괄적 목적 제시\n④ **오답 (인접 혼동)**: 유사한 상황에서 있을 법한 다른 목적\n⑤ **오답 (세부 함정)**: 글의 특정 표현에만 집중하게 유도\n\n### 오답 매력도 확보 전략\n- 모든 오답은 문맥상 그럴듯해 보여야 함\n- 정답은 D-E 단계까지 읽어야 확정 가능하도록 설계\n- 하위권은 A-C 단계에서 성급한 판단으로 오답 선택 유도",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 194,
+    "prompt_key": "2",
+    "title": "LC2 Location",
+    "prompt_text": "[LC2 Location] Generate a 2–3 turn conversation where the location is not named directly but is inferable from contextual clues (objects, actions, announcements). Question: \"Where is the conversation most likely taking place?\" Provide 5 location options; only one must be strongly supported. Length: 55–75 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 주장의 핵심과 부수적 내용 구분 능력 측정\n\n### 개별 선택지 역할\n① **정답**: 필자의 핵심 주장을 정확히 반영\n② **오답 (근거 혼동)**: 주장을 뒷받침하는 근거를 주장으로 오인\n③ **오답 (범위 축소)**: 주장의 일부분만 포착\n④ **오답 (과잉 확대)**: 글의 범위를 넘어선 주장\n⑤ **오답 (반대 주장)**: 필자 입장과 상반되는 내용\n\n### 오답 매력도 확보 전략\n- 근거와 주장의 경계를 모호하게 하는 오답\n- 글 초반 언급 내용을 주장으로 착각하게 유도",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 195,
+    "prompt_key": "3",
+    "title": "LC3 Relationship",
+    "prompt_text": "[LC3 Relationship] Generate a 2–3 turn conversation where the relationship between speakers (teacher–student, client–agent, buyer–seller, coworkers, etc.) is implied by tone and behavior, not explicitly stated. Question: \"What is the relationship between the speakers?\" Provide 5 relationship options; only one fits. Length: 55–80 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 포괄적 주제와 세부 소재 구분 능력\n\n### 개별 선택지 역할\n① **정답**: 글 전체를 관통하는 핵심 주제\n② **오답 (소재 혼동)**: 글에서 다루는 소재를 주제로 착각\n③ **오답 (범위 축소)**: 특정 단락의 내용만 반영\n④ **오답 (범위 확대)**: 글의 범위를 벗어난 광범위한 주제\n⑤ **오답 (관련 주제)**: 관련 있지만 글의 초점과 다른 주제\n\n### 오답 매력도 확보 전략\n- 제목과 혼동될 수 있는 오답 배치\n- 글의 도입부에서 언급된 배경을 주제로 오인하게 유도",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 196,
+    "prompt_key": "4",
+    "title": "LC4 Attitude/Feeling",
+    "prompt_text": "[LC4 Attitude] Create a conversation showing a clear emotional tone or attitude (relieved, disappointed, annoyed, grateful, worried) without naming it directly. Question: \"How does the woman feel?\" or \"What is the man's attitude?\" Provide 5 adjective options; one correct, others semantically close but wrong. Length: 60–80 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 적절한 제목 선정 능력\n\n### 개별 선택지 역할\n① **정답**: 글의 핵심 내용과 톤을 반영하는 제목\n② **오답 (부분 반영)**: 글의 일부 내용만 반영한 제목\n③ **오답 (과잉 포괄)**: 너무 광범위하고 일반적인 제목\n④ **오답 (세부 초점)**: 특정 예시나 세부 사항에만 집중\n⑤ **오답 (매력적 표현)**: 흥미롭지만 내용과 불일치\n\n### 오답 매력도 확보 전략\n- 눈길을 끄는 표현이지만 내용과 불일치하는 오답\n- 글의 부차적 소재를 강조한 제목",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 197,
+    "prompt_key": "5",
+    "title": "LC5 True/Not Mentioned",
+    "prompt_text": "[LC5 Detail/True/NotMentioned] Write a 3-turn conversation including 3–4 key facts (time, place, plan, preference). Question: either \"Which of the following is NOT mentioned?\" or \"Which statement is true according to the conversation?\" Provide 5 statements; exactly one must satisfy the question type. Length: 65–90 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 문장**: 무관 문장(정답) 1개 + 관련 문장 4개\n- **변별력**: 글의 통일성 및 응집성 파악 능력\n\n### 개별 문장 역할\n① **정답 (무관 문장)**: 주제와 관련 있어 보이지만 논리적 흐름을 방해\n② **오답**: 글의 주제 도입 또는 배경 설명\n③ **오답**: 핵심 주장 또는 논거 제시\n④ **오답**: 예시 또는 부연 설명\n⑤ **오답**: 결론 또는 요약\n\n### 무관 문장 설계 전략\n- 같은 주제 영역의 어휘 사용 (표면적 관련성)\n- 논리적 연결고리 부재 (실제 무관성)\n- 삭제해도 글의 흐름이 자연스러워지는 문장\n\n### 오답 매력도 확보 전략\n- 모든 문장이 같은 주제 영역의 어휘 포함\n- 무관 문장도 그 자체로는 의미 있는 정보 제공",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 198,
+    "prompt_key": "6",
+    "title": "LC6 Picture Matching",
+    "prompt_text": "[LC6 Picture Matching] Create a conversation that would match exactly one picture among five. In this system, each option is written as a short description of a picture. Question: \"Which picture matches the conversation?\" Provide 5 distinct descriptions; only one fully matches the dialogue. Length: 50–70 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 순서 1개 + 오답 순서 4개\n- **변별력**: 글의 논리적 전개 파악 능력\n\n### 개별 선택지 역할\n① **정답**: (A)-(B)-(C)의 논리적으로 올바른 배열\n② **오답**: 첫 문단만 맞고 나머지 순서 오류\n③ **오답**: 마지막 문단만 맞고 나머지 순서 오류\n④ **오답**: 일부 순서만 맞는 배열\n⑤ **오답**: 완전히 잘못된 배열 (명백한 오답)\n\n### 순서 단서 활용\n- 지시어 (this, these, such, the + 명사)\n- 연결어 (however, therefore, moreover)\n- 대명사의 선행사 관계\n- 시간 순서 표현\n- 논리적 인과관계\n\n### 오답 매력도 확보 전략\n- 표면적으로 연결 가능해 보이는 오답 순서\n- 연결어만으로 판단 시 오류 발생 가능한 배열",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 199,
+    "prompt_key": "7",
+    "title": "LC7 Main Topic",
+    "prompt_text": "[LC7 Topic] Write a dialogue in which two speakers discuss one main topic (e.g., planning an event, solving a problem, sharing an opinion). Question: \"What are the speakers mainly talking about?\" Provide 5 topic options; only one must summarize the conversation. Length: 55–80 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 순서 1개 + 오답 순서 4개\n- **변별력**: 복잡한 논리 구조 파악 능력 (RC36보다 고난도)\n\n### 개별 선택지 역할\n① **정답**: 완벽한 논리적 순서\n② **오답**: (A)의 위치만 정확한 배열\n③ **오답**: (C)의 위치만 정확한 배열\n④ **오답**: 두 문단 순서가 뒤바뀐 배열\n⑤ **오답**: 논리적 혼란을 주는 배열\n\n### 오답 매력도 확보 전략\n- 각 문단의 독립성이 높아 여러 순서가 가능해 보임\n- 주어진 글과의 연결이 핵심 단서",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 200,
+    "prompt_key": "8",
+    "title": "LC8 Specific Detail",
+    "prompt_text": "[LC8 Detail] Construct a conversation that clearly includes a key detail (time, date, place, quantity, selected option). Question asks for this detail (e.g., \"When will they meet?\"). Provide 5 close options; only one matches. Length: 60–90 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력 목표**: 상위권 학생이 마지막까지 고민하도록 설계\n\n### 개별 선택지 역할\n① **정답**: 글의 주된 의사소통 목적을 정확히 반영\n② **오답 (부분 일치)**: 글에 언급된 부차적 내용을 목적으로 오인하게 함\n③ **오답 (과잉 일반화)**: 글의 범위를 넘어서는 포괄적 목적 제시\n④ **오답 (인접 혼동)**: 유사한 상황에서 있을 법한 다른 목적\n⑤ **오답 (세부 함정)**: 글의 특정 표현에만 집중하게 유도\n\n### 오답 매력도 확보 전략\n- 모든 오답은 문맥상 그럴듯해 보여야 함\n- 정답은 D-E 단계까지 읽어야 확정 가능하도록 설계\n- 하위권은 A-C 단계에서 성급한 판단으로 오답 선택 유도",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 201,
+    "prompt_key": "9",
+    "title": "LC9 Next Action",
+    "prompt_text": "[LC9 Next Action] Create a dialogue where a logical next action of one speaker is implied by the discussion. Avoid explicit \"I will now…\" statements. Question: \"What will the woman do next?\" or similar. Provide 5 actions; only one naturally follows. Length: 60–85 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **형식**: \"A → B\" 형태의 심경 변화 쌍\n\n### 개별 선택지 역할\n① **정답**: 글의 전후 심경 변화를 정확히 포착\n② **오답 (순서 역전)**: 변화 방향을 반대로 제시 (B → A)\n③ **오답 (부분 감정)**: 전반부 또는 후반부 감정만 정확\n④ **오답 (유사 감정)**: 비슷하지만 다른 감정 쌍 제시\n⑤ **오답 (무관 감정)**: 글에서 추론 불가능한 감정 제시\n\n### 오답 매력도 확보 전략\n- 감정 어휘의 미묘한 차이 활용 (anxious vs nervous)\n- 전환점 이전 감정에 집중한 오답 배치",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 202,
+    "prompt_key": "10",
+    "title": "LC10 Reason/Cause",
+    "prompt_text": "[LC10 Reason] Generate a conversation where a reason or cause (for being late, disappointed, worried, etc.) is implied. Question: \"Why does the man feel disappointed?\" or similar. Provide 5 possible reasons; only one is supported by the dialogue. Length: 60–85 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 도표 정보와 담화 내용 매칭 능력\n\n### 개별 선택지 역할\n① **정답**: 도표와 담화 내용 모두 일치\n② **오답**: 도표와 일치하지만 담화와 불일치\n③ **오답**: 담화와 일치하지만 도표와 불일치\n④ **오답**: 도표의 다른 항목과 혼동\n⑤ **오답**: 담화의 다른 부분과 혼동\n\n### 오답 매력도 확보 전략\n- 도표와 담화 중 하나만 집중하면 오답 선택 유도\n- 유사한 수치/항목 간 혼동 유도",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 203,
+    "prompt_key": "11",
+    "title": "LC11 Suggestion",
+    "prompt_text": "[LC11 Suggestion] Write a conversation where one speaker suggests or recommends something as a solution or idea. Question: \"What does the woman suggest the man do?\" Provide 5 suggestions; only one matches. Length: 60–90 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 상황에 적절한 응답 선택 능력\n\n### 개별 선택지 역할\n① **정답**: 대화 맥락에 가장 자연스러운 응답\n② **오답**: 문법적으로 맞지만 맥락에 부적절\n③ **오답**: 대화 주제와 관련 있지만 어색한 응답\n④ **오답**: 이전 발화의 일부에만 반응하는 응답\n⑤ **오답**: 명백히 부자연스러운 응답\n\n### 오답 매력도 확보 전략\n- 대화의 표면적 질문에만 답하는 오답\n- 화용론적 적절성을 고려해야 정답 선택 가능",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 204,
+    "prompt_key": "12",
+    "title": "LC12 Phone Message",
+    "prompt_text": "[LC12 Phone Message] Create a phone message or voicemail-style monologue: greeting → main message (info + request) → closing. Question: \"What is the purpose of the message?\" Provide 5 purpose options (ask for help, confirm, apologize, invite, inform of a change); one correct. Length: 70–95 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 긴 대화에서 적절한 응답 선택\n\n### 개별 선택지 역할\n① **정답**: 대화 전체 맥락을 고려한 적절한 응답\n② **오답**: 대화 초반 내용에만 적절한 응답\n③ **오답**: 대화 중간 내용에만 적절한 응답\n④ **오답**: 표면적으로 관련 있지만 맥락상 부적절\n⑤ **오답**: 대화 주제와 무관한 응답\n\n### 오답 매력도 확보 전략\n- 대화 전체 흐름 파악 필요\n- 마지막 발화의 의도 정확히 파악 필요",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 205,
+    "prompt_key": "13",
+    "title": "LC13 Announcement/Ad",
+    "prompt_text": "[LC13 Announcement] Produce a short announcement/advertisement/notice (e.g., event, sale, schedule change, lost item). Question: \"What is the announcement mainly about?\" or \"What is being advertised?\" Provide 5 topic options; only one correct. Length: 60–90 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 상황 설명 후 적절한 말 선택\n\n### 개별 선택지 역할\n① **정답**: 주어진 상황에 가장 적절한 발화\n② **오답**: 상황의 일부에만 적절한 발화\n③ **오답**: 비슷한 상황에서 쓸 수 있지만 이 상황에는 부적절\n④ **오답**: 역할이 뒤바뀐 상황에 적절한 발화\n⑤ **오답**: 상황과 무관한 발화\n\n### 오답 매력도 확보 전략\n- 상황의 핵심 요소 (화자의 입장, 목적, 상대방과의 관계) 파악 필요\n- 공손성 수준, 격식 수준 고려 필요",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 206,
+    "prompt_key": "14",
+    "title": "LC14 Table/Chart Listening",
+    "prompt_text": "[LC14 Table/Chart Listening] Generate a conversation where speakers refer to simple quantitative info (prices, times, amounts). Question asks for a specific numerical fact. Provide 5 numeric options; only one is correct. Length: 65–95 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 담화를 듣고 세부 정보 파악\n\n### 개별 선택지 역할\n① **정답**: 담화 내용과 정확히 일치\n② **오답**: 유사하지만 세부 사항 오류\n③ **오답**: 담화에서 언급된 다른 정보\n④ **오답**: 추론 가능하지만 직접 언급되지 않은 정보\n⑤ **오답**: 담화 주제와 관련 있지만 언급되지 않은 정보\n\n### 오답 매력도 확보 전략\n- 숫자, 날짜, 장소, 이름 등의 세부 정보 혼동\n- 담화 구조상 핵심 정보 위치 파악 필요",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 207,
+    "prompt_key": "15",
+    "title": "LC15 Informational Speech",
+    "prompt_text": "[LC15 Informational Speech] Write a monologue-style informational speech or announcement (greeting → purpose → key points → closing). Question: \"What is the main purpose of the announcement?\" Provide 5 purpose options (inform, instruct, warn, invite, remind); one correct. Length: 80–110 words.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 담화를 듣고 세부 정보 파악\n\n### 개별 선택지 역할\n① **정답**: 담화 내용과 정확히 일치\n② **오답**: 부분적으로만 일치\n③ **오답**: 담화의 다른 부분과 혼동\n④ **오답**: 논리적으로 타당하지만 언급되지 않음\n⑤ **오답**: 담화 내용과 반대\n\n### 오답 매력도 확보 전략\n- 긴 담화에서 핵심 정보 위치 파악 필요\n- 세부 사항의 정확한 기억 필요",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 208,
+    "prompt_key": "16",
+    "title": "LC16 Set Q1",
+    "prompt_text": "[LC16 Set Q1] This item is the first question of the LC16–17 listening set sharing a single lc_script. For item 16, create a question focusing on global meaning or key information of the shared script (topic, main idea, or important detail). Use only the shared script; do not create a new one here. Provide 5 options; one correct.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙 (세트 문항)\n- **각 문항 5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 긴 담화의 전체 내용 및 세부 정보 파악\n\n### LC16 (첫 번째 문항) 역할\n① **정답**: 담화의 주제/목적에 해당\n② **오답**: 담화의 부차적 내용\n③ **오답**: 담화에서 언급된 예시\n④ **오답**: 관련 있지만 언급되지 않은 내용\n⑤ **오답**: 담화 내용과 반대\n\n### LC17 (두 번째 문항) 역할\n① **정답**: 세부 정보와 정확히 일치\n② **오답**: 담화의 다른 세부 정보\n③ **오답**: 부분적으로만 일치\n④ **오답**: 추론 가능하지만 직접 언급되지 않음\n⑤ **오답**: 담화 내용과 불일치\n\n### 오답 매력도 확보 전략\n- 두 문항이 담화의 다른 측면을 측정\n- 첫 문항: 전체 구조/목적, 두 번째 문항: 세부 정보",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 209,
+    "prompt_key": "17",
+    "title": "LC17 Set Q2",
+    "prompt_text": "[LC17 Set Q2] This item is the second question of the LC16–17 set. Create a question targeting a different aspect of the same shared lc_script (e.g., speaker's attitude, another detail, or next action). Ensure there is no overlap with LC16's focus. Provide 5 options; one correct.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙 (세트 문항)\n- **각 문항 5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 긴 담화의 전체 내용 및 세부 정보 파악\n\n### LC16 (첫 번째 문항) 역할\n① **정답**: 담화의 주제/목적에 해당\n② **오답**: 담화의 부차적 내용\n③ **오답**: 담화에서 언급된 예시\n④ **오답**: 관련 있지만 언급되지 않은 내용\n⑤ **오답**: 담화 내용과 반대\n\n### LC17 (두 번째 문항) 역할\n① **정답**: 세부 정보와 정확히 일치\n② **오답**: 담화의 다른 세부 정보\n③ **오답**: 부분적으로만 일치\n④ **오답**: 추론 가능하지만 직접 언급되지 않음\n⑤ **오답**: 담화 내용과 불일치\n\n### 오답 매력도 확보 전략\n- 두 문항이 담화의 다른 측면을 측정\n- 첫 문항: 전체 구조/목적, 두 번째 문항: 세부 정보",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 211,
+    "prompt_key": "19",
+    "title": "RC19 Title",
+    "prompt_text": "[RC19 Title] Create a 'best title' question for the given passage. The correct title must concisely express the overall message. Distractors should be plausible but incomplete, overly specific, or overly general. Provide 5 options; one correct.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **형식**: \"A → B\" 형태의 심경 변화 쌍\n\n### 개별 선택지 역할\n① **정답**: 글의 전후 심경 변화를 정확히 포착\n② **오답 (순서 역전)**: 변화 방향을 반대로 제시 (B → A)\n③ **오답 (부분 감정)**: 전반부 또는 후반부 감정만 정확\n④ **오답 (유사 감정)**: 비슷하지만 다른 감정 쌍 제시\n⑤ **오답 (무관 감정)**: 글에서 추론 불가능한 감정 제시\n\n### 오답 매력도 확보 전략\n- 감정 어휘의 미묘한 차이 활용 (anxious vs nervous)\n- 전환점 이전 감정에 집중한 오답 배치",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 212,
+    "prompt_key": "20",
+    "title": "RC20 Gist",
+    "prompt_text": "[RC20 Gist] Make a question asking for the gist or core message of the passage. Provide 5 summary statements; only one must match the main point. Distractors may focus on supporting details or partial ideas.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 주장의 핵심과 부수적 내용 구분 능력 측정\n\n### 개별 선택지 역할\n① **정답**: 필자의 핵심 주장을 정확히 반영\n② **오답 (근거 혼동)**: 주장을 뒷받침하는 근거를 주장으로 오인\n③ **오답 (범위 축소)**: 주장의 일부분만 포착\n④ **오답 (과잉 확대)**: 글의 범위를 넘어선 주장\n⑤ **오답 (반대 주장)**: 필자 입장과 상반되는 내용\n\n### 오답 매력도 확보 전략\n- 근거와 주장의 경계를 모호하게 하는 오답\n- 글 초반 언급 내용을 주장으로 착각하게 유도",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 213,
+    "prompt_key": "21",
+    "title": "RC21 Purpose",
+    "prompt_text": "[RC21 Author's Purpose] Create a question about the author's purpose (to persuade, to criticize, to explain, to warn, to encourage, etc.). Provide 5 options in the form \"To ~\". Only one should match the overall intent of the passage.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 표면적 의미와 함축적 의미 구분 능력 측정\n\n### 개별 선택지 역할\n① **정답**: 밑줄 친 표현의 문맥적 함축 의미\n② **오답 (사전적 의미)**: 표현의 글자 그대로의 의미\n③ **오답 (부분 의미)**: 함축 의미의 일부만 포착\n④ **오답 (과도 해석)**: 문맥을 벗어난 과장된 해석\n⑤ **오답 (연관 오해)**: 관련 있어 보이지만 다른 의미\n\n### 오답 매력도 확보 전략\n- 관용적 표현이나 비유적 표현 활용\n- 정답은 전체 맥락을 고려해야 도출 가능",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 214,
+    "prompt_key": "22",
+    "title": "RC22 Emphasis",
+    "prompt_text": "[RC22 Emphasis] Produce a question asking what the author emphasizes in the passage. The correct option must represent the main argument or key emphasis. Distractors should represent secondary or background ideas.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 세부 내용과 핵심 요지 구분 능력\n\n### 개별 선택지 역할\n① **정답**: 글의 핵심 메시지를 정확히 요약\n② **오답 (예시 혼동)**: 예시나 사례를 요지로 착각\n③ **오답 (부분 요약)**: 글의 일부만 반영한 불완전한 요지\n④ **오답 (확대 해석)**: 글에서 직접 언급되지 않은 내용 포함\n⑤ **오답 (반대 요지)**: 글의 메시지와 상반되는 내용\n\n### 오답 매력도 확보 전략\n- 구체적 예시를 요지로 오인하게 유도\n- 도입부 내용만으로 판단 시 오답 선택 유도",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 215,
+    "prompt_key": "23",
+    "title": "RC23 Claim",
+    "prompt_text": "[RC23 Claim] Create a question identifying the author's main claim or assertion. Provide 5 statements; only one must match the central claim supported by the passage.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 포괄적 주제와 세부 소재 구분 능력\n\n### 개별 선택지 역할\n① **정답**: 글 전체를 관통하는 핵심 주제\n② **오답 (소재 혼동)**: 글에서 다루는 소재를 주제로 착각\n③ **오답 (범위 축소)**: 특정 단락의 내용만 반영\n④ **오답 (범위 확대)**: 글의 범위를 벗어난 광범위한 주제\n⑤ **오답 (관련 주제)**: 관련 있지만 글의 초점과 다른 주제\n\n### 오답 매력도 확보 전략\n- 제목과 혼동될 수 있는 오답 배치\n- 글의 도입부에서 언급된 배경을 주제로 오인하게 유도",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 216,
+    "prompt_key": "24",
+    "title": "RC24 Function of Example",
+    "prompt_text": "[RC24 Function of Example] Create a question asking what role a specific example or illustration plays in the passage. Options should describe functions such as \"to support the main idea\", \"to provide a contrast\", \"to give an explanation\", \"to show a consequence\", etc.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 적절한 제목 선정 능력\n\n### 개별 선택지 역할\n① **정답**: 글의 핵심 내용과 톤을 반영하는 제목\n② **오답 (부분 반영)**: 글의 일부 내용만 반영한 제목\n③ **오답 (과잉 포괄)**: 너무 광범위하고 일반적인 제목\n④ **오답 (세부 초점)**: 특정 예시나 세부 사항에만 집중\n⑤ **오답 (매력적 표현)**: 흥미롭지만 내용과 불일치\n\n### 오답 매력도 확보 전략\n- 눈길을 끄는 표현이지만 내용과 불일치하는 오답\n- 글의 부차적 소재를 강조한 제목",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 217,
+    "prompt_key": "25",
+    "title": "RC25 Chart/Graph",
+    "prompt_text": "[RC25 Chart/Graph] Using CHART_DATA provided in context, create a KSAT-style chart/graph interpretation item. Generate 5 statements about the chart; exactly one must be correct (or incorrect) according to the instructions. All numeric and comparative information must be logically consistent with CHART_DATA. Do not rewrite or alter the underlying data.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 상위권 학생이 마지막까지 고민하도록 설계\n\n### 개별 선택지 역할\n① **정답**: 문항의 요구사항을 완벽히 충족\n② **오답 (부분 일치)**: 일부 조건만 충족하는 선택지\n③ **오답 (과잉 확대)**: 지문 범위를 넘어선 내용\n④ **오답 (관련 혼동)**: 관련 있어 보이지만 정확하지 않은 내용\n⑤ **오답 (반대/무관)**: 지문 내용과 상반되거나 무관한 내용\n\n### 오답 매력도 확보 전략\n- 모든 오답이 독립적으로 보면 의미 있는 내용\n- 지문을 꼼꼼히 읽어야 정답과 오답 구분 가능\n- 표면적 유사성이 아닌 논리적 연결성 기준으로 정답 판별",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 218,
+    "prompt_key": "26",
+    "title": "RC26 Sentence-for-Blank",
+    "prompt_text": "[RC26 Sentence Blank] Create a question asking which sentence best fits a given blank in the passage. Provide 5 sentence options; only one must restore logical flow and coherence. Distractors should be locally plausible but globally inconsistent. Do not modify other sentences.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 상위권 학생이 마지막까지 고민하도록 설계\n\n### 개별 선택지 역할\n① **정답**: 문항의 요구사항을 완벽히 충족\n② **오답 (부분 일치)**: 일부 조건만 충족하는 선택지\n③ **오답 (과잉 확대)**: 지문 범위를 넘어선 내용\n④ **오답 (관련 혼동)**: 관련 있어 보이지만 정확하지 않은 내용\n⑤ **오답 (반대/무관)**: 지문 내용과 상반되거나 무관한 내용\n\n### 오답 매력도 확보 전략\n- 모든 오답이 독립적으로 보면 의미 있는 내용\n- 지문을 꼼꼼히 읽어야 정답과 오답 구분 가능\n- 표면적 유사성이 아닌 논리적 연결성 기준으로 정답 판별",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 219,
+    "prompt_key": "27",
+    "title": "RC27 Abstract Blank",
+    "prompt_text": "[RC27 Abstract Blank] Make a higher-level blank-completion question requiring abstract or conceptual inference. One option must integrate ideas before and after the blank in a meaningful way. Avoid trivial or purely factual completions. Provide 5 options; one correct.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 상위권 학생이 마지막까지 고민하도록 설계\n\n### 개별 선택지 역할\n① **정답**: 문항의 요구사항을 완벽히 충족\n② **오답 (부분 일치)**: 일부 조건만 충족하는 선택지\n③ **오답 (과잉 확대)**: 지문 범위를 넘어선 내용\n④ **오답 (관련 혼동)**: 관련 있어 보이지만 정확하지 않은 내용\n⑤ **오답 (반대/무관)**: 지문 내용과 상반되거나 무관한 내용\n\n### 오답 매력도 확보 전략\n- 모든 오답이 독립적으로 보면 의미 있는 내용\n- 지문을 꼼꼼히 읽어야 정답과 오답 구분 가능\n- 표면적 유사성이 아닌 논리적 연결성 기준으로 정답 판별",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 220,
+    "prompt_key": "28",
+    "title": "RC28 Sentence Function/Transition",
+    "prompt_text": "[RC28 Function/Transition] Create a question asking how a specific underlined sentence functions in the passage (introducing a topic, contrasting, giving an example, summarizing, etc.). Provide 5 functional descriptions; only one fits the sentence in context.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 상위권 학생이 마지막까지 고민하도록 설계\n\n### 개별 선택지 역할\n① **정답**: 문항의 요구사항을 완벽히 충족\n② **오답 (부분 일치)**: 일부 조건만 충족하는 선택지\n③ **오답 (과잉 확대)**: 지문 범위를 넘어선 내용\n④ **오답 (관련 혼동)**: 관련 있어 보이지만 정확하지 않은 내용\n⑤ **오답 (반대/무관)**: 지문 내용과 상반되거나 무관한 내용\n\n### 오답 매력도 확보 전략\n- 모든 오답이 독립적으로 보면 의미 있는 내용\n- 지문을 꼼꼼히 읽어야 정답과 오답 구분 가능\n- 표면적 유사성이 아닌 논리적 연결성 기준으로 정답 판별",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 221,
+    "prompt_key": "29",
+    "title": "RC29 Grammar",
+    "prompt_text": "[RC29 Grammar] Based on the given passage with exactly 5 underlined segments (<u>...</u>), write a question asking which underlined part is grammatically incorrect or inappropriate. Provide 5 options corresponding to each underlined segment, answer (1–5), explanation, and grammar_meta (error type). Never change non-underlined text.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 밑줄**: 정답(어법상 틀린 것) 1개 + 맞는 표현 4개\n- **변별력**: 세밀한 문법 지식과 문맥 파악 능력\n\n### 개별 밑줄 역할\n① **정답 (오류)**: 문법적으로 틀린 표현 (수정 필요)\n② **오답 (함정)**: 헷갈리기 쉽지만 문법적으로 맞는 표현\n③ **오답 (함정)**: 다른 문법 규칙으로 혼동 유도\n④ **오답 (평범)**: 명백히 맞는 표현 (쉬운 선지)\n⑤ **오답 (평범)**: 명백히 맞는 표현 (쉬운 선지)\n\n### 문법 오류 유형 (정답용)\n- 주어-동사 수일치 오류\n- 능동/수동 혼동\n- 분사 (현재분사/과거분사) 선택 오류\n- 관계대명사 격 오류\n- to부정사/동명사 선택 오류\n\n### 함정 선지 설계 (오답용)\n- 정답처럼 보이지만 문맥상 맞는 표현\n- 익숙하지 않은 구문이지만 정확한 표현",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 222,
+    "prompt_key": "30",
+    "title": "RC30 Vocabulary-in-Context",
+    "prompt_text": "[RC30 Vocabulary] Create a vocabulary-in-context question about an underlined word/phrase. Provide 5 meaning options; one closest in meaning, others semantically related but incorrect. Avoid dictionary-style meta-language; stay within context.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 밑줄**: 부적절한 어휘(정답) 1개 + 적절한 어휘 4개\n- **변별력**: 문맥에 맞는 어휘 선택 능력\n\n### 개별 밑줄 역할\n① **정답 (부적절)**: 문맥상 반대되거나 어울리지 않는 어휘\n② **오답 (함정)**: 어색해 보이지만 문맥상 적절한 어휘\n③ **오답 (함정)**: 의미가 비슷해 보이지만 정확한 어휘\n④ **오답 (평범)**: 명백히 문맥에 맞는 어휘\n⑤ **오답 (평범)**: 명백히 문맥에 맞는 어휘\n\n### 오답 매력도 확보 전략\n- 동의어/반의어 관계 활용\n- 다의어의 문맥적 의미 파악 필요\n- 논리적 흐름을 따라가야 부적절함 파악 가능",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 223,
+    "prompt_key": "31",
+    "title": "RC31 Single Blank",
+    "prompt_text": "[RC31 Single Blank] From the given passage, form a single-blank item by removing one key sentence or clause. Output gapped_passage (with a single [BLANK] or equivalent marker) and 5 completion options. Only one option must make the passage logically and semantically coherent. Do not alter non-blank text.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 문맥적 추론 및 논리적 완성 능력\n\n### 개별 선택지 역할\n① **정답**: 빈칸에 들어가 글의 논리를 완성하는 표현\n② **오답 (부분 일치)**: 글의 일부와 관련 있지만 전체 맥락에 부적합\n③ **오답 (반대 논리)**: 글의 논지와 상반되는 내용\n④ **오답 (관련 어휘)**: 같은 주제 영역이지만 문맥에 부적합\n⑤ **오답 (매력적 표현)**: 그럴듯해 보이지만 논리적 연결 부족\n\n### 오답 매력도 확보 전략\n- 빈칸 전후 문장만으로는 정답 확정 불가\n- 글 전체의 논리적 흐름 파악 필요\n- 오답도 단독으로 보면 의미 있는 표현",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 224,
+    "prompt_key": "32",
+    "title": "RC32 Paragraph Summary",
+    "prompt_text": "[RC32 Summary] Create a question asking for the best summary of a specified paragraph or section. Provide 5 summary statements; only one accurately reflects the central content. Distractors must focus on partial or peripheral information.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 심화된 문맥적 추론 능력 (RC31보다 고난도)\n\n### 개별 선택지 역할\n① **정답**: 글의 핵심 논지를 완성하는 추상적 표현\n② **오답 (표면적)**: 글의 표면적 내용만 반영\n③ **오답 (과잉 추론)**: 글에서 직접 추론 불가능한 내용\n④ **오답 (부분 적합)**: 일부 문장과는 어울리지만 전체와 부조화\n⑤ **오답 (유사 개념)**: 비슷한 개념이지만 미묘하게 다른 의미\n\n### 오답 매력도 확보 전략\n- 추상적 표현으로 구성된 선택지\n- 정답은 글의 주제문/결론부와 긴밀히 연결",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 225,
+    "prompt_key": "33",
+    "title": "RC33 Long Single Blank",
+    "prompt_text": "[RC33 Long Single Blank] For a longer multi-paragraph passage, create a single-blank completion item that tests global logical flow. Provide 5 options; only one should maintain the deeper argument or reasoning. Academic/abstract style required.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 최고난도 빈칸 추론 (추상적/철학적 내용)\n\n### 개별 선택지 역할\n① **정답**: 글의 핵심 통찰을 담은 표현\n② **오답 (단순화)**: 글의 복잡한 논지를 지나치게 단순화\n③ **오답 (곡해)**: 글의 의미를 왜곡한 표현\n④ **오답 (관련 개념)**: 관련 있지만 글의 초점과 다른 개념\n⑤ **오답 (정반대)**: 글의 논지와 정면으로 배치되는 내용\n\n### 오답 매력도 확보 전략\n- 철학적/추상적 어휘 사용\n- 모든 선택지가 학술적으로 의미 있어 보임\n- 글 전체의 논증 구조 파악 필수",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 226,
+    "prompt_key": "34",
+    "title": "RC34 Sentence Insertion",
+    "prompt_text": "[RC34 Sentence Insertion] Design a sentence insertion item. Provide 5 sentence options; only one must fit at a marked insertion point in the passage, given pronoun reference, discourse markers, and logical order.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **형식**: (A), (B) 두 빈칸에 들어갈 연결어 조합\n\n### 개별 선택지 역할\n① **정답**: 문맥의 논리적 흐름에 맞는 연결어 쌍\n② **오답 (부분 정답)**: (A)만 맞거나 (B)만 맞는 조합\n③ **오답 (부분 정답)**: (A)만 맞거나 (B)만 맞는 조합\n④ **오답 (역전)**: 논리 관계를 반대로 파악한 조합\n⑤ **오답 (무관)**: 문맥과 무관한 연결어 조합\n\n### 연결어 유형\n- **순접**: therefore, thus, hence, consequently\n- **역접**: however, nevertheless, nonetheless, yet\n- **예시**: for example, for instance, in other words\n- **추가**: moreover, furthermore, in addition\n- **대조**: on the other hand, in contrast, conversely\n\n### 오답 매력도 확보 전략\n- 부분적으로만 맞는 조합 배치\n- 연결어의 미묘한 뉘앙스 차이 활용",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 227,
+    "prompt_key": "35",
+    "title": "RC35 Sentence Ordering",
+    "prompt_text": "[RC35 Ordering] Provide 5 choices representing different orders of 3–5 given scrambled sentences. Only one order should form a coherent paragraph. Ensure that temporal, causal, and referential cues support the correct sequence.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 문장**: 무관 문장(정답) 1개 + 관련 문장 4개\n- **변별력**: 글의 통일성 및 응집성 파악 능력\n\n### 개별 문장 역할\n① **정답 (무관 문장)**: 주제와 관련 있어 보이지만 논리적 흐름을 방해\n② **오답**: 글의 주제 도입 또는 배경 설명\n③ **오답**: 핵심 주장 또는 논거 제시\n④ **오답**: 예시 또는 부연 설명\n⑤ **오답**: 결론 또는 요약\n\n### 무관 문장 설계 전략\n- 같은 주제 영역의 어휘 사용 (표면적 관련성)\n- 논리적 연결고리 부재 (실제 무관성)\n- 삭제해도 글의 흐름이 자연스러워지는 문장\n\n### 오답 매력도 확보 전략\n- 모든 문장이 같은 주제 영역의 어휘 포함\n- 무관 문장도 그 자체로는 의미 있는 정보 제공",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 228,
+    "prompt_key": "36",
+    "title": "RC36 Logical Completion",
+    "prompt_text": "[RC36 Logical Completion] Create a blank-completion item requiring higher-order logical inference (e.g., contrast, concession, cause–effect). The correct option must be consistent with both the local sentence and the global argument.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 순서 1개 + 오답 순서 4개\n- **변별력**: 글의 논리적 전개 파악 능력\n\n### 개별 선택지 역할\n① **정답**: (A)-(B)-(C)의 논리적으로 올바른 배열\n② **오답**: 첫 문단만 맞고 나머지 순서 오류\n③ **오답**: 마지막 문단만 맞고 나머지 순서 오류\n④ **오답**: 일부 순서만 맞는 배열\n⑤ **오답**: 완전히 잘못된 배열 (명백한 오답)\n\n### 순서 단서 활용\n- 지시어 (this, these, such, the + 명사)\n- 연결어 (however, therefore, moreover)\n- 대명사의 선행사 관계\n- 시간 순서 표현\n- 논리적 인과관계\n\n### 오답 매력도 확보 전략\n- 표면적으로 연결 가능해 보이는 오답 순서\n- 연결어만으로 판단 시 오류 발생 가능한 배열",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 229,
+    "prompt_key": "37",
+    "title": "RC37 Practical Reading",
+    "prompt_text": "[RC37 Practical Reading] Create a question based on a practical text (notice, flyer, schedule, instructions). Provide 5 options; only one matches explicit information in the text. Focus on realistic reading tasks.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 순서 1개 + 오답 순서 4개\n- **변별력**: 복잡한 논리 구조 파악 능력 (RC36보다 고난도)\n\n### 개별 선택지 역할\n① **정답**: 완벽한 논리적 순서\n② **오답**: (A)의 위치만 정확한 배열\n③ **오답**: (C)의 위치만 정확한 배열\n④ **오답**: 두 문단 순서가 뒤바뀐 배열\n⑤ **오답**: 논리적 혼란을 주는 배열\n\n### 오답 매력도 확보 전략\n- 각 문단의 독립성이 높아 여러 순서가 가능해 보임\n- 주어진 글과의 연결이 핵심 단서",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 230,
+    "prompt_key": "38",
+    "title": "RC38 Rhetorical Structure",
+    "prompt_text": "[RC38 Structure] Make a question asking about the passage's overall organizational pattern (comparison-contrast, cause-effect, problem-solution, definition-example, etc.). Provide 5 structure labels or descriptions; one correct.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 위치**: 정답 위치 1개 + 오답 위치 4개\n- **변별력**: 문장의 논리적 위치 파악 능력\n\n### 개별 위치 역할\n① **정답**: 주어진 문장이 논리적으로 연결되는 유일한 위치\n② **오답**: 표면적으로 연결 가능해 보이는 위치\n③ **오답**: 지시어가 가리킬 대상이 있어 보이는 위치\n④ **오답**: 주제 관련 어휘가 있는 위치\n⑤ **오답**: 명백히 부적절한 위치 (쉬운 선지)\n\n### 삽입 문장 단서\n- 지시어 (This, Such, These)\n- 연결어 (However, Therefore, For example)\n- 정관사 + 명사 (the idea, the concept)\n- 대명사와 선행사 관계\n\n### 오답 매력도 확보 전략\n- 삽입 문장의 키워드와 유사한 어휘가 있는 오답 위치\n- 부분적으로 연결 가능해 보이는 위치",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 231,
+    "prompt_key": "39",
+    "title": "RC39 Reference",
+    "prompt_text": "[RC39 Reference] Create a question asking what a pronoun or referring expression (it, they, this, such a phenomenon, etc.) refers to. Provide 5 candidate antecedents; only one is correct in context.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 위치**: 정답 위치 1개 + 오답 위치 4개\n- **변별력**: 복잡한 텍스트에서 논리적 위치 파악 (RC38보다 고난도)\n\n### 개별 위치 역할\n① **정답**: 논리적 필연성이 있는 유일한 위치\n② **오답**: 어휘적 연결만 있는 위치\n③ **오답**: 주제적 연결만 있는 위치\n④ **오답**: 시간적/공간적 연결이 있어 보이는 위치\n⑤ **오답**: 명백한 오답 (기초 수준)\n\n### 오답 매력도 확보 전략\n- 더 복잡한 지시 관계 설정\n- 삽입 문장 자체가 복문/중문으로 구성",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 232,
+    "prompt_key": "40",
+    "title": "RC40 Logical Flow",
+    "prompt_text": "[RC40 Logical Flow] Construct a question about the logical relation between ideas or paragraphs (e.g., cause–effect, contrast, elaboration, concession, sequence). Provide 5 descriptions; only one matches the relation in the passage.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 조합 1개 + 오답 조합 4개\n- **형식**: (A), (B) 두 빈칸에 들어갈 어휘 조합\n\n### 개별 선택지 역할\n① **정답**: 요약문을 정확히 완성하는 어휘 쌍\n② **오답 (부분 정답)**: (A)만 적절하거나 (B)만 적절\n③ **오답 (부분 정답)**: (A)만 적절하거나 (B)만 적절\n④ **오답 (반대 의미)**: 글의 논지와 반대되는 어휘 포함\n⑤ **오답 (무관 어휘)**: 글에서 다루지 않은 개념\n\n### 오답 매력도 확보 전략\n- 글에 등장한 어휘를 활용한 오답\n- 요약문 구조상 어색하지 않은 어휘 조합\n- 정답과 유의어/반의어 관계인 오답 어휘",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 233,
+    "prompt_key": "41",
+    "title": "RC41 Set Q1",
+    "prompt_text": "[RC41 Set Q1] This is the first item of a two-question reading set (41–42) sharing one passage. For item 41, create a global comprehension question (main idea, best title, or author's purpose). The question must require understanding of the entire passage. Provide 5 options; one correct.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙 (세트 문항)\n- **각 문항 5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 장문 독해의 전체 이해 및 세부 파악\n\n### RC41 (첫 번째 문항 - 주로 제목/주제)\n① **정답**: 글 전체를 아우르는 제목/주제\n② **오답**: 글의 일부분만 반영\n③ **오답**: 너무 광범위한 제목/주제\n④ **오답**: 글의 예시에만 집중\n⑤ **오답**: 글의 논지와 다른 방향\n\n### RC42 (두 번째 문항 - 세부 내용/어휘)\n① **정답**: 세부 내용과 정확히 일치\n② **오답**: 글의 다른 부분과 혼동\n③ **오답**: 부분적으로만 일치\n④ **오답**: 글에서 암시되지만 명시되지 않음\n⑤ **오답**: 글 내용과 반대\n\n### 오답 매력도 확보 전략\n- 장문의 복잡한 구조 활용\n- 두 문항이 서로 다른 읽기 능력 측정",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 234,
+    "prompt_key": "42",
+    "title": "RC42 Set Q2",
+    "prompt_text": "[RC42 Set Q2] This is the second item of the 41–42 set. Using the same passage, create a question that focuses on a different skill (inference, specific detail, paragraph function, etc.). Ensure that RC42 does not duplicate the focus of RC41.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙 (세트 문항)\n- **각 문항 5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 장문 독해의 전체 이해 및 세부 파악\n\n### RC41 (첫 번째 문항 - 주로 제목/주제)\n① **정답**: 글 전체를 아우르는 제목/주제\n② **오답**: 글의 일부분만 반영\n③ **오답**: 너무 광범위한 제목/주제\n④ **오답**: 글의 예시에만 집중\n⑤ **오답**: 글의 논지와 다른 방향\n\n### RC42 (두 번째 문항 - 세부 내용/어휘)\n① **정답**: 세부 내용과 정확히 일치\n② **오답**: 글의 다른 부분과 혼동\n③ **오답**: 부분적으로만 일치\n④ **오답**: 글에서 암시되지만 명시되지 않음\n⑤ **오답**: 글 내용과 반대\n\n### 오답 매력도 확보 전략\n- 장문의 복잡한 구조 활용\n- 두 문항이 서로 다른 읽기 능력 측정",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 235,
+    "prompt_key": "43",
+    "title": "RC43 Set Q1",
+    "prompt_text": "[RC43 Set Q1] This is the first item of a three-question reading set (43–45). Using the shared passage, create a global comprehension question (main idea, title, or purpose). Provide 5 options; one correct.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙 (세트 문항 - 3문항)\n- **각 문항 5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 장문 독해의 다양한 측면 파악\n\n### RC43 (순서 배열)\n① **정답**: 논리적으로 올바른 (A)-(B)-(C) 순서\n② **오답**: 첫 문단만 맞는 순서\n③ **오답**: 마지막 문단만 맞는 순서\n④ **오답**: 두 문단 순서가 바뀐 배열\n⑤ **오답**: 완전히 잘못된 순서\n\n### RC44 (문장 삽입 또는 지칭 추론)\n① **정답**: 문맥상 올바른 위치/지칭 대상\n② **오답**: 어휘적으로만 연결되는 위치/대상\n③ **오답**: 주제적으로만 연결되는 위치/대상\n④ **오답**: 부분적으로 연결되는 위치/대상\n⑤ **오답**: 명백히 부적절한 위치/대상\n\n### RC45 (내용 일치/불일치)\n① **정답**: 글 내용과 정확히 일치/불일치\n② **오답**: 세부 사항이 다른 선택지\n③ **오답**: 글의 다른 부분과 혼동되는 선택지\n④ **오답**: 추론 가능하지만 명시되지 않은 내용\n⑤ **오답**: 글 내용과 반대\n\n### 오답 매력도 확보 전략\n- 3문항이 장문의 다양한 측면 측정\n- 글 전체를 꼼꼼히 읽어야 모든 문항 해결 가능",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 236,
+    "prompt_key": "44",
+    "title": "RC44 Set Q2",
+    "prompt_text": "[RC44 Set Q2] Using the same passage as RC43, create a question focusing on inference, detail, or author's attitude. Avoid overlap with RC43 and RC45. Provide 5 options; one correct.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 상위권 학생이 마지막까지 고민하도록 설계\n\n### 개별 선택지 역할\n① **정답**: 문항의 요구사항을 완벽히 충족\n② **오답 (부분 일치)**: 일부 조건만 충족하는 선택지\n③ **오답 (과잉 확대)**: 지문 범위를 넘어선 내용\n④ **오답 (관련 혼동)**: 관련 있어 보이지만 정확하지 않은 내용\n⑤ **오답 (반대/무관)**: 지문 내용과 상반되거나 무관한 내용\n\n### 오답 매력도 확보 전략\n- 모든 오답이 독립적으로 보면 의미 있는 내용\n- 지문을 꼼꼼히 읽어야 정답과 오답 구분 가능\n- 표면적 유사성이 아닌 논리적 연결성 기준으로 정답 판별",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 237,
+    "prompt_key": "45",
+    "title": "RC45 Set Q3",
+    "prompt_text": "[RC45 Set Q3] Using the same passage as RC43 and RC44, create a question about logical structure, sentence insertion, or partial summary. Ensure that the three questions together cover complementary aspects of the passage.\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙 (세트 문항 - 3문항)\n- **각 문항 5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 장문 독해의 다양한 측면 파악\n\n### RC43 (순서 배열)\n① **정답**: 논리적으로 올바른 (A)-(B)-(C) 순서\n② **오답**: 첫 문단만 맞는 순서\n③ **오답**: 마지막 문단만 맞는 순서\n④ **오답**: 두 문단 순서가 바뀐 배열\n⑤ **오답**: 완전히 잘못된 순서\n\n### RC44 (문장 삽입 또는 지칭 추론)\n① **정답**: 문맥상 올바른 위치/지칭 대상\n② **오답**: 어휘적으로만 연결되는 위치/대상\n③ **오답**: 주제적으로만 연결되는 위치/대상\n④ **오답**: 부분적으로 연결되는 위치/대상\n⑤ **오답**: 명백히 부적절한 위치/대상\n\n### RC45 (내용 일치/불일치)\n① **정답**: 글 내용과 정확히 일치/불일치\n② **오답**: 세부 사항이 다른 선택지\n③ **오답**: 글의 다른 부분과 혼동되는 선택지\n④ **오답**: 추론 가능하지만 명시되지 않은 내용\n⑤ **오답**: 글 내용과 반대\n\n### 오답 매력도 확보 전략\n- 3문항이 장문의 다양한 측면 측정\n- 글 전체를 꼼꼼히 읽어야 모든 문항 해결 가능",
+    "active": 1,
+    "created_at": "2026-01-03 05:01:15",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 356,
+    "prompt_key": "LC01",
+    "title": "듣기 LC01 문항",
+    "prompt_text": "Create a CSAT Listening Item 1 (Purpose Identification) following these specifications:\n\n## ITEM CHARACTERISTICS & METHODOLOGY\n\n### Assessment Objective\n- **Core Skill**: Identifying the speaker's purpose in formal announcements\n- **Cognitive Process**: Listen → Identify speaker's intent → Match with purpose options\n- **Difficulty Level**: Basic comprehension with clear purpose indicators\n\n### Discourse Type & Structure\n- **Format**: Formal monologue (announcement, notice, or public address)\n- **Structure Pattern**: Greeting → Identity/Role → Main announcement → Details → Closing\n- **Content Flexibility**: Any institutional context (school, office, public facility, organization)\n- **Speaker Role**: Official announcer, administrator, or authority figure\n\n### Language Specifications\n- **Transcript Length**: 60-80 words (approximately 30-40 seconds)\n- **Sentence Complexity**: Simple to moderate (1-2 clauses per sentence)\n- **Vocabulary Level**: High-frequency, concrete vocabulary\n- **Speech Rate**: Standard conversational pace with clear articulation\n- **Vocabulary Profile**:\n  \"vocabulary_difficulty\": \"CSAT\",\n  \"low_frequency_words\": []\n\n### Question Format Requirements\n- **Stem**: \"다음을 듣고, [남자/여자]가 하는 말의 목적으로 가장 적절한 것을 고르시오.\"\n- **Options**: 5 Korean purpose statements ending with \"~하려고\"\n- **Correct Answer**: Must directly correspond to the speaker's main intent\n- **Distractors**: Related but secondary purposes, unmentioned purposes, opposite purposes\n\n### Content Generation Guidelines\n- Create diverse announcement scenarios (schedule changes, policy updates, event notifications)\n- Ensure the purpose is clearly identifiable but requires active listening\n- Include realistic institutional contexts and appropriate formal language\n- Maintain consistency with Korean high school institutional environments\n\n**Required JSON Output Format:**\n{\n\"question\": \"다음을 듣고, [남자/여자]가 하는 말의 목적으로 가장 적절한 것을 고르시오.\",\n\"transcript\": \"[60-80 word formal announcement in English]\",\n\"options\": [\"목적1하려고\", \"목적2하려고\", \"목적3하려고\", \"목적4하려고\", \"목적5하려고\"],\n\"correct_answer\": [1-5],\n\"explanation\": \"[Korean explanation of why the answer is correct]\",\n\"vocabulary_difficulty\": \"CSAT\",\n\"low_frequency_words\": []\n}\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 대화의 핵심 목적 파악 능력\n\n### 개별 선택지 역할\n① **정답**: 대화의 주된 목적\n② **오답**: 대화 중 언급된 부차적 행위\n③ **오답**: 대화 상황에서 예상 가능한 다른 목적\n④ **오답**: 특정 발화에만 초점을 맞춘 목적\n⑤ **오답**: 전혀 다른 상황의 목적\n\n### 오답 매력도 확보 전략\n- 대화 초반 내용만으로 판단 시 오답 선택 유도\n- 대화에서 실제 언급된 어휘 활용",
+    "active": 1,
+    "created_at": "2026-01-03 11:52:13",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 361,
+    "prompt_key": "LC06",
+    "title": "듣기 LC06 문항",
+    "prompt_text": "다음 명세에 따라 수능 영어 듣기 6번 유형(금액 계산) 문항을 생성하시오.\n\n## 문항 특성 및 제작 방법론\n\n### 평가 목표\n- **핵심 능력**: 암산을 통한 지불 금액 계산 능력\n- **인지 과정**: 명확한 숫자 정보 추출 → 하나의 간단한 할인 또는 조건 적용 → 수량 곱하기 → 최종 합계 계산\n- **난이도**: 중급, 빠른 암산이 가능하도록 설계 (최대 2~3단계 계산)\n\n### 담화 유형 및 구조\n- **형식**: 거래 관련 대화 (예: 티켓 예매, 음식 주문, 물건 구매)\n- **구조 패턴** (최소 5턴, 최대 10턴):\n  1) 문의 / 필요 사항 제시\n  2) 개당 가격 명시 (정수만 사용)\n  3) 할인/조건 명시 (계산 결과가 정수로 떨어지는 경우만 해당)\n  4) 수량 확인 (숫자를 한 번 더 반복할 수 있음)\n  5) **지불 행위 관련 표현** (숫자 없이) → 대화 종료\n\n### [핵심 제약 조건: 정답 정보 누출 방지]\n- **[가장 중요한 원칙]** 최종 지불 금액(정답)은 대화 스크립트에 절대 명시되거나 암시되어서는 안 됩니다. 수험생이 직접 계산하도록 만드는 것이 이 문항의 핵심입니다.\n- 총액을 계산하거나, 합계를 언급하거나, 최종 가격을 알려주는 모든 종류의 발화(예: \"So the total is...\", \"That will be...\")는 엄격히 금지됩니다.\n- 대화의 **마지막 두 턴(turn)에는 숫자, 통화 기호, 또는 숫자를 나타내는 단어가 전혀 포함되어서는 안 됩니다**.\n- 고객은 \"총 얼마인가요?\" 또는 \"How much will it be?\"와 같은 총액을 묻는 질문을 할 수 없습니다.\n- 점원은 계산 과정을 말로 설명하거나 수행해서는 안 됩니다.\n\n### 언어적 명세\n- 대본 길이: 100–120 단어 (50–60초 분량)\n- 문장 복잡성: 중간 수준 (긴 내포문 없음)\n- 어휘: 일상적인 상거래 관련 어휘\n- **어휘 프로필**:\n  \"vocabulary_difficulty\": \"CSAT\",\n  \"low_frequency_words\": []\n\n### 문제 형식 요구사항\n- **질문**: \"대화를 듣고, [남자/여자]가 지불할 금액을 고르시오.\"\n- **선택지**: 5개의 정수 금액, 값의 차이가 크지 않게 제시\n- **선택지 간격 규칙**: 5개의 선택지는 서로 최소 2 이상의 차이를 가져야 함.\n\n**필수 JSON 출력 형식:**\n{\n  \"question\": \"대화를 듣고, [남자/여자]가 지불할 금액을 고르시오.\",\n  \"transcript\": \"[100–120 단어 길이의 거래 관련 대화; 최종 금액 언급 금지; 마지막 두 턴에 숫자 없음]\",\n  \"options\": [\"$정수금액1\", \"$정수금액2\", \"$정수금액3\", \"$정수금액4\", \"$정수금액5\"],\n  \"correct_answer\": [1-5],\n  \"explanation\": \"[계산 과정을 단계별로 서술]\"\n}\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n\n### 개별 선택지 역할\n① **정답**: 대화에서 명시적으로 확인 가능한 정보\n② **오답**: 대화에서 언급되었지만 정답이 아닌 정보\n③ **오답**: 추론 가능하지만 직접 언급되지 않은 정보\n④ **오답**: 대화 주제와 관련 있지만 언급되지 않은 정보\n⑤ **오답**: 명백히 대화 내용과 불일치하는 정보\n\n### 오답 매력도 확보 전략\n- 대화에서 실제 사용된 어휘를 오답에도 활용\n- 숫자, 시간, 장소 등 구체적 정보의 혼동 유도",
+    "active": 1,
+    "created_at": "2026-01-03 11:52:13",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 384,
+    "prompt_key": "RC34",
+    "title": "독해 RC34 문항",
+    "prompt_text": "Create a CSAT Reading Item 34 (Blank Filling - Double Blanks) following these specifications:\n\n## ITEM CHARACTERISTICS & METHODOLOGY\n\n### Assessment Objective\n- **Core Skill**: Selecting appropriate word pairs to complete two related blanks\n- **Cognitive Process**: Analyze relationship between blanks → Identify logical pair → Select fitting combination\n- **Difficulty Target**: 상 (예상 정답률 45–60%)\n\n### Text Type & Structure\n- **Format**: Expository passage with two blanks (A) and (B)\n- **Structure Pattern**: Parallel or contrasting structure requiring paired completion\n- **Blank Relationship**: Complementary, contrasting, or cause-effect pairs\n\n### Language Specifications\n- **Passage Length**: 150-180 words\n- **Sentence Complexity**: Moderate to complex\n- **Vocabulary Profile**: CSAT+O3000\n\n### Question Format Requirements\n- **Stem**: \"다음 빈칸 (A), (B)에 들어갈 말로 가장 적절한 것은?\"\n- **Options**: 5 pairs of words in format \"(A) — (B)\"\n- **Correct Answer**: Must be the pair that fits both blanks logically\n\n**Required JSON Output Format:**\n{\n  \"question\": \"다음 빈칸 (A), (B)에 들어갈 말로 가장 적절한 것은?\",\n  \"stimulus\": \"[150-180 word passage with blanks marked as (A) and (B) in English]\",\n  \"options\": [\"(A) word1 — (B) word1\", \"(A) word2 — (B) word2\", \"(A) word3 — (B) word3\", \"(A) word4 — (B) word4\", \"(A) word5 — (B) word5\"],\n  \"correct_answer\": [1-5],\n  \"explanation\": \"[Korean explanation of the word pair logic]\",\n  \"vocabulary_difficulty\": \"CSAT+O3000\",\n  \"low_frequency_words\": []\n}\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **형식**: (A), (B) 두 빈칸에 들어갈 연결어 조합\n\n### 개별 선택지 역할\n① **정답**: 문맥의 논리적 흐름에 맞는 연결어 쌍\n② **오답 (부분 정답)**: (A)만 맞거나 (B)만 맞는 조합\n③ **오답 (부분 정답)**: (A)만 맞거나 (B)만 맞는 조합\n④ **오답 (역전)**: 논리 관계를 반대로 파악한 조합\n⑤ **오답 (무관)**: 문맥과 무관한 연결어 조합\n\n### 연결어 유형\n- **순접**: therefore, thus, hence, consequently\n- **역접**: however, nevertheless, nonetheless, yet\n- **예시**: for example, for instance, in other words\n- **추가**: moreover, furthermore, in addition\n- **대조**: on the other hand, in contrast, conversely\n\n### 오답 매력도 확보 전략\n- 부분적으로만 맞는 조합 배치\n- 연결어의 미묘한 뉘앙스 차이 활용",
+    "active": 1,
+    "created_at": "2026-01-03 11:52:13",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 385,
+    "prompt_key": "RC35",
+    "title": "독해 RC35 문항",
+    "prompt_text": "Create a CSAT Reading Item 35 (Irrelevant Sentence) following these specifications:\n\n## ITEM CHARACTERISTICS & METHODOLOGY\n\n### Assessment Objective\n- **Core Skill**: Identifying the sentence that does not belong in the paragraph\n- **Cognitive Process**: Analyze paragraph unity → Identify topic → Find deviation\n- **Difficulty Target**: 중상 (예상 정답률 60–75%)\n\n### Text Type & Structure\n- **Format**: Expository paragraph with 5 numbered sentences\n- **Structure Pattern**: Unified paragraph with one off-topic sentence\n- **Irrelevant Sentence**: Related to general topic but deviates from specific focus\n\n### Language Specifications\n- **Passage Length**: 140-170 words\n- **Sentence Complexity**: Moderate with clear topic development\n- **Vocabulary Profile**: CSAT\n\n### Question Format Requirements\n- **Stem**: \"다음 글에서 전체 흐름과 관계 없는 문장은?\"\n- **Options**: References to 5 numbered sentences (①, ②, ③, ④, ⑤)\n- **Correct Answer**: Must be the sentence that breaks paragraph unity\n\n**Required JSON Output Format:**\n{\n  \"question\": \"다음 글에서 전체 흐름과 관계 없는 문장은?\",\n  \"stimulus\": \"[140-170 word passage with 5 numbered sentences ①②③④⑤ in English]\",\n  \"options\": [\"①\", \"②\", \"③\", \"④\", \"⑤\"],\n  \"correct_answer\": [1-5],\n  \"explanation\": \"[Korean explanation of why the sentence is irrelevant]\",\n  \"vocabulary_difficulty\": \"CSAT\",\n  \"low_frequency_words\": []\n}\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 문장**: 무관 문장(정답) 1개 + 관련 문장 4개\n- **변별력**: 글의 통일성 및 응집성 파악 능력\n\n### 개별 문장 역할\n① **정답 (무관 문장)**: 주제와 관련 있어 보이지만 논리적 흐름을 방해\n② **오답**: 글의 주제 도입 또는 배경 설명\n③ **오답**: 핵심 주장 또는 논거 제시\n④ **오답**: 예시 또는 부연 설명\n⑤ **오답**: 결론 또는 요약\n\n### 무관 문장 설계 전략\n- 같은 주제 영역의 어휘 사용 (표면적 관련성)\n- 논리적 연결고리 부재 (실제 무관성)\n- 삭제해도 글의 흐름이 자연스러워지는 문장\n\n### 오답 매력도 확보 전략\n- 모든 문장이 같은 주제 영역의 어휘 포함\n- 무관 문장도 그 자체로는 의미 있는 정보 제공",
+    "active": 1,
+    "created_at": "2026-01-03 11:52:13",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 386,
+    "prompt_key": "RC36",
+    "title": "독해 RC36 문항",
+    "prompt_text": "Create a CSAT Reading Item 36 (Sentence Ordering) following these specifications:\n\n## ITEM CHARACTERISTICS & METHODOLOGY\n\n### Assessment Objective\n- **Core Skill**: Arranging sentences in logical order to form coherent paragraph\n- **Cognitive Process**: Analyze cohesive devices → Identify logical sequence → Order sentences\n- **Difficulty Target**: 중상 (예상 정답률 55–70%)\n\n### Text Type & Structure\n- **Format**: Topic sentence + 3 scrambled sentences (A), (B), (C)\n- **Structure Pattern**: Clear logical progression with cohesive devices\n- **Cohesion Markers**: Pronouns, connectors, time/sequence markers\n\n### Language Specifications\n- **Passage Length**: 130-160 words total\n- **Sentence Complexity**: Moderate with clear connections\n- **Vocabulary Profile**: CSAT\n\n### Question Format Requirements\n- **Stem**: \"주어진 글 다음에 이어질 글의 순서로 가장 적절한 것은?\"\n- **Options**: 5 ordering options like \"(A)-(C)-(B)\", \"(B)-(A)-(C)\", etc.\n- **Correct Answer**: Must be the most logical sequence\n\n**Required JSON Output Format:**\n{\n  \"question\": \"주어진 글 다음에 이어질 글의 순서로 가장 적절한 것은?\",\n  \"stimulus\": {\n    \"intro\": \"[Topic sentence in English]\",\n    \"sentences\": {\n      \"A\": \"[Sentence A in English]\",\n      \"B\": \"[Sentence B in English]\",\n      \"C\": \"[Sentence C in English]\"\n    }\n  },\n  \"options\": [\"(A)-(C)-(B)\", \"(B)-(A)-(C)\", \"(B)-(C)-(A)\", \"(C)-(A)-(B)\", \"(C)-(B)-(A)\"],\n  \"correct_answer\": [1-5],\n  \"explanation\": \"[Korean explanation of the ordering logic]\",\n  \"vocabulary_difficulty\": \"CSAT\",\n  \"low_frequency_words\": []\n}\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 순서 1개 + 오답 순서 4개\n- **변별력**: 글의 논리적 전개 파악 능력\n\n### 개별 선택지 역할\n① **정답**: (A)-(B)-(C)의 논리적으로 올바른 배열\n② **오답**: 첫 문단만 맞고 나머지 순서 오류\n③ **오답**: 마지막 문단만 맞고 나머지 순서 오류\n④ **오답**: 일부 순서만 맞는 배열\n⑤ **오답**: 완전히 잘못된 배열 (명백한 오답)\n\n### 순서 단서 활용\n- 지시어 (this, these, such, the + 명사)\n- 연결어 (however, therefore, moreover)\n- 대명사의 선행사 관계\n- 시간 순서 표현\n- 논리적 인과관계\n\n### 오답 매력도 확보 전략\n- 표면적으로 연결 가능해 보이는 오답 순서\n- 연결어만으로 판단 시 오류 발생 가능한 배열",
+    "active": 1,
+    "created_at": "2026-01-03 11:52:13",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 387,
+    "prompt_key": "RC37",
+    "title": "독해 RC37 문항",
+    "prompt_text": "Create a CSAT Reading Item 37 (Sentence Ordering) following these specifications:\n\n## ITEM CHARACTERISTICS & METHODOLOGY\n\n### Assessment Objective\n- **Core Skill**: Arranging sentences in logical order to form coherent paragraph\n- **Cognitive Process**: Analyze cohesive devices → Identify logical sequence → Order sentences\n- **Difficulty Target**: 중상 (예상 정답률 55–70%)\n\n### Text Type & Structure\n- **Format**: Topic sentence + 3 scrambled sentences (A), (B), (C)\n- **Structure Pattern**: Clear logical progression with cohesive devices\n- **Cohesion Markers**: Pronouns, connectors, time/sequence markers\n\n### Language Specifications\n- **Passage Length**: 140-170 words total\n- **Sentence Complexity**: Moderate to complex\n- **Vocabulary Profile**: CSAT+O3000\n\n### Question Format Requirements\n- **Stem**: \"주어진 글 다음에 이어질 글의 순서로 가장 적절한 것은?\"\n- **Options**: 5 ordering options\n- **Correct Answer**: Must be the most logical sequence\n\n**Required JSON Output Format:**\n{\n  \"question\": \"주어진 글 다음에 이어질 글의 순서로 가장 적절한 것은?\",\n  \"stimulus\": {\n    \"intro\": \"[Topic sentence in English]\",\n    \"sentences\": {\n      \"A\": \"[Sentence A in English]\",\n      \"B\": \"[Sentence B in English]\",\n      \"C\": \"[Sentence C in English]\"\n    }\n  },\n  \"options\": [\"(A)-(C)-(B)\", \"(B)-(A)-(C)\", \"(B)-(C)-(A)\", \"(C)-(A)-(B)\", \"(C)-(B)-(A)\"],\n  \"correct_answer\": [1-5],\n  \"explanation\": \"[Korean explanation]\",\n  \"vocabulary_difficulty\": \"CSAT+O3000\",\n  \"low_frequency_words\": []\n}\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 순서 1개 + 오답 순서 4개\n- **변별력**: 복잡한 논리 구조 파악 능력 (RC36보다 고난도)\n\n### 개별 선택지 역할\n① **정답**: 완벽한 논리적 순서\n② **오답**: (A)의 위치만 정확한 배열\n③ **오답**: (C)의 위치만 정확한 배열\n④ **오답**: 두 문단 순서가 뒤바뀐 배열\n⑤ **오답**: 논리적 혼란을 주는 배열\n\n### 오답 매력도 확보 전략\n- 각 문단의 독립성이 높아 여러 순서가 가능해 보임\n- 주어진 글과의 연결이 핵심 단서",
+    "active": 1,
+    "created_at": "2026-01-03 11:52:13",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 388,
+    "prompt_key": "RC38",
+    "title": "독해 RC38 문항",
+    "prompt_text": "Create a CSAT Reading Item 38 (Sentence Insertion) following these specifications:\n\n## ITEM CHARACTERISTICS & METHODOLOGY\n\n### Assessment Objective\n- **Core Skill**: Identifying the correct position to insert a given sentence\n- **Cognitive Process**: Analyze given sentence → Identify cohesive links → Find insertion point\n- **Difficulty Target**: 중상 (예상 정답률 55–70%)\n\n### Text Type & Structure\n- **Format**: Passage with 5 potential insertion points marked ①②③④⑤\n- **Structure Pattern**: Coherent paragraph with one optimal insertion point\n- **Given Sentence**: Contains clear cohesive devices linking to context\n\n### Language Specifications\n- **Passage Length**: 140-170 words\n- **Sentence Complexity**: Moderate with clear flow\n- **Vocabulary Profile**: CSAT\n\n### Question Format Requirements\n- **Stem**: \"글의 흐름으로 보아, 주어진 문장이 들어가기에 가장 적절한 곳은?\"\n- **Given Sentence**: Displayed before the passage\n- **Options**: Position markers ①, ②, ③, ④, ⑤\n- **Correct Answer**: Must be the position where the sentence best fits\n\n**Required JSON Output Format:**\n{\n  \"question\": \"글의 흐름으로 보아, 주어진 문장이 들어가기에 가장 적절한 곳은?\",\n  \"given_sentence\": \"[Sentence to be inserted in English]\",\n  \"stimulus\": \"[140-170 word passage with insertion points ①②③④⑤ in English]\",\n  \"options\": [\"①\", \"②\", \"③\", \"④\", \"⑤\"],\n  \"correct_answer\": [1-5],\n  \"explanation\": \"[Korean explanation of the insertion logic]\",\n  \"vocabulary_difficulty\": \"CSAT\",\n  \"low_frequency_words\": []\n}\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 위치**: 정답 위치 1개 + 오답 위치 4개\n- **변별력**: 문장의 논리적 위치 파악 능력\n\n### 개별 위치 역할\n① **정답**: 주어진 문장이 논리적으로 연결되는 유일한 위치\n② **오답**: 표면적으로 연결 가능해 보이는 위치\n③ **오답**: 지시어가 가리킬 대상이 있어 보이는 위치\n④ **오답**: 주제 관련 어휘가 있는 위치\n⑤ **오답**: 명백히 부적절한 위치 (쉬운 선지)\n\n### 삽입 문장 단서\n- 지시어 (This, Such, These)\n- 연결어 (However, Therefore, For example)\n- 정관사 + 명사 (the idea, the concept)\n- 대명사와 선행사 관계\n\n### 오답 매력도 확보 전략\n- 삽입 문장의 키워드와 유사한 어휘가 있는 오답 위치\n- 부분적으로 연결 가능해 보이는 위치",
+    "active": 1,
+    "created_at": "2026-01-03 11:52:13",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 389,
+    "prompt_key": "RC39",
+    "title": "독해 RC39 문항",
+    "prompt_text": "Create a CSAT Reading Item 39 (Sentence Insertion) following these specifications:\n\n## ITEM CHARACTERISTICS & METHODOLOGY\n\n### Assessment Objective\n- **Core Skill**: Identifying the correct position to insert a given sentence\n- **Cognitive Process**: Analyze given sentence → Identify cohesive links → Find insertion point\n- **Difficulty Target**: 상 (예상 정답률 50–65%)\n\n### Text Type & Structure\n- **Format**: Passage with 5 potential insertion points marked ①②③④⑤\n- **Structure Pattern**: Complex paragraph with one optimal insertion point\n- **Given Sentence**: Contains cohesive devices requiring careful analysis\n\n### Language Specifications\n- **Passage Length**: 150-180 words\n- **Sentence Complexity**: Moderate to complex\n- **Vocabulary Profile**: CSAT+O3000\n\n### Question Format Requirements\n- **Stem**: \"글의 흐름으로 보아, 주어진 문장이 들어가기에 가장 적절한 곳은?\"\n- **Options**: Position markers ①, ②, ③, ④, ⑤\n- **Correct Answer**: Must be the optimal position\n\n**Required JSON Output Format:**\n{\n  \"question\": \"글의 흐름으로 보아, 주어진 문장이 들어가기에 가장 적절한 곳은?\",\n  \"given_sentence\": \"[Sentence to be inserted in English]\",\n  \"stimulus\": \"[150-180 word passage with insertion points in English]\",\n  \"options\": [\"①\", \"②\", \"③\", \"④\", \"⑤\"],\n  \"correct_answer\": [1-5],\n  \"explanation\": \"[Korean explanation]\",\n  \"vocabulary_difficulty\": \"CSAT+O3000\",\n  \"low_frequency_words\": []\n}\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 위치**: 정답 위치 1개 + 오답 위치 4개\n- **변별력**: 복잡한 텍스트에서 논리적 위치 파악 (RC38보다 고난도)\n\n### 개별 위치 역할\n① **정답**: 논리적 필연성이 있는 유일한 위치\n② **오답**: 어휘적 연결만 있는 위치\n③ **오답**: 주제적 연결만 있는 위치\n④ **오답**: 시간적/공간적 연결이 있어 보이는 위치\n⑤ **오답**: 명백한 오답 (기초 수준)\n\n### 오답 매력도 확보 전략\n- 더 복잡한 지시 관계 설정\n- 삽입 문장 자체가 복문/중문으로 구성",
+    "active": 1,
+    "created_at": "2026-01-03 11:52:13",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 390,
+    "prompt_key": "RC40",
+    "title": "독해 RC40 문항",
+    "prompt_text": "Create a CSAT Reading Item 40 (Summary Completion) following these specifications:\n\n## ITEM CHARACTERISTICS & METHODOLOGY\n\n### Assessment Objective\n- **Core Skill**: Completing a summary by selecting appropriate word pairs\n- **Cognitive Process**: Comprehend passage → Analyze summary → Select fitting words\n- **Difficulty Target**: 중상 (예상 정답률 55–70%)\n\n### Text Type & Structure\n- **Format**: Expository passage + summary with two blanks (A), (B)\n- **Structure Pattern**: Passage presents main idea, summary condenses it\n- **Summary Function**: Accurate condensation of passage content\n\n### Language Specifications\n- **Passage Length**: 160-200 words\n- **Summary Length**: 40-60 words\n- **Vocabulary Profile**: CSAT+O3000\n\n### Question Format Requirements\n- **Stem**: \"다음 글의 내용을 한 문장으로 요약하고자 한다. 빈칸 (A), (B)에 들어갈 말로 가장 적절한 것은?\"\n- **Options**: 5 pairs of words \"(A) — (B)\"\n- **Correct Answer**: Must accurately complete the summary\n\n**Required JSON Output Format:**\n{\n  \"question\": \"다음 글의 내용을 한 문장으로 요약하고자 한다. 빈칸 (A), (B)에 들어갈 말로 가장 적절한 것은?\",\n  \"stimulus\": \"[160-200 word passage in English]\",\n  \"summary\": \"[Summary sentence with blanks (A) and (B) in English]\",\n  \"options\": [\"(A) word1 — (B) word1\", \"(A) word2 — (B) word2\", \"(A) word3 — (B) word3\", \"(A) word4 — (B) word4\", \"(A) word5 — (B) word5\"],\n  \"correct_answer\": [1-5],\n  \"explanation\": \"[Korean explanation]\",\n  \"vocabulary_difficulty\": \"CSAT+O3000\",\n  \"low_frequency_words\": []\n}\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙\n- **5개 선택지**: 정답 조합 1개 + 오답 조합 4개\n- **형식**: (A), (B) 두 빈칸에 들어갈 어휘 조합\n\n### 개별 선택지 역할\n① **정답**: 요약문을 정확히 완성하는 어휘 쌍\n② **오답 (부분 정답)**: (A)만 적절하거나 (B)만 적절\n③ **오답 (부분 정답)**: (A)만 적절하거나 (B)만 적절\n④ **오답 (반대 의미)**: 글의 논지와 반대되는 어휘 포함\n⑤ **오답 (무관 어휘)**: 글에서 다루지 않은 개념\n\n### 오답 매력도 확보 전략\n- 글에 등장한 어휘를 활용한 오답\n- 요약문 구조상 어색하지 않은 어휘 조합\n- 정답과 유의어/반의어 관계인 오답 어휘",
+    "active": 1,
+    "created_at": "2026-01-03 11:52:13",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 391,
+    "prompt_key": "RC41_42",
+    "title": "독해 RC41_42 문항",
+    "prompt_text": "Create a CSAT Reading Item 41-42 (Long Passage Set - Title + Content Match) following these specifications:\n\n## ITEM CHARACTERISTICS & METHODOLOGY\n\n### Assessment Objective\n- **Core Skill**: Dual assessment - title selection and content matching for long passage\n- **Cognitive Process**: Comprehend extended text → Identify main theme → Verify details\n- **Difficulty Target**: 중 (예상 정답률 70–85%)\n\n### Text Type & Structure\n- **Format**: Extended passage (biography, narrative, or informational)\n- **Structure Pattern**: Introduction → Development → Details → Conclusion\n- **Content**: Rich with both thematic and factual information\n\n### Language Specifications\n- **Passage Length**: 250-300 words\n- **Sentence Complexity**: Varied\n- **Vocabulary Profile**: CSAT\n\n### Question Format Requirements\n- **Item 41**: Title selection - \"위 글의 제목으로 가장 적절한 것은?\"\n- **Item 42**: Content match - \"위 글의 [주제]에 관한 내용과 일치하지 않는 것은?\"\n\n**Required JSON Output Format:**\n{\n  \"set_instruction\": \"[41~42] 다음 글을 읽고, 물음에 답하시오.\",\n  \"stimulus\": \"[250-300 word passage in English]\",\n  \"questions\": [\n    {\n      \"question_number\": 41,\n      \"question\": \"위 글의 제목으로 가장 적절한 것은?\",\n      \"options\": [\"Title 1\", \"Title 2\", \"Title 3\", \"Title 4\", \"Title 5\"],\n      \"correct_answer\": [1-5],\n      \"explanation\": \"[Korean explanation]\"\n    },\n    {\n      \"question_number\": 42,\n      \"question\": \"위 글의 [주제]에 관한 내용과 일치하지 않는 것은?\",\n      \"options\": [\"사실1\", \"사실2\", \"사실3\", \"사실4\", \"사실5\"],\n      \"correct_answer\": [1-5],\n      \"explanation\": \"[Korean explanation]\"\n    }\n  ],\n  \"vocabulary_difficulty\": \"CSAT\",\n  \"low_frequency_words\": []\n}\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙 (세트 문항)\n- **각 문항 5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 장문 독해의 전체 이해 및 세부 파악\n\n### RC41 (첫 번째 문항 - 주로 제목/주제)\n① **정답**: 글 전체를 아우르는 제목/주제\n② **오답**: 글의 일부분만 반영\n③ **오답**: 너무 광범위한 제목/주제\n④ **오답**: 글의 예시에만 집중\n⑤ **오답**: 글의 논지와 다른 방향\n\n### RC42 (두 번째 문항 - 세부 내용/어휘)\n① **정답**: 세부 내용과 정확히 일치\n② **오답**: 글의 다른 부분과 혼동\n③ **오답**: 부분적으로만 일치\n④ **오답**: 글에서 암시되지만 명시되지 않음\n⑤ **오답**: 글 내용과 반대\n\n### 오답 매력도 확보 전략\n- 장문의 복잡한 구조 활용\n- 두 문항이 서로 다른 읽기 능력 측정",
+    "active": 1,
+    "created_at": "2026-01-03 11:52:13",
+    "updated_at": "2026-01-12 08:37:22"
+  },
+  {
+    "id": 392,
+    "prompt_key": "RC43_45",
+    "title": "독해 RC43_45 문항",
+    "prompt_text": "Create a CSAT Reading Item 43-45 (Long Passage Set - Order + Insertion + Vocabulary) following these specifications:\n\n## ITEM CHARACTERISTICS & METHODOLOGY\n\n### Assessment Objective\n- **Core Skill**: Triple assessment - sentence ordering, sentence insertion, and vocabulary\n- **Cognitive Process**: Complex text analysis requiring multiple reading skills\n- **Difficulty Target**: 상 (예상 정답률 50–65%)\n\n### Text Type & Structure\n- **Format**: Extended passage with scrambled sections\n- **Structure Pattern**: Given intro + 3 scrambled paragraphs (A), (B), (C)\n- **Complexity**: Requires understanding of both macro and micro structure\n\n### Language Specifications\n- **Passage Length**: 280-350 words total\n- **Sentence Complexity**: Complex with sophisticated cohesion\n- **Vocabulary Profile**: CSAT+O3000 or AWL\n\n### Question Format Requirements\n- **Item 43**: Ordering - \"주어진 글 (A)에 이어질 내용을 순서에 맞게 배열한 것으로 가장 적절한 것은?\"\n- **Item 44**: Insertion - \"밑줄 친 (a)~(e) 중에서 가리키는 대상이 나머지 넷과 다른 것은?\"\n- **Item 45**: Content match - \"윗글에 관한 내용으로 적절하지 않은 것은?\"\n\n**Required JSON Output Format:**\n{\n  \"set_instruction\": \"[43~45] 다음 글을 읽고, 물음에 답하시오.\",\n  \"stimulus\": {\n    \"intro\": \"[Given introduction paragraph in English]\",\n    \"paragraphs\": {\n      \"A\": \"[Paragraph A in English]\",\n      \"B\": \"[Paragraph B in English]\",\n      \"C\": \"[Paragraph C in English]\"\n    }\n  },\n  \"questions\": [\n    {\n      \"question_number\": 43,\n      \"question\": \"주어진 글 (A)에 이어질 내용을 순서에 맞게 배열한 것으로 가장 적절한 것은?\",\n      \"options\": [\"(A)-(C)-(B)\", \"(B)-(A)-(C)\", \"(B)-(C)-(A)\", \"(C)-(A)-(B)\", \"(C)-(B)-(A)\"],\n      \"correct_answer\": [1-5],\n      \"explanation\": \"[Korean explanation]\"\n    },\n    {\n      \"question_number\": 44,\n      \"question\": \"밑줄 친 (a)~(e) 중에서 가리키는 대상이 나머지 넷과 다른 것은?\",\n      \"options\": [\"(a)\", \"(b)\", \"(c)\", \"(d)\", \"(e)\"],\n      \"correct_answer\": [1-5],\n      \"explanation\": \"[Korean explanation]\"\n    },\n    {\n      \"question_number\": 45,\n      \"question\": \"윗글에 관한 내용으로 적절하지 않은 것은?\",\n      \"options\": [\"내용1\", \"내용2\", \"내용3\", \"내용4\", \"내용5\"],\n      \"correct_answer\": [1-5],\n      \"explanation\": \"[Korean explanation]\"\n    }\n  ],\n  \"vocabulary_difficulty\": \"CSAT+O3000\",\n  \"low_frequency_words\": []\n}\n\n## Distractor Design Guidelines (오답 설계 지침)\n\n### 선택지 구성 원칙 (세트 문항 - 3문항)\n- **각 문항 5개 선택지**: 정답 1개 + 매력적 오답 4개\n- **변별력**: 장문 독해의 다양한 측면 파악\n\n### RC43 (순서 배열)\n① **정답**: 논리적으로 올바른 (A)-(B)-(C) 순서\n② **오답**: 첫 문단만 맞는 순서\n③ **오답**: 마지막 문단만 맞는 순서\n④ **오답**: 두 문단 순서가 바뀐 배열\n⑤ **오답**: 완전히 잘못된 순서\n\n### RC44 (문장 삽입 또는 지칭 추론)\n① **정답**: 문맥상 올바른 위치/지칭 대상\n② **오답**: 어휘적으로만 연결되는 위치/대상\n③ **오답**: 주제적으로만 연결되는 위치/대상\n④ **오답**: 부분적으로 연결되는 위치/대상\n⑤ **오답**: 명백히 부적절한 위치/대상\n\n### RC45 (내용 일치/불일치)\n① **정답**: 글 내용과 정확히 일치/불일치\n② **오답**: 세부 사항이 다른 선택지\n③ **오답**: 글의 다른 부분과 혼동되는 선택지\n④ **오답**: 추론 가능하지만 명시되지 않은 내용\n⑤ **오답**: 글 내용과 반대\n\n### 오답 매력도 확보 전략\n- 3문항이 장문의 다양한 측면 측정\n- 글 전체를 꼼꼼히 읽어야 모든 문항 해결 가능",
+    "active": 1,
+    "created_at": "2026-01-03 11:52:13",
+    "updated_at": "2026-01-12 08:37:22"
+  }
+]

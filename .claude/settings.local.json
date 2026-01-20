@@ -31,8 +31,15 @@
       "Bash(sleep:*)",
       "Bash(del nul)",
       "Bash(tar:*)",
+<<<<<<< HEAD
       "Bash(del \"F:\\\\csat_mj_generator\\\\compare_sync.ps1\")",
       "Bash(del \"F:\\\\csat_mj_generator\\\\sync_to_d.ps1\")"
+=======
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(timeout:*)",
+      "Bash(npx pm2 info csat-server)"
+>>>>>>> ede23532b16426db83e71a687bf18137c1ef8ce6
     ]
   }
 }

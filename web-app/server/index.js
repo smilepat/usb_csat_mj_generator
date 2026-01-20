@@ -10,6 +10,26 @@ const cors = require('cors');
 const session = require('express-session');
 
 const { initDatabase } = require('./db/database');
+const logger = require('./services/logger');
+
+// 미들웨어
+const {
+  apiKeyAuth,
+  login,
+  logout,
+  checkAuth,
+  requestLogger,
+  rateLimit,
+  notFoundHandler,
+  globalErrorHandler,
+  setupGlobalErrorHandlers,
+  sanitizeBody
+} = require('./middleware');
+
+// 유틸리티
+const { responseHelpers } = require('./utils');
+
+// 라우트
 const configRoutes = require('./routes/config');
 const promptRoutes = require('./routes/prompts');
 const itemRoutes = require('./routes/items');
@@ -18,11 +38,15 @@ const chartRoutes = require('./routes/charts');
 const logRoutes = require('./routes/logs');
 const metricsRoutes = require('./routes/metrics');
 const libraryRoutes = require('./routes/library');
+const docsRoutes = require('./routes/docs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// 미들웨어
+// 전역 에러 핸들러 설정
+setupGlobalErrorHandlers();
+
+// 기본 미들웨어
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? process.env.CLIENT_URL || true
@@ -35,8 +59,45 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'csat-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000
+  }
 }));
+
+// 커스텀 미들웨어
+app.use(requestLogger);
+app.use(sanitizeBody);
+app.use(responseHelpers);
+
+// Rate limiting (API 엔드포인트에만 적용)
+app.use('/api', rateLimit({
+  windowMs: 60 * 1000, // 1분
+  max: 200, // 분당 최대 200 요청
+  message: '요청이 너무 많습니다. 1분 후 다시 시도해주세요.'
+}));
+
+// 인증 관련 라우트 (인증 미들웨어 적용 전)
+app.post('/api/auth/login', login);
+app.post('/api/auth/logout', logout);
+app.get('/api/auth/check', checkAuth);
+
+// 헬스 체크 (인증 불필요)
+app.get('/api/health', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development'
+    }
+  });
+});
+
+// API 인증 미들웨어 적용
+app.use('/api', apiKeyAuth);
 
 // 정적 파일 서빙 (프로덕션)
 if (process.env.NODE_ENV === 'production') {
@@ -52,11 +113,7 @@ app.use('/api/charts', chartRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/library', libraryRoutes);
-
-// 헬스 체크
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+app.use('/api/docs', docsRoutes);
 
 // SPA 폴백 (프로덕션)
 if (process.env.NODE_ENV === 'production') {
@@ -65,29 +122,27 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// 에러 핸들러
-app.use((err, req, res, next) => {
-  console.error('서버 오류:', err);
-  res.status(500).json({
-    error: '서버 오류가 발생했습니다.',
-    message: err.message
-  });
-});
+// 404 핸들러 (API 라우트에만)
+app.use('/api', notFoundHandler);
+
+// 전역 에러 핸들러
+app.use(globalErrorHandler);
 
 // 서버 시작
 async function startServer() {
   try {
     await initDatabase();
-    console.log('데이터베이스 초기화 완료');
+    logger.info('SERVER', 'startup', '데이터베이스 초기화 완료');
 
     const server = app.listen(PORT, () => {
+      logger.info('SERVER', 'startup', `서버 시작: http://localhost:${PORT}`);
       console.log(`
 ╔═══════════════════════════════════════════════════╗
-║     🎓 수능 문항 생성-검증 시스템                    ║
+║     수능 문항 생성-검증 시스템                       ║
 ║     KSAT Item Generator & Validator               ║
 ╠═══════════════════════════════════════════════════╣
 ║  서버 실행 중: http://localhost:${PORT}              ║
-║  환경: ${process.env.NODE_ENV || 'development'}                             ║
+║  환경: ${(process.env.NODE_ENV || 'development').padEnd(12)}                       ║
 ╚═══════════════════════════════════════════════════╝
       `);
     });
@@ -95,37 +150,27 @@ async function startServer() {
     // 서버 오류 처리
     server.on('error', (error) => {
       if (error.code === 'EADDRINUSE') {
-        console.error(`포트 ${PORT}가 이미 사용 중입니다.`);
+        logger.error('SERVER', 'startup', `포트 ${PORT}가 이미 사용 중입니다.`);
         process.exit(1);
       } else {
-        console.error('서버 오류:', error);
+        logger.error('SERVER', 'runtime', error);
       }
     });
 
   } catch (error) {
-    console.error('서버 시작 실패:', error);
+    logger.error('SERVER', 'startup', error);
     process.exit(1);
   }
 }
 
 // 프로세스 종료 처리
-process.on('uncaughtException', (error) => {
-  console.error('처리되지 않은 예외:', error);
-  // 서버는 계속 실행되도록 함 (종료하지 않음)
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('처리되지 않은 Promise 거부:', reason);
-  // 서버는 계속 실행되도록 함 (종료하지 않음)
-});
-
 process.on('SIGTERM', () => {
-  console.log('SIGTERM 신호 수신, 서버 종료 중...');
+  logger.info('SERVER', 'shutdown', 'SIGTERM 신호 수신, 서버 종료 중...');
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  console.log('SIGINT 신호 수신, 서버 종료 중...');
+  logger.info('SERVER', 'shutdown', 'SIGINT 신호 수신, 서버 종료 중...');
   process.exit(0);
 });
 

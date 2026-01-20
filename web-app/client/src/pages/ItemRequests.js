@@ -238,6 +238,24 @@ function ItemRequests() {
                 <>
                   <h4 className="mb-2">생성된 문항</h4>
                   <div className="item-preview">
+                    {/* RC40 요약문 완성 문항: summary 표시 */}
+                    {(() => {
+                      // final_json에서 summary 추출
+                      const finalJson = selectedItem.results?.[0]?.final_json;
+                      let summary = null;
+                      if (finalJson) {
+                        try {
+                          const parsed = typeof finalJson === 'string' ? JSON.parse(finalJson) : finalJson;
+                          summary = parsed.summary;
+                        } catch (e) {}
+                      }
+                      return summary ? (
+                        <div className="summary-section" style={{ marginBottom: '16px', padding: '12px', background: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                          <strong style={{ color: 'var(--info-color)' }}>요약문:</strong>
+                          <p style={{ marginTop: '8px', fontStyle: 'italic' }}>{summary}</p>
+                        </div>
+                      ) : null;
+                    })()}
                     <div className="question">{selectedItem.output.question}</div>
                     <ol className="options">
                       {[1, 2, 3, 4, 5].map(i => (

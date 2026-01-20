@@ -83,6 +83,15 @@ async function generateItemPipeline(req) {
         `answer=${parsed.answer}, correct_answer=${parsed.correct_answer}, keys=${Object.keys(parsed).join(',')}`
       );
 
+      // RC31~33 디버깅: passage/stimulus/gapped_passage 필드 확인
+      if (req.itemNo >= 31 && req.itemNo <= 33) {
+        const hasBlankInPassage = parsed.passage && /_{3,}/.test(parsed.passage);
+        const hasBlankInStimulus = parsed.stimulus && /_{3,}/.test(parsed.stimulus);
+        logger.info('RC31~33 빈칸 디버깅', req.requestId,
+          `passage=${!!parsed.passage}(blank:${hasBlankInPassage}), stimulus=${!!parsed.stimulus}(blank:${hasBlankInStimulus}), gapped_passage=${!!parsed.gapped_passage}`
+        );
+      }
+
       // 4) Normalize
       const normalized = normalizeItemJson(parsed);
       if (!normalized || typeof normalized !== 'object') {

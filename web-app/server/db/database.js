@@ -486,7 +486,7 @@ async function initDatabase() {
   // DB 저장
   saveDatabase();
 
-  console.log('데이터베이스 테이블 및 기본 데이터 초기화 완료');
+  // 초기화 완료 (logger를 여기서 import하면 순환 의존성 문제가 있어 console.log 유지)
   return db;
 }
 

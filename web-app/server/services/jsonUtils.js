@@ -155,6 +155,25 @@ function normalizeItemJson(obj) {
 
   out.gapped_passage = g1 || g2 || g3 || g4 || out.gapped_passage || '';
 
+  // gapped_passage가 없고 passage에 빈칸이 있으면 passage를 gapped_passage로 사용
+  if (!out.gapped_passage && out.passage) {
+    const hasBlank = /_{3,}|\(___\)/.test(out.passage);
+    if (hasBlank) {
+      out.gapped_passage = out.passage;
+      // 디버깅용 로그 (콘솔에만 출력)
+      console.log('[jsonUtils] passage에서 빈칸 감지 → gapped_passage 자동 설정');
+    }
+  }
+
+  // 추가: stimulus에 빈칸이 있지만 passage로 복사 안 된 경우 대비
+  if (!out.gapped_passage && obj.stimulus) {
+    const hasBlankInStimulus = /_{3,}|\(___\)/.test(obj.stimulus);
+    if (hasBlankInStimulus) {
+      out.gapped_passage = obj.stimulus;
+      console.log('[jsonUtils] stimulus에서 빈칸 감지 → gapped_passage 자동 설정');
+    }
+  }
+
   // 새 프롬프트 형식의 추가 필드 보존
   if (obj.vocabulary_difficulty) {
     out.vocabulary_difficulty = obj.vocabulary_difficulty;
@@ -170,6 +189,19 @@ function normalizeItemJson(obj) {
   }
   if (obj.chart_data) {
     out.chart_data = obj.chart_data;
+  }
+
+  // RC40 요약문 완성 문항용 summary 필드 보존
+  if (obj.summary) {
+    out.summary = obj.summary;
+  }
+
+  // 추가 통계 필드 보존 (passage_stats, summary_stats)
+  if (obj.passage_stats) {
+    out.passage_stats = obj.passage_stats;
+  }
+  if (obj.summary_stats) {
+    out.summary_stats = obj.summary_stats;
   }
 
   return out;

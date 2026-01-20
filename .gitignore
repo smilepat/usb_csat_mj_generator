@@ -37,7 +37,12 @@ Thumbs.db
 *.temp
 temp_prompts.json
 ccsat_mj_generatortemp_prompts.json
+tmpclaude-*
+temp_*.json
+*temp_*.json
 
 # Windows reserved names
 nul
 NUL
+
+csat_mj_generator

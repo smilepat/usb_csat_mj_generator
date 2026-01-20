@@ -18,12 +18,29 @@ function getConfig() {
     config[row.key] = row.value;
   }
 
-  // 환경 변수에서 API 키 가져오기
+  // 환경 변수에서 설정 가져오기
+  if (process.env.PROVIDER) {
+    config.PROVIDER = process.env.PROVIDER;
+  }
   if (process.env.GEMINI_API_KEY) {
     config.GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   }
   if (process.env.OPENAI_API_KEY) {
     config.OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  }
+
+  // Azure OpenAI 환경 변수
+  if (process.env.AZURE_OPENAI_ENDPOINT) {
+    config.AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT;
+  }
+  if (process.env.AZURE_OPENAI_API_KEY) {
+    config.AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY;
+  }
+  if (process.env.AZURE_OPENAI_DEPLOYMENT) {
+    config.AZURE_OPENAI_DEPLOYMENT = process.env.AZURE_OPENAI_DEPLOYMENT;
+  }
+  if (process.env.AZURE_OPENAI_API_VERSION) {
+    config.AZURE_OPENAI_API_VERSION = process.env.AZURE_OPENAI_API_VERSION;
   }
 
   return config;
