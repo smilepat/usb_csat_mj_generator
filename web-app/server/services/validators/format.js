@@ -181,6 +181,7 @@ const OPTION_FORBIDDEN_PATTERNS = [
 
 /**
  * LLM 메타 문장 검사
+ * 선택지는 대화 내용이므로 "I can't" 등이 자연스러울 수 있어 제외
  * @param {Object} itemObj
  * @returns {{ pass: boolean, errors: string[] }}
  */
@@ -188,13 +189,13 @@ function validateNoLLMMeta(itemObj) {
   const errors = [];
   let pass = true;
 
-  // 모든 텍스트 필드 검사
+  // 선택지 제외 - 대화 문항에서는 "I can't", "I'm sorry" 등이 자연스러운 응답
   const textsToCheck = [
     itemObj.passage,
     itemObj.stimulus,
+    itemObj.lc_script,
     itemObj.question,
-    itemObj.explanation,
-    ...(itemObj.options || [])
+    itemObj.explanation
   ].filter(Boolean).map(String);
 
   for (const text of textsToCheck) {
