@@ -20,7 +20,7 @@
  * @returns {boolean}
  */
 function isMainlyEnglish(text) {
-  if (!text) return false;
+  if (!text || typeof text !== 'string') return false;
   const englishChars = (text.match(/[a-zA-Z]/g) || []).length;
   const koreanChars = (text.match(/[가-힣]/g) || []).length;
   return englishChars > koreanChars;
@@ -32,7 +32,7 @@ function isMainlyEnglish(text) {
  * @returns {boolean}
  */
 function isMainlyKorean(text) {
-  if (!text) return false;
+  if (!text || typeof text !== 'string') return false;
   const englishChars = (text.match(/[a-zA-Z]/g) || []).length;
   const koreanChars = (text.match(/[가-힣]/g) || []).length;
   return koreanChars > englishChars;
@@ -111,7 +111,7 @@ const WORD_COUNT_RANGES = {
  * @returns {number}
  */
 function countWords(text) {
-  if (!text) return 0;
+  if (!text || typeof text !== 'string') return 0;
   return text.trim().split(/\s+/).filter(w => w.length > 0).length;
 }
 

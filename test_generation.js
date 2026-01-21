@@ -67,16 +67,22 @@ async function testItem(itemNo) {
       return { itemNo, success: false, error: genResult.error?.message || JSON.stringify(genResult.error) };
     }
 
+    // Check validation result
+    const validationResult = genResult.data?.validationResult || genResult.data?.status;
+    const isValidationPass = validationResult === 'PASS' || validationResult === 'OK';
+
     const fj = genResult.data?.finalJson || {};
     const keys = Object.keys(fj);
     return {
       itemNo,
-      success: true,
+      success: isValidationPass,
       hasQuestion: !!fj.question,
-      hasPassage: !!(fj.lc_script || fj.passage || fj.gapped_passage || fj.transcript),
+      hasPassage: !!(fj.lc_script || fj.passage || fj.gapped_passage || fj.transcript || fj.stimulus),
       hasOptions: !!(fj.options && fj.options.length > 0),
       hasAnswer: !!(fj.correct_answer || fj.answer),
-      keys: keys.join(',')
+      keys: keys.join(','),
+      validationResult: validationResult,
+      validationLog: genResult.data?.validationLog || ''
     };
   } catch (e) {
     return { itemNo, success: false, error: e.message };
@@ -105,7 +111,8 @@ async function runTests() {
       const a = result.hasAnswer ? '✓' : '✗';
       console.log('성공\t| ' + q + '\t| ' + p + '\t| ' + o + '\t| ' + a + '\t| ' + result.keys.substring(0, 40));
     } else {
-      console.log('실패\t| ' + String(result.error || '').substring(0, 50));
+      const errMsg = result.error || result.validationLog || result.validationResult || 'Unknown';
+      console.log('실패\t| ' + String(errMsg).substring(0, 50));
     }
   }
 

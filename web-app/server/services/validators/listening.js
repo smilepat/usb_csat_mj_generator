@@ -204,7 +204,7 @@ function hasSpeakerMarkers(script) {
  * @returns {number}
  */
 function countWords(text) {
-  if (!text) return 0;
+  if (!text || typeof text !== 'string') return 0;
   return text.trim().split(/\s+/).filter(w => w.length > 0).length;
 }
 
