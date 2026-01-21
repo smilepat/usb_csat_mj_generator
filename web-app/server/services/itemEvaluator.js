@@ -389,14 +389,15 @@ function quickItemCheck(itemObj, itemNo) {
   const issues = [];
   const warnings = [];
 
-  const passage = itemObj.passage || itemObj.stimulus || itemObj.gapped_passage || '';
+  const passageRaw = itemObj.passage || itemObj.stimulus || itemObj.gapped_passage || '';
+  const passage = typeof passageRaw === 'string' ? passageRaw : '';
   const question = itemObj.question || itemObj.question_stem || '';
   const options = itemObj.options || [];
   const answer = parseInt(itemObj.answer || itemObj.correct_answer || 0);
   const explanation = itemObj.explanation || '';
 
   // 1. 정답 선택지가 지문을 그대로 복사했는지 체크
-  if (answer >= 1 && answer <= 5) {
+  if (answer >= 1 && answer <= 5 && passage) {
     const answerText = String(options[answer - 1] || '').toLowerCase().trim();
     const passageLower = passage.toLowerCase();
 

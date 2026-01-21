@@ -437,6 +437,7 @@ function validateGapOptionCompletion(itemObj, itemNo) {
  */
 function calculatePassageAnswerOverlap(passage, answerText) {
   if (!passage || !answerText) return 0;
+  if (typeof passage !== 'string' || typeof answerText !== 'string') return 0;
 
   const passageWords = passage.toLowerCase().split(/\s+/).filter(w => w.length > 3);
   const answerWords = answerText.toLowerCase().split(/\s+/).filter(w => w.length > 3);
@@ -489,7 +490,8 @@ function validateWeakDistractors(itemObj) {
   let pass = true;
   const weakDistractors = [];
 
-  const passage = itemObj.passage || itemObj.stimulus || '';
+  const passageRaw = itemObj.passage || itemObj.stimulus || '';
+  const passage = typeof passageRaw === 'string' ? passageRaw : '';
   const options = itemObj.options || [];
   const answer = parseInt(itemObj.answer || itemObj.correct_answer || 0);
 
