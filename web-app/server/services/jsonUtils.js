@@ -65,6 +65,11 @@ function normalizeItemJson(obj) {
     out.passage = out.transcript;
   }
 
+  // lc_script: LC 문항용 스크립트 필드 매핑 (stimulus, transcript 지원)
+  if (!out.lc_script) {
+    out.lc_script = out.stimulus || out.transcript || out.script || '';
+  }
+
   // options: 배열, 정확히 5개 유지
   if (!Array.isArray(out.options)) {
     throw new Error('options 배열이 없습니다.');
