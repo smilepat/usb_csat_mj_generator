@@ -41,11 +41,17 @@ function parseItemJson(rawText) {
 /**
  * JSON 객체를 정규화된 형태로 변환
  * @param {Object} obj - 원본 JSON 객체
+ * @param {number} targetItemNo - 추출할 문항 번호 (세트 응답에서 특정 문항 추출 시 사용)
  * @returns {Object} 정규화된 객체
  */
-function normalizeItemJson(obj) {
+function normalizeItemJson(obj, targetItemNo = null) {
   if (!obj) {
     throw new Error('normalizeItemJson: obj가 없습니다.');
+  }
+
+  // 세트 형식 응답 처리 (questions 배열이 있는 경우)
+  if (Array.isArray(obj.questions) && obj.questions.length > 0) {
+    return normalizeSetItemJson(obj, targetItemNo);
   }
 
   // Deep Copy
@@ -212,7 +218,99 @@ function normalizeItemJson(obj) {
   return out;
 }
 
+/**
+ * 세트 형식 JSON 응답을 정규화 (questions 배열이 있는 경우)
+ * RC41_42, RC43_45 등 세트 프롬프트에서 사용
+ * @param {Object} obj - 원본 JSON 객체 (questions 배열 포함)
+ * @param {number} targetItemNo - 추출할 문항 번호
+ * @returns {Object} 정규화된 개별 문항 객체
+ */
+function normalizeSetItemJson(obj, targetItemNo) {
+  if (!Array.isArray(obj.questions) || obj.questions.length === 0) {
+    throw new Error('세트 형식이지만 questions 배열이 비어있습니다.');
+  }
+
+  // targetItemNo가 없으면 첫 번째 문항 사용
+  let targetQuestion = null;
+
+  if (targetItemNo) {
+    // question_number로 해당 문항 찾기
+    targetQuestion = obj.questions.find(q =>
+      q.question_number === targetItemNo ||
+      String(q.question_number) === String(targetItemNo)
+    );
+  }
+
+  // 찾지 못하면 첫 번째 문항 사용
+  if (!targetQuestion) {
+    targetQuestion = obj.questions[0];
+  }
+
+  // 개별 문항 형식으로 변환
+  const out = {
+    itemNo: targetQuestion.question_number || targetItemNo,
+    question: targetQuestion.question || targetQuestion.question_stem || '',
+    options: targetQuestion.options || [],
+    answer: null,
+    explanation: targetQuestion.explanation || '',
+    passage: obj.stimulus || obj.passage || '',
+    lc_script: obj.stimulus || obj.transcript || obj.script || '',
+    set_instruction: obj.set_instruction || '',
+    logic_proof: {
+      evidence_sentence: '',
+      reasoning_steps: []
+    }
+  };
+
+  // answer 처리
+  let answerValue = targetQuestion.correct_answer || targetQuestion.answer;
+
+  if (typeof answerValue === 'number') {
+    if (answerValue >= 1 && answerValue <= 5) {
+      out.answer = String(answerValue);
+    } else {
+      throw new Error('answer 필드가 1~5 범위를 벗어남: ' + answerValue);
+    }
+  } else if (typeof answerValue === 'string') {
+    const m = String(answerValue).match(/([1-5])/);
+    if (m) {
+      out.answer = m[1];
+    } else {
+      throw new Error('answer 필드에서 1~5를 찾을 수 없습니다: ' + answerValue);
+    }
+  } else {
+    throw new Error('세트 문항에서 answer 필드가 없습니다.');
+  }
+
+  // options 5개로 맞추기
+  if (!Array.isArray(out.options)) {
+    throw new Error('세트 문항의 options 배열이 없습니다.');
+  }
+  while (out.options.length < 5) {
+    out.options.push('');
+  }
+  if (out.options.length > 5) {
+    out.options = out.options.slice(0, 5);
+  }
+
+  // 추가 필드 보존
+  if (obj.vocabulary_difficulty) {
+    out.vocabulary_difficulty = obj.vocabulary_difficulty;
+  }
+  if (obj.low_frequency_words) {
+    out.low_frequency_words = obj.low_frequency_words;
+  }
+
+  // gapped_passage 처리 (빈칸이 있는 경우)
+  if (out.passage && /_{3,}|\(___\)/.test(out.passage)) {
+    out.gapped_passage = out.passage;
+  }
+
+  return out;
+}
+
 module.exports = {
   parseItemJson,
-  normalizeItemJson
+  normalizeItemJson,
+  normalizeSetItemJson
 };

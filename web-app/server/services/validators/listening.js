@@ -3,6 +3,15 @@
  * 듣기 문항 (LC1-17) 검증기
  */
 
+// ============================================
+// 프리컴파일된 정규식 (성능 최적화)
+// ============================================
+const RE_SPEAKER_TURN = /^(M:|W:|Man:|Woman:|Narrator:)/gim;
+const RE_SPEAKER_MARKER = /^(M:|W:|Man:|Woman:)/im;
+const RE_WHITESPACE = /\s+/;
+const RE_ENGLISH = /[a-zA-Z]/g;
+const RE_NUMERIC = /[\d$₩,]+/;
+
 /**
  * LC 문항 유형별 검증 규칙
  */
@@ -183,8 +192,8 @@ const LC_ITEM_RULES = {
  */
 function countSpeakerTurns(script) {
   if (!script) return 0;
-  const speakerPattern = /^(M:|W:|Man:|Woman:|Narrator:)/gim;
-  const matches = script.match(speakerPattern);
+  RE_SPEAKER_TURN.lastIndex = 0;
+  const matches = script.match(RE_SPEAKER_TURN);
   return matches ? matches.length : 0;
 }
 
@@ -195,7 +204,8 @@ function countSpeakerTurns(script) {
  */
 function hasSpeakerMarkers(script) {
   if (!script) return false;
-  return /^(M:|W:|Man:|Woman:)/im.test(script);
+  RE_SPEAKER_MARKER.lastIndex = 0;
+  return RE_SPEAKER_MARKER.test(script);
 }
 
 /**
@@ -205,7 +215,7 @@ function hasSpeakerMarkers(script) {
  */
 function countWords(text) {
   if (!text || typeof text !== 'string') return 0;
-  return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+  return text.trim().split(RE_WHITESPACE).filter(w => w.length > 0).length;
 }
 
 /**
@@ -215,11 +225,11 @@ function countWords(text) {
  */
 function areOptionsEnglish(options) {
   if (!Array.isArray(options)) return false;
-  // 영어 문자가 50% 이상이면 영어로 판단
-  const englishPattern = /[a-zA-Z]/g;
+  // 영어 문자가 30% 이상이면 영어로 판단
   return options.every(opt => {
     const text = String(opt || '');
-    const englishChars = (text.match(englishPattern) || []).length;
+    RE_ENGLISH.lastIndex = 0;
+    const englishChars = (text.match(RE_ENGLISH) || []).length;
     return englishChars > text.length * 0.3;
   });
 }
@@ -231,8 +241,7 @@ function areOptionsEnglish(options) {
  */
 function areOptionsNumeric(options) {
   if (!Array.isArray(options)) return false;
-  const numericPattern = /[\d$₩,]+/;
-  return options.every(opt => numericPattern.test(String(opt || '')));
+  return options.every(opt => RE_NUMERIC.test(String(opt || '')));
 }
 
 /**

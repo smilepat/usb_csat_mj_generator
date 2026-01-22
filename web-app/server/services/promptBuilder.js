@@ -6,8 +6,35 @@
 const { getDb } = require('../db/database');
 const logger = require('./logger');
 
+// 프롬프트 캐시 (성능 최적화)
+const promptCache = {
+  master: null,
+  items: new Map(),
+  lastClearTime: Date.now()
+};
+
+// 캐시 TTL: 5분 (프롬프트 수정 시 자동 무효화)
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
 /**
- * MASTER_PROMPT 읽기
+ * 캐시 무효화 (프롬프트 수정 시 호출)
+ */
+function clearPromptCache() {
+  promptCache.master = null;
+  promptCache.items.clear();
+  promptCache.lastClearTime = Date.now();
+  logger.info('promptCache', null, '프롬프트 캐시 무효화됨');
+}
+
+/**
+ * 캐시 유효성 확인
+ */
+function isCacheValid() {
+  return (Date.now() - promptCache.lastClearTime) < CACHE_TTL_MS;
+}
+
+/**
+ * MASTER_PROMPT 읽기 (캐시 적용)
  *
  * 우선순위:
  * 1. active=1 + is_default=1 (최우선)
@@ -16,6 +43,11 @@ const logger = require('./logger');
  * 4. 아무거나
  */
 function readMasterPrompt() {
+  // 캐시 확인
+  if (promptCache.master && isCacheValid()) {
+    return promptCache.master;
+  }
+
   const db = getDb();
 
   // 1. 활성화 + 기본값 프롬프트 찾기 (최우선)
@@ -60,15 +92,46 @@ function readMasterPrompt() {
     throw new Error('MASTER_PROMPT를 찾을 수 없습니다.');
   }
 
+  // 캐시에 저장
+  promptCache.master = row.prompt_text;
   return row.prompt_text;
 }
 
 /**
  * 문항 번호를 프롬프트 키로 변환
  * LC01-LC17 (1-17), RC18-RC45 (18-45)
+ * 세트 문항: LC16_17, RC41_42, RC43_45
  */
 function itemNoToPromptKey(itemNo) {
+  const itemNoStr = String(itemNo);
+
+  // 세트 문항 형식 처리 (예: "16-17", "41-42", "43-45")
+  if (itemNoStr.includes('-')) {
+    const [start, end] = itemNoStr.split('-').map(n => parseInt(n, 10));
+    if (start >= 1 && end <= 17) {
+      // 듣기 세트: LC16_17
+      return `LC${start}_${end}`;
+    } else if (start >= 18 && end <= 45) {
+      // 독해 세트: RC41_42, RC43_45
+      return `RC${start}_${end}`;
+    }
+  }
+
   const num = parseInt(itemNo, 10);
+
+  // 세트 문항의 개별 번호 처리 (16, 17 → LC16_17)
+  if (num === 16 || num === 17) {
+    return 'LC16_17';
+  }
+  // 세트 문항의 개별 번호 처리 (41, 42 → RC41_42)
+  if (num === 41 || num === 42) {
+    return 'RC41_42';
+  }
+  // 세트 문항의 개별 번호 처리 (43, 44, 45 → RC43_45)
+  if (num >= 43 && num <= 45) {
+    return 'RC43_45';
+  }
+
   if (num >= 1 && num <= 17) {
     // 듣기 문항: LC01-LC17
     return 'LC' + String(num).padStart(2, '0');
@@ -81,7 +144,7 @@ function itemNoToPromptKey(itemNo) {
 }
 
 /**
- * ITEM_PROMPT 읽기
+ * ITEM_PROMPT 읽기 (캐시 적용)
  *
  * 우선순위:
  * 1. 새 형식 키 (RC18) + active=1 + is_default=1
@@ -94,6 +157,13 @@ function itemNoToPromptKey(itemNo) {
  * 8. 기존 형식 키 (18)
  */
 function readItemPrompt(itemNo) {
+  const cacheKey = `item_${itemNo}`;
+
+  // 캐시 확인
+  if (promptCache.items.has(cacheKey) && isCacheValid()) {
+    return promptCache.items.get(cacheKey);
+  }
+
   const db = getDb();
 
   // 새 형식 (LC01, RC20 등)과 기존 형식 (숫자만) 모두 시도
@@ -182,6 +252,8 @@ function readItemPrompt(itemNo) {
     throw new Error(`ITEM_NO=${itemNo}에 해당하는 프롬프트를 찾을 수 없습니다. (시도한 키: ${newKey}, ${oldKey})`);
   }
 
+  // 캐시에 저장
+  promptCache.items.set(cacheKey, row.prompt_text);
   return row.prompt_text;
 }
 
@@ -583,5 +655,6 @@ module.exports = {
   parseSetProfile,
   getExpectedLevelFromProfile,
   getChartData,
-  buildPromptBundle
+  buildPromptBundle,
+  clearPromptCache  // 프롬프트 수정 시 캐시 무효화용
 };

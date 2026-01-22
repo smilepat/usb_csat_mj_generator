@@ -11,6 +11,15 @@
  */
 
 // ============================================
+// 프리컴파일된 정규식 (성능 최적화)
+// ============================================
+const RE_ENGLISH = /[a-zA-Z]/g;
+const RE_KOREAN = /[가-힣]/g;
+const RE_WHITESPACE = /\s+/;
+const RE_BLANK = /\(___\)|_{3,}|\(\s{3,}\)/g;
+const RE_NUMBER = /\d+/g;
+
+// ============================================
 // A. 언어 혼합 규칙 검사
 // ============================================
 
@@ -21,8 +30,11 @@
  */
 function isMainlyEnglish(text) {
   if (!text || typeof text !== 'string') return false;
-  const englishChars = (text.match(/[a-zA-Z]/g) || []).length;
-  const koreanChars = (text.match(/[가-힣]/g) || []).length;
+  // 정규식 lastIndex 리셋 후 사용
+  RE_ENGLISH.lastIndex = 0;
+  RE_KOREAN.lastIndex = 0;
+  const englishChars = (text.match(RE_ENGLISH) || []).length;
+  const koreanChars = (text.match(RE_KOREAN) || []).length;
   return englishChars > koreanChars;
 }
 
@@ -33,8 +45,10 @@ function isMainlyEnglish(text) {
  */
 function isMainlyKorean(text) {
   if (!text || typeof text !== 'string') return false;
-  const englishChars = (text.match(/[a-zA-Z]/g) || []).length;
-  const koreanChars = (text.match(/[가-힣]/g) || []).length;
+  RE_ENGLISH.lastIndex = 0;
+  RE_KOREAN.lastIndex = 0;
+  const englishChars = (text.match(RE_ENGLISH) || []).length;
+  const koreanChars = (text.match(RE_KOREAN) || []).length;
   return koreanChars > englishChars;
 }
 
@@ -112,7 +126,7 @@ const WORD_COUNT_RANGES = {
  */
 function countWords(text) {
   if (!text || typeof text !== 'string') return 0;
-  return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+  return text.trim().split(RE_WHITESPACE).filter(w => w.length > 0).length;
 }
 
 /**
@@ -381,8 +395,8 @@ function validateGapOptionCompletion(itemObj, itemNo) {
   const options = itemObj.options || [];
 
   // 빈칸 위치 찾기
-  const blankPattern = /\(___\)|_{3,}|\(\s{3,}\)/g;
-  const hasBlank = blankPattern.test(gappedPassage);
+  RE_BLANK.lastIndex = 0;
+  const hasBlank = RE_BLANK.test(gappedPassage);
 
   if (!hasBlank) {
     errors.push('빈칸 문항에 빈칸 표시가 없음');
@@ -402,7 +416,7 @@ function validateGapOptionCompletion(itemObj, itemNo) {
 
     // 31-32번 (구/절): 짧은 표현 (2-15단어 권장)
     if (itemNo === 31 || itemNo === 32) {
-      const wordCount = opt.split(/\s+/).filter(w => w.length > 0).length;
+      const wordCount = opt.split(RE_WHITESPACE).filter(w => w.length > 0).length;
       if (wordCount > 15) {
         warnings.push(`선택지 ${i + 1} 구/절 문항치고 너무 김: ${wordCount}단어`);
       }
@@ -413,7 +427,7 @@ function validateGapOptionCompletion(itemObj, itemNo) {
 
     // 33-34번 (문장): 더 긴 표현 (5-25단어 권장)
     if (itemNo === 33 || itemNo === 34) {
-      const wordCount = opt.split(/\s+/).filter(w => w.length > 0).length;
+      const wordCount = opt.split(RE_WHITESPACE).filter(w => w.length > 0).length;
       if (wordCount < 5) {
         warnings.push(`선택지 ${i + 1} 문장 빈칸 문항치고 너무 짧음: ${wordCount}단어`);
       }
@@ -440,8 +454,8 @@ function calculatePassageAnswerOverlap(passage, answerText) {
   if (!passage || !answerText) return 0;
   if (typeof passage !== 'string' || typeof answerText !== 'string') return 0;
 
-  const passageWords = passage.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-  const answerWords = answerText.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+  const passageWords = passage.toLowerCase().split(RE_WHITESPACE).filter(w => w.length > 3);
+  const answerWords = answerText.toLowerCase().split(RE_WHITESPACE).filter(w => w.length > 3);
 
   if (answerWords.length === 0) return 0;
 
@@ -498,14 +512,14 @@ function validateWeakDistractors(itemObj) {
 
   // 지문 키워드 추출 (4글자 이상 단어)
   const passageKeywords = new Set(
-    passage.toLowerCase().split(/\s+/).filter(w => w.length >= 4)
+    passage.toLowerCase().split(RE_WHITESPACE).filter(w => w.length >= 4)
   );
 
   for (let i = 0; i < options.length; i++) {
     if (i + 1 === answer) continue; // 정답은 스킵
 
     const opt = String(options[i] || '').toLowerCase();
-    const optWords = opt.split(/\s+/).filter(w => w.length >= 4);
+    const optWords = opt.split(RE_WHITESPACE).filter(w => w.length >= 4);
 
     // 지문과 전혀 관련 없는 키워드만 있는 경우
     const matchCount = optWords.filter(w => passageKeywords.has(w)).length;
@@ -568,8 +582,8 @@ function validateMultipleAnswerRisk(itemObj) {
  * @returns {number} 0-1 사이 유사도
  */
 function calculateSimilarity(opt1, opt2) {
-  const words1 = opt1.toLowerCase().split(/\s+/);
-  const words2 = opt2.toLowerCase().split(/\s+/);
+  const words1 = opt1.toLowerCase().split(RE_WHITESPACE);
+  const words2 = opt2.toLowerCase().split(RE_WHITESPACE);
 
   const set1 = new Set(words1);
   const set2 = new Set(words2);
@@ -622,7 +636,8 @@ function validateNumericDistinction(itemObj) {
 
   // 숫자 추출
   const numbersInOptions = options.map(opt => {
-    const matches = opt.match(/\d+/g);
+    RE_NUMBER.lastIndex = 0;
+    const matches = opt.match(RE_NUMBER);
     return matches ? matches.map(Number) : [];
   });
 

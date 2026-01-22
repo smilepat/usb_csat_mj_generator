@@ -92,8 +92,8 @@ async function generateItemPipeline(req) {
         );
       }
 
-      // 4) Normalize
-      const normalized = normalizeItemJson(parsed);
+      // 4) Normalize (세트 문항인 경우 itemNo 전달하여 해당 문항 추출)
+      const normalized = normalizeItemJson(parsed, req.itemNo);
       if (!normalized || typeof normalized !== 'object') {
         throw new Error('normalizeItemJson 결과가 유효한 객체가 아닙니다.');
       }
@@ -264,12 +264,17 @@ function saveGenerationHistory(requestId, attemptNo, rawJson, normalizedJson, re
 }
 
 /**
- * 세트 문항 생성
+ * 세트 문항 생성 (병렬 처리 지원)
  * @param {string} setId - 세트 ID
+ * @param {boolean} parallel - 병렬 처리 여부 (기본: true)
  * @returns {Object} 세트 처리 결과
  */
-async function generateSetItems(setId) {
+async function generateSetItems(setId, parallel = true) {
   const db = getDb();
+  const config = getConfig();
+
+  // 설정에서 병렬 처리 여부 확인
+  const enableParallel = parallel && config.ENABLE_SET_PARALLEL !== 'false';
 
   // 세트 정보 조회
   const setInfo = readSetInfo(setId);
@@ -291,44 +296,98 @@ async function generateSetItems(setId) {
     logger.warn('세트 패턴 오류', `SET:${setId}`, patternCheck.message);
   }
 
-  const results = [];
   const now = new Date().toISOString();
 
-  for (const row of requests) {
-    const req = {
-      requestId: row.request_id,
-      status: row.status,
-      itemNo: row.item_no,
-      passage: setInfo.passage || row.passage,
-      level: row.level,
-      extra: row.extra,
-      chartId: row.chart_id,
-      setId: row.set_id,
-      passageSource: row.passage_source,
-      topic: row.topic
-    };
+  // 요청 객체 배열 준비
+  const reqObjects = requests.map(row => ({
+    requestId: row.request_id,
+    status: row.status,
+    itemNo: row.item_no,
+    passage: setInfo.passage || row.passage,
+    level: row.level,
+    extra: row.extra,
+    chartId: row.chart_id,
+    setId: row.set_id,
+    passageSource: row.passage_source,
+    topic: row.topic
+  }));
 
-    // 상태 업데이트: RUNNING
+  // 모든 요청을 RUNNING 상태로 업데이트
+  for (const req of reqObjects) {
     db.prepare(`
       UPDATE item_requests
       SET status = 'RUNNING', updated_at = ?
       WHERE request_id = ?
     `).run(now, req.requestId);
+  }
 
-    // 문항 생성
-    const result = await generateItemPipeline(req);
-    results.push({ req, result });
+  let results = [];
 
-    // 결과 저장 (itemNo 전달)
-    await saveItemResults(req.requestId, result, req.itemNo);
+  if (enableParallel && reqObjects.length > 1) {
+    // 병렬 처리
+    logger.info('세트 문항 병렬 생성 시작', `SET:${setId}`, `문항 수: ${reqObjects.length}`);
 
-    // 상태 업데이트: OK/FAIL
-    const finalStatus = result.validationResult === 'PASS' ? 'OK' : 'FAIL';
-    db.prepare(`
-      UPDATE item_requests
-      SET status = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE request_id = ?
-    `).run(finalStatus, req.requestId);
+    const promises = reqObjects.map(async (req) => {
+      try {
+        const result = await generateItemPipeline(req);
+        return { req, result, success: true };
+      } catch (e) {
+        logger.error('병렬 생성 중 오류', req.requestId, e.message);
+        return {
+          req,
+          result: {
+            rawJson: '',
+            normalized: null,
+            validationResult: 'FAIL',
+            validationLog: '병렬 생성 중 오류: ' + e.message,
+            repairLog: '',
+            finalJson: null
+          },
+          success: false
+        };
+      }
+    });
+
+    // 모든 Promise 완료 대기
+    const parallelResults = await Promise.all(promises);
+
+    // 결과 저장 (순차)
+    for (const { req, result } of parallelResults) {
+      results.push({ req, result });
+      await saveItemResults(req.requestId, result, req.itemNo);
+
+      // 상태 업데이트: OK/FAIL
+      const finalStatus = result.validationResult === 'PASS' ? 'OK' : 'FAIL';
+      db.prepare(`
+        UPDATE item_requests
+        SET status = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE request_id = ?
+      `).run(finalStatus, req.requestId);
+    }
+
+    logger.info('세트 문항 병렬 생성 완료', `SET:${setId}`,
+      `성공: ${parallelResults.filter(r => r.result.validationResult === 'PASS').length}/${parallelResults.length}`);
+
+  } else {
+    // 순차 처리 (기존 방식)
+    logger.info('세트 문항 순차 생성 시작', `SET:${setId}`, `문항 수: ${reqObjects.length}`);
+
+    for (const req of reqObjects) {
+      // 문항 생성
+      const result = await generateItemPipeline(req);
+      results.push({ req, result });
+
+      // 결과 저장 (itemNo 전달)
+      await saveItemResults(req.requestId, result, req.itemNo);
+
+      // 상태 업데이트: OK/FAIL
+      const finalStatus = result.validationResult === 'PASS' ? 'OK' : 'FAIL';
+      db.prepare(`
+        UPDATE item_requests
+        SET status = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE request_id = ?
+      `).run(finalStatus, req.requestId);
+    }
   }
 
   // 세트 단위 검증
@@ -340,7 +399,8 @@ async function generateSetItems(setId) {
     itemCount: results.length,
     validationResult: setVal.pass ? 'PASS' : 'CHECK',
     validationLog: setVal.log,
-    results
+    results,
+    parallelProcessed: enableParallel && reqObjects.length > 1
   };
 }
 

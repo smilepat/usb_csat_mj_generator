@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { itemsApi, promptsApi, libraryApi } from '../api';
+import { itemsApi, promptsApi, libraryApi, setsApi } from '../api';
 import PromptPreview from '../components/PromptPreview';
 import { validateForm, countWords, isLCItem, isRCItem, isSetItem } from '../utils/validation';
+
+// 세트 문항 번호를 개별 문항 번호 배열로 변환
+const getSetItemNumbers = (itemNo) => {
+  const itemNoStr = String(itemNo);
+  if (itemNoStr === '16-17') return [16, 17];
+  if (itemNoStr === '41-42') return [41, 42];
+  if (itemNoStr === '43-45') return [43, 44, 45];
+  return null;
+};
+
+// 세트 문항인지 확인
+const isSetItemNo = (itemNo) => {
+  const itemNoStr = String(itemNo);
+  return ['16-17', '41-42', '43-45'].includes(itemNoStr);
+};
 
 function ItemCreate() {
   const navigate = useNavigate();
@@ -134,6 +149,13 @@ function ItemCreate() {
   const handleConfirmGenerate = async () => {
     try {
       setLoading(true);
+
+      // 세트 문항인지 확인
+      if (isSetItemNo(formData.item_no)) {
+        await handleSetItemGeneration();
+        return;
+      }
+
       const res = await itemsApi.createRequest(formData);
       setMessage({ type: 'success', text: '요청이 생성되었습니다. 문항 생성을 시작합니다...' });
 
@@ -210,6 +232,13 @@ function ItemCreate() {
 
     try {
       setLoading(true);
+
+      // 세트 문항인지 확인
+      if (isSetItemNo(formData.item_no)) {
+        await handleSetItemGeneration();
+        return;
+      }
+
       const res = await itemsApi.createRequest(formData);
       setMessage({ type: 'success', text: '요청이 생성되었습니다. 문항 생성을 시작합니다...' });
 
@@ -257,6 +286,76 @@ function ItemCreate() {
       }
     } catch (error) {
       setMessage({ type: 'error', text: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 세트 문항 생성 처리
+  const handleSetItemGeneration = async () => {
+    const itemNumbers = getSetItemNumbers(formData.item_no);
+    if (!itemNumbers) {
+      setMessage({ type: 'error', text: '알 수 없는 세트 문항입니다.' });
+      setLoading(false);
+      return;
+    }
+
+    const setId = `SET_${formData.item_no.replace('-', '_')}_${Date.now()}`;
+    setMessage({ type: 'info', text: `세트 문항 생성 중... (${itemNumbers.join(', ')}번)` });
+
+    try {
+      // 1. 세트 생성
+      await setsApi.create({
+        set_id: setId,
+        set_name: `${formData.item_no}번 세트`,
+        common_passage: formData.passage || '',
+        profile: itemNumbers.map(no => `${no}:${formData.level}`).join(',')
+      });
+
+      // 2. 세트에 개별 문항 요청 추가
+      const items = itemNumbers.map(no => ({
+        item_no: no,
+        level: formData.level,
+        extra: formData.extra,
+        topic: formData.topic
+      }));
+      await setsApi.addRequests(setId, items);
+
+      // 3. 세트 생성 실행
+      setMessage({ type: 'info', text: `세트 문항 생성 중... (${itemNumbers.length}개 문항 병렬 생성)` });
+      const genRes = await setsApi.generate(setId);
+
+      // 4. 세트 상세 조회
+      const setDetail = await setsApi.get(setId);
+
+      // 5. 결과 표시
+      setGenerationResult({
+        isSet: true,
+        setId: setId,
+        itemCount: genRes.data.itemCount,
+        validationResult: genRes.data.validationResult,
+        validationLog: genRes.data.validationLog,
+        setDetail: setDetail.data
+      });
+      setShowResult(true);
+      setShowPreview(false);
+
+      const successCount = setDetail.data.requests.filter(r => r.status === 'OK').length;
+      const failCount = setDetail.data.requests.filter(r => r.status === 'FAIL').length;
+
+      if (failCount === 0) {
+        setMessage({
+          type: 'success',
+          text: `세트 문항 ${itemNumbers.length}개가 모두 성공적으로 생성되었습니다!`
+        });
+      } else {
+        setMessage({
+          type: 'warning',
+          text: `세트 문항 생성 완료 (성공: ${successCount}개, 실패: ${failCount}개)`
+        });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: '세트 문항 생성 오류: ' + error.message });
     } finally {
       setLoading(false);
     }
@@ -400,7 +499,198 @@ function ItemCreate() {
     return styles[grade] || styles['F'];
   };
 
-  // 생성 결과 화면
+  // 세트 문항 결과 화면
+  if (showResult && generationResult && generationResult.isSet) {
+    const { setDetail } = generationResult;
+    const requests = setDetail?.requests || [];
+    const outputs = setDetail?.outputs || [];
+    const successCount = requests.filter(r => r.status === 'OK').length;
+    const failCount = requests.filter(r => r.status === 'FAIL').length;
+
+    return (
+      <div>
+        <h1 style={{ marginBottom: '24px' }}>
+          {failCount === 0 ? '✅ 세트 문항 생성 완료!' : '⚠️ 세트 문항 생성 완료 - 일부 검토 필요'}
+        </h1>
+
+        {message && (
+          <div className={`alert alert-${message.type}`}>
+            {message.text}
+          </div>
+        )}
+
+        {/* 세트 요약 */}
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <h3 style={{ marginBottom: '12px', color: '#1e40af' }}>📦 세트 요약</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+            <div style={{
+              background: '#f0fdf4',
+              padding: '16px',
+              borderRadius: '8px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#15803d' }}>{successCount}</div>
+              <div style={{ color: '#166534' }}>성공</div>
+            </div>
+            <div style={{
+              background: failCount > 0 ? '#fef2f2' : '#f1f5f9',
+              padding: '16px',
+              borderRadius: '8px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: failCount > 0 ? '#dc2626' : '#64748b' }}>{failCount}</div>
+              <div style={{ color: failCount > 0 ? '#991b1b' : '#475569' }}>실패</div>
+            </div>
+            <div style={{
+              background: '#eff6ff',
+              padding: '16px',
+              borderRadius: '8px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1d4ed8' }}>{requests.length}</div>
+              <div style={{ color: '#1e40af' }}>총 문항</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 공통 지문 (있는 경우) */}
+        {setDetail?.set?.common_passage && (
+          <div className="card" style={{ marginBottom: '16px' }}>
+            <h3 style={{ marginBottom: '12px', color: '#1e40af' }}>📖 공통 지문</h3>
+            <div style={{
+              background: '#f8fafc',
+              padding: '16px',
+              borderRadius: '8px',
+              lineHeight: '1.8',
+              whiteSpace: 'pre-wrap'
+            }}>
+              {setDetail.set.common_passage}
+            </div>
+          </div>
+        )}
+
+        {/* 개별 문항 결과 */}
+        {requests.map((req, idx) => {
+          const output = outputs.find(o => o.request_id === req.request_id) || {};
+          const isSuccess = req.status === 'OK';
+
+          return (
+            <div key={req.request_id} className="card" style={{
+              marginBottom: '16px',
+              border: isSuccess ? '2px solid #22c55e' : '2px solid #ef4444'
+            }}>
+              <h3 style={{
+                marginBottom: '12px',
+                color: isSuccess ? '#15803d' : '#dc2626',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                {isSuccess ? '✅' : '❌'} {req.item_no}번 문항
+                <span style={{
+                  fontSize: '0.8rem',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  background: isSuccess ? '#dcfce7' : '#fee2e2',
+                  marginLeft: 'auto'
+                }}>
+                  {req.status}
+                </span>
+              </h3>
+
+              {isSuccess && output.question && (
+                <>
+                  {/* 발문 */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <strong>발문:</strong> {output.question}
+                  </div>
+
+                  {/* 선택지 */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <strong>선택지:</strong>
+                    <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {[1, 2, 3, 4, 5].map(i => {
+                        const optionText = output[`option_${i}`] || '';
+                        const isAnswer = String(output.answer) === String(i);
+                        return (
+                          <div key={i} style={{
+                            padding: '8px 12px',
+                            borderRadius: '4px',
+                            background: isAnswer ? '#dcfce7' : '#f1f5f9',
+                            border: isAnswer ? '1px solid #22c55e' : '1px solid #e2e8f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}>
+                            <span style={{
+                              width: '20px',
+                              height: '20px',
+                              borderRadius: '50%',
+                              background: isAnswer ? '#22c55e' : '#94a3b8',
+                              color: 'white',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.75rem',
+                              fontWeight: 'bold'
+                            }}>{i}</span>
+                            {optionText}
+                            {isAnswer && <span style={{ marginLeft: 'auto', color: '#22c55e', fontWeight: 600 }}>정답</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 해설 */}
+                  {output.explanation && (
+                    <div style={{
+                      background: '#fffbeb',
+                      padding: '12px',
+                      borderRadius: '6px',
+                      border: '1px solid #fcd34d'
+                    }}>
+                      <strong>해설:</strong> {output.explanation}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {!isSuccess && (
+                <div style={{ color: '#dc2626' }}>
+                  문항 생성에 실패했습니다. 다시 시도해주세요.
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* 버튼 */}
+        <div className="flex gap-2">
+          <button
+            className="btn btn-primary"
+            onClick={handleCreateNew}
+          >
+            ➕ 새 문항 생성
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => navigate(`/sets`)}
+          >
+            📦 세트 목록으로
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => navigate('/items')}
+          >
+            📋 요청 목록으로
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 단일 문항 생성 결과 화면
   if (showResult && generationResult) {
     const { details } = generationResult;
     const output = details?.output || {};

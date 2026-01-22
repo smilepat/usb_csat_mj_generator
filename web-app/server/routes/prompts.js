@@ -34,6 +34,7 @@ const {
   getAllPromptAlerts,
   getFeedbackSummary
 } = require('../services/promptFeedbackAnalyzer');
+const { clearPromptCache } = require('../services/promptBuilder');
 const logger = require('../services/logger');
 
 /**
@@ -484,9 +485,12 @@ router.put('/:key', async (req, res) => {
       key
     );
 
-    // 프롬프트 텍스트가 변경되었으면 메트릭스 재계산
+    // 프롬프트 텍스트가 변경되었으면 메트릭스 재계산 및 캐시 무효화
     let metrics = null;
     if (prompt_text !== undefined && prompt_text !== existing.prompt_text) {
+      // 캐시 무효화
+      clearPromptCache();
+
       try {
         metrics = await calculateAndSavePromptMetrics(existing.id, key, newPromptText, false);
         logger.info('프롬프트 수정 후 메트릭스 재계산', key, `Score: ${metrics?.totalScore}`);
@@ -724,6 +728,9 @@ router.post('/:key/versions/:version/restore', async (req, res) => {
           updated_at = CURRENT_TIMESTAMP
       WHERE prompt_key = ?
     `).run(targetVersion.prompt_text, key);
+
+    // 캐시 무효화
+    clearPromptCache();
 
     logger.info('프롬프트 버전 복원', key, `버전 ${version}으로 복원됨`);
 
@@ -1356,6 +1363,9 @@ router.post('/:key/feedback/:feedbackId/apply', async (req, res) => {
     db.prepare(`
       UPDATE prompts SET prompt_text = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
     `).run(improvement.data.improved_prompt, prompt.id);
+
+    // 캐시 무효화
+    clearPromptCache();
 
     // 피드백 적용 상태 업데이트
     db.prepare(`
