@@ -28,7 +28,46 @@ function parseItemJson(rawText) {
     throw new Error('JSON 형식이 아닌 응답입니다: ' + text.slice(0, 100));
   }
 
-  const jsonStr = text.substring(first, last + 1);
+  let jsonStr = text.substring(first, last + 1);
+
+  // LLM이 circled numbers (①②③④⑤)를 반환하는 경우 정수로 변환
+  // 모든 위치에서 circled numbers를 숫자로 변환 (JSON 값 위치)
+  // 예: "correct_answer": ① → "correct_answer": 1
+  // 예: "answer": ⑤, → "answer": 5,
+
+  // 1) 콜론 뒤에 오는 circled numbers (키:값 형태)
+  jsonStr = jsonStr
+    .replace(/:\s*①\s*([,}\]])/g, ': 1$1')
+    .replace(/:\s*②\s*([,}\]])/g, ': 2$1')
+    .replace(/:\s*③\s*([,}\]])/g, ': 3$1')
+    .replace(/:\s*④\s*([,}\]])/g, ': 4$1')
+    .replace(/:\s*⑤\s*([,}\]])/g, ': 5$1');
+
+  // 2) 줄 끝에 있는 circled numbers (쉼표/괄호 없이)
+  jsonStr = jsonStr
+    .replace(/:\s*①\s*$/gm, ': 1')
+    .replace(/:\s*②\s*$/gm, ': 2')
+    .replace(/:\s*③\s*$/gm, ': 3')
+    .replace(/:\s*④\s*$/gm, ': 4')
+    .replace(/:\s*⑤\s*$/gm, ': 5');
+
+  // 3) 배열 내부의 unquoted circled numbers (숫자 값으로 사용된 경우만)
+  // 예: [①, ②] → [1, 2] (unquoted)
+  // 주의: ["①", "②"]는 유효한 JSON이므로 변환하지 않음
+  jsonStr = jsonStr
+    .replace(/\[\s*①\s*([,\]])/g, '[1$1')
+    .replace(/\[\s*②\s*([,\]])/g, '[2$1')
+    .replace(/\[\s*③\s*([,\]])/g, '[3$1')
+    .replace(/\[\s*④\s*([,\]])/g, '[4$1')
+    .replace(/\[\s*⑤\s*([,\]])/g, '[5$1')
+    .replace(/,\s*①\s*([,\]])/g, ', 1$1')
+    .replace(/,\s*②\s*([,\]])/g, ', 2$1')
+    .replace(/,\s*③\s*([,\]])/g, ', 3$1')
+    .replace(/,\s*④\s*([,\]])/g, ', 4$1')
+    .replace(/,\s*⑤\s*([,\]])/g, ', 5$1');
+
+  // 참고: 문자열 내부의 circled numbers ("①", "②" 등)는 유효한 JSON이므로 변환하지 않음
+  // RC29, RC37 등의 프롬프트에서 options로 사용됨
 
   try {
     const obj = JSON.parse(jsonStr);
@@ -36,6 +75,79 @@ function parseItemJson(rawText) {
   } catch (e) {
     throw new Error('JSON.parse 실패: ' + e.message + ' / 원본: ' + jsonStr.slice(0, 150));
   }
+}
+
+/**
+ * passage가 객체인 경우 문자열로 변환
+ * LLM이 {intro, sentences} 또는 배열 형태로 반환하는 경우 처리
+ * @param {any} passage - 원본 passage 값
+ * @returns {string} 문자열로 변환된 passage
+ */
+function convertPassageToString(passage) {
+  if (!passage) return '';
+
+  // 이미 문자열인 경우 그대로 반환
+  if (typeof passage === 'string') {
+    return passage;
+  }
+
+  // 배열인 경우 조인
+  if (Array.isArray(passage)) {
+    return passage.map(item => {
+      if (typeof item === 'string') return item;
+      if (typeof item === 'object' && item !== null) {
+        return item.text || item.content || item.sentence || JSON.stringify(item);
+      }
+      return String(item);
+    }).join(' ');
+  }
+
+  // 객체인 경우 (예: {intro, sentences})
+  if (typeof passage === 'object' && passage !== null) {
+    const parts = [];
+
+    // intro 처리
+    if (passage.intro) {
+      parts.push(typeof passage.intro === 'string' ? passage.intro : JSON.stringify(passage.intro));
+    }
+
+    // sentences 처리 (RC36, RC37 문장 순서 문항용)
+    if (passage.sentences) {
+      if (Array.isArray(passage.sentences)) {
+        // 배열인 경우
+        parts.push(passage.sentences.join(' '));
+      } else if (typeof passage.sentences === 'string') {
+        // 문자열인 경우
+        parts.push(passage.sentences);
+      } else if (typeof passage.sentences === 'object') {
+        // 객체인 경우 (예: {A: "...", B: "...", C: "..."})
+        // RC36, RC37 문장 순서 문항 형식
+        const sentenceKeys = Object.keys(passage.sentences).sort();
+        const formattedSentences = sentenceKeys.map(key => {
+          return `(${key}) ${passage.sentences[key]}`;
+        }).join('\n');
+        parts.push(formattedSentences);
+      }
+    }
+
+    // text, content 필드 처리
+    if (passage.text) {
+      parts.push(typeof passage.text === 'string' ? passage.text : JSON.stringify(passage.text));
+    }
+    if (passage.content) {
+      parts.push(typeof passage.content === 'string' ? passage.content : JSON.stringify(passage.content));
+    }
+
+    // 아무 필드도 없으면 JSON 문자열로 변환
+    if (parts.length === 0) {
+      return JSON.stringify(passage);
+    }
+
+    return parts.join('\n\n');
+  }
+
+  // 기타 타입은 문자열로 변환
+  return String(passage);
 }
 
 /**
@@ -70,6 +182,10 @@ function normalizeItemJson(obj, targetItemNo = null) {
   if (!out.passage && out.transcript) {
     out.passage = out.transcript;
   }
+
+  // passage가 객체인 경우 문자열로 변환 (LLM이 {intro, sentences} 형태로 반환하는 경우)
+  out.passage = convertPassageToString(out.passage);
+  out.stimulus = convertPassageToString(out.stimulus);
 
   // lc_script: LC 문항용 스크립트 필드 매핑 (stimulus, transcript 지원)
   if (!out.lc_script) {
@@ -253,8 +369,8 @@ function normalizeSetItemJson(obj, targetItemNo) {
     options: targetQuestion.options || [],
     answer: null,
     explanation: targetQuestion.explanation || '',
-    passage: obj.stimulus || obj.passage || '',
-    lc_script: obj.stimulus || obj.transcript || obj.script || '',
+    passage: convertPassageToString(obj.stimulus || obj.passage || ''),
+    lc_script: convertPassageToString(obj.stimulus || obj.transcript || obj.script || ''),
     set_instruction: obj.set_instruction || '',
     logic_proof: {
       evidence_sentence: '',
