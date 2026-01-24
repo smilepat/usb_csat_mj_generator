@@ -81,7 +81,7 @@ function countUnderlinedSegmentsLegacy(passage) {
 
 /**
  * RC29 어법 문항 검증
- * grammar_meta가 유효하면 밑줄 형식 검증은 경고로 처리 (PASS 가능)
+ * 지문에 원숫자(①②③④⑤)가 반드시 포함되어야 함 (필수)
  * @param {Object} itemObj - 정규화된 문항 객체
  * @param {Object} req - 요청 객체
  * @returns {{ pass: boolean, log: string, promptSuggestion: string|null }}
@@ -93,28 +93,32 @@ function validateGrammarItem(itemObj, req) {
   let promptSuggestion = null;
 
   const passage = req.passage || itemObj.passage || '';
+  console.log(`[RC29 검증] req.passage길이: ${(req.passage||'').length}, itemObj.passage길이: ${(itemObj.passage||'').length}`);
+  console.log(`[RC29 검증] 사용할 passage처음100자: ${passage.substring(0, 100)}`);
   const underlineResult = countUnderlinedSegments(passage);
+  console.log(`[RC29 검증] 원숫자 검출 결과: ${underlineResult.count}개, 형식: ${underlineResult.formatName}`);
 
   // grammar_meta 먼저 검증 (핵심 검증)
   const meta = itemObj.grammar_meta;
   const hasValidMeta = Array.isArray(meta) && meta.length === 5;
 
-  // 밑줄 개수 검증
+  // 밑줄 개수 검증 - RC29는 반드시 지문에 원숫자 5개가 있어야 함
   if (underlineResult.count !== 5) {
-    if (hasValidMeta) {
-      // grammar_meta가 유효하면 밑줄 누락은 경고로만 처리 (PASS 유지)
-      warnings.push(`지문 내 밑줄 마커 없음 (grammar_meta로 대체)`);
-      if (underlineResult.suggestion) {
-        warnings.push('[권장] ' + underlineResult.suggestion);
-      }
+    // 원숫자가 5개 미만이면 무조건 실패 (재생성 필요)
+    pass = false;
+    logs.push(`[필수] 지문 내 원숫자(①②③④⑤) ${underlineResult.count}개 발견 (5개 필요)`);
+
+    if (underlineResult.count === 0) {
+      promptSuggestion = '지문에 ①②③④⑤ 원숫자가 반드시 포함되어야 합니다. ' +
+        '예: "The scientist ①discovered that the results ②were consistent..."';
+      logs.push('[재생성 필요] ' + promptSuggestion);
     } else {
-      // grammar_meta도 없으면 실패
-      pass = false;
-      logs.push(`지문 내 밑줄 개수 != 5 (현재: ${underlineResult.count})`);
-      if (underlineResult.count === 0 && underlineResult.suggestion) {
-        promptSuggestion = underlineResult.suggestion;
-        logs.push('[프롬프트 수정 필요] ' + promptSuggestion);
-      }
+      promptSuggestion = `지문에 원숫자가 ${underlineResult.count}개만 있습니다. 5개 모두 필요합니다.`;
+      logs.push('[재생성 필요] ' + promptSuggestion);
+    }
+
+    if (hasValidMeta) {
+      warnings.push('grammar_meta는 있으나 지문에 원숫자 마커가 누락됨');
     }
   } else {
     logs.push(`지문 내 밑줄 5개 OK (형식: ${underlineResult.formatName})`);

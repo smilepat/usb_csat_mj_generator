@@ -624,12 +624,31 @@ function buildPromptBundle(req, logger = null) {
     context += '[세트 정보]\nSET_ID=' + req.setId + ', ITEM_NO=' + req.itemNo + '\n\n';
   }
 
+  // RC29 어법 문항용 원숫자 강제 지시
+  let rc29CircledNumberInstruction = '';
+  if (req.itemNo === 29) {
+    rc29CircledNumberInstruction = `
+⚠️ [RC29 필수 요구사항 - 반드시 준수] ⚠️
+stimulus 필드에 원숫자(①②③④⑤)를 반드시 지문 텍스트 내에 삽입하세요.
+
+올바른 예시:
+"stimulus": "The scientist ①discovered that the results ②were consistent with ③their hypothesis, which ④suggested a new approach ⑤to solving the problem."
+
+잘못된 예시 (절대 금지):
+"stimulus": "The scientist discovered that the results were consistent with their hypothesis..."
+(원숫자가 없으면 검증 실패로 재생성됩니다)
+
+원숫자는 각 문법 포인트 바로 앞에 위치해야 합니다.
+`;
+  }
+
   // userPrompt 구성
   const userPrompt =
     '아래 정보를 바탕으로 한국 수능 영어 문항을 1개 생성하시오.\n' +
     '1) PASSAGE_GIVEN 블록이 있는 경우: 해당 지문을 절대 수정·삭제·요약하지 말고 그대로 사용하시오.\n' +
     '2) 지문 생성 지시만 있고 PASSAGE_GIVEN이 없는 경우: 먼저 지문을 직접 작성한 뒤, 그 지문을 기반으로 문항을 생성하시오.\n' +
     '3) 출력은 MASTER_PROMPT에서 정의한 JSON 스키마를 따르는 단일 JSON 객체 1개만 출력하고, 그 외 텍스트는 출력하지 마시오.\n\n' +
+    rc29CircledNumberInstruction +
     '----------------------------------------\n' +
     '[ITEM별 지침]\n' + itemPrompt + '\n\n' +
     '----------------------------------------\n' +

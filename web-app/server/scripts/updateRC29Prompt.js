@@ -9,7 +9,101 @@ const fs = require('fs');
 
 const DB_PATH = path.join(__dirname, '../../data/csat.db');
 
-const improvedRC29Prompt = `Create a CSAT Reading Item 29 (Grammar - Error Identification) following these specifications:
+const improvedRC29Prompt = `Create a CSAT Reading Item 29 (Grammar – Error Identification).
+
+This prompt operates under the CSAT Master Prompt.
+All global constraints apply first.
+
+────────────────────────────────
+[ABSOLUTE FORMAT RULE – NON-NEGOTIABLE]
+
+The stimulus text MUST contain EXACTLY FIVE circled numbers:
+① ② ③ ④ ⑤
+
+• Each circled number must appear EXACTLY ONCE.
+• Each circled number must be placed IMMEDIATELY BEFORE the word or phrase being tested.
+• Circled numbers replace underlining. DO NOT use underlines.
+• If any circled number is missing, duplicated, or misplaced, the output is INVALID.
+
+────────────────────────────────
+[ITEM PURPOSE]
+
+• Core skill: Identifying ONE grammatically incorrect expression
+• Cognitive process:
+  sentence-level analysis → cross-sentence context checking → error judgment
+• Difficulty: 중상 (expected correct rate 60–75%)
+• Context dependency is REQUIRED. The error must NOT be detectable in isolation.
+
+────────────────────────────────
+[STIMULUS REQUIREMENTS]
+
+• Passage length: 150–160 words
+• Text type: narrative or anecdotal (single coherent paragraph preferred)
+• Grammar points must be naturally distributed across the passage
+• Avoid placing more than ONE circled number in the same sentence
+
+────────────────────────────────
+[ERROR DESIGN – CORRECT ANSWER]
+
+Exactly ONE of the five circled expressions must be grammatically incorrect.
+
+The error must involve at least one of the following:
+• agreement across clauses
+• tense consistency across sentences
+• pronoun reference requiring discourse tracking
+• modifier–head relationship across distance
+• context-dependent voice (active/passive)
+
+AVOID:
+• isolated rule errors
+• immediately obvious subject–verb mismatches
+
+────────────────────────────────
+[QUESTION FORMAT]
+
+question:
+다음 글의 ①~⑤ 중, 어법상 틀린 것은?
+
+options:
+["①", "②", "③", "④", "⑤"]
+
+correct_answer:
+(Number 1–5 only)
+
+────────────────────────────────
+[GRAMMAR_META – REQUIRED]
+
+Include a grammar_meta array with EXACTLY five objects.
+
+Each object must correspond to the circled number in the stimulus.
+
+Fields:
+• index (1–5)
+• is_correct (true / false)
+• grammar_point
+• explanation (Korean, context-based)
+• correction (ONLY if is_correct is false)
+
+Exactly ONE object must have is_correct: false.
+
+────────────────────────────────
+[OUTPUT FORMAT – JSON ONLY]
+
+Return ONLY valid JSON.
+No explanations outside JSON.
+No markdown.
+No comments.
+
+────────────────────────────────
+[FINAL SELF-CHECK – DO BEFORE OUTPUT]
+
+Confirm internally:
+✓ stimulus contains ①②③④⑤
+✓ exactly one grammar_meta item is incorrect
+✓ correct_answer matches that index
+✓ grammar_meta explanations match stimulus context`;
+
+const oldImprovedRC29Prompt = `Create a CSAT Reading Item 29 (Grammar - Error Identification) following these specifications:
 
 ## ⚠️ ABSOLUTE REQUIREMENT - READ FIRST ⚠️
 

@@ -176,8 +176,11 @@ function normalizeItemJson(obj, targetItemNo = null) {
   out.question = out.question || out.question_stem || '';
 
   // passage: stimulus, transcript도 지원 (새 프롬프트 형식)
+  // 디버깅: stimulus 필드 확인
+  console.log('[jsonUtils] stimulus 필드 확인:', typeof out.stimulus, out.stimulus ? out.stimulus.substring(0, 50) : 'null');
   if (!out.passage && out.stimulus) {
     out.passage = out.stimulus;
+    console.log('[jsonUtils] stimulus → passage 복사됨');
   }
   if (!out.passage && out.transcript) {
     out.passage = out.transcript;
