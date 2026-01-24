@@ -93,10 +93,7 @@ function validateGrammarItem(itemObj, req) {
   let promptSuggestion = null;
 
   const passage = req.passage || itemObj.passage || '';
-  console.log(`[RC29 검증] req.passage길이: ${(req.passage||'').length}, itemObj.passage길이: ${(itemObj.passage||'').length}`);
-  console.log(`[RC29 검증] 사용할 passage처음100자: ${passage.substring(0, 100)}`);
   const underlineResult = countUnderlinedSegments(passage);
-  console.log(`[RC29 검증] 원숫자 검출 결과: ${underlineResult.count}개, 형식: ${underlineResult.formatName}`);
 
   // grammar_meta 먼저 검증 (핵심 검증)
   const meta = itemObj.grammar_meta;

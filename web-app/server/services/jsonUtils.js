@@ -176,11 +176,8 @@ function normalizeItemJson(obj, targetItemNo = null) {
   out.question = out.question || out.question_stem || '';
 
   // passage: stimulus, transcript도 지원 (새 프롬프트 형식)
-  // 디버깅: stimulus 필드 확인
-  console.log('[jsonUtils] stimulus 필드 확인:', typeof out.stimulus, out.stimulus ? out.stimulus.substring(0, 50) : 'null');
   if (!out.passage && out.stimulus) {
     out.passage = out.stimulus;
-    console.log('[jsonUtils] stimulus → passage 복사됨');
   }
   if (!out.passage && out.transcript) {
     out.passage = out.transcript;
@@ -373,7 +370,7 @@ function normalizeSetItemJson(obj, targetItemNo) {
     answer: null,
     explanation: targetQuestion.explanation || '',
     passage: convertPassageToString(obj.stimulus || obj.passage || ''),
-    lc_script: convertPassageToString(obj.stimulus || obj.transcript || obj.script || ''),
+    lc_script: convertPassageToString(obj.lc_script || obj.stimulus || obj.transcript || obj.script || ''),
     set_instruction: obj.set_instruction || '',
     logic_proof: {
       evidence_sentence: '',

@@ -42,8 +42,6 @@ async function repairRC29CircledNumbers(normalized, config) {
   // passage 또는 stimulus 중 하나 사용
   const passage = normalized.passage || normalized.stimulus || '';
   const grammarMeta = normalized.grammar_meta;
-  console.log(`[RC29 수정] passage길이: ${passage.length}, stimulus길이: ${(normalized.stimulus || '').length}`);
-  console.log(`[RC29 수정] passage처음100자: ${passage.substring(0, 100)}`);
 
   // 이미 원숫자가 5개 있으면 수정 불필요
   const underlineResult = countUnderlinedSegments(passage);
@@ -53,12 +51,11 @@ async function repairRC29CircledNumbers(normalized, config) {
 
   // grammar_meta가 없으면 수정 불가
   if (!Array.isArray(grammarMeta) || grammarMeta.length !== 5) {
-    console.log(`[RC29 수정] grammar_meta 유효하지 않음 - isArray: ${Array.isArray(grammarMeta)}, length: ${grammarMeta?.length}`);
+    logger.warn('RC29 수정 불가', 'grammar_meta 유효하지 않음');
     return normalized;
   }
 
-  console.log(`[RC29 수정] 원숫자 자동 삽입 시도 - 현재 ${underlineResult.count}개 → 5개 필요`);
-  console.log('[RC29 수정] grammar_meta:', JSON.stringify(grammarMeta.map(m => ({ index: m.index, point: m.grammar_point }))));
+  logger.info('RC29 원숫자 자동 삽입 시도', `현재 ${underlineResult.count}개 → 5개 필요`);
 
   // 수정용 프롬프트 생성
   const repairPrompt = `다음 영어 지문에 원숫자(①②③④⑤)를 삽입해야 합니다.
@@ -83,9 +80,7 @@ JSON만 출력하세요:`;
 
   try {
     const systemPrompt = 'You are a helpful assistant that inserts circled numbers into English text. Output only valid JSON.';
-    console.log('[RC29 수정] LLM 호출 시작...');
     const response = await callLLM(systemPrompt, repairPrompt, config);
-    console.log('[RC29 수정] LLM 응답:', response ? response.substring(0, 300) : 'null');
 
     // JSON 파싱
     const jsonMatch = response.match(/\{[\s\S]*\}/);
@@ -96,7 +91,6 @@ JSON만 출력하세요:`;
         const repairedResult = countUnderlinedSegments(parsed.repaired_stimulus);
         if (repairedResult.count === 5) {
           logger.info('RC29 원숫자 삽입 성공', `${repairedResult.count}개 삽입됨`);
-          logger.info('RC29 수정된 지문', parsed.repaired_stimulus.substring(0, 200));
           normalized.passage = parsed.repaired_stimulus;
           normalized.stimulus = parsed.repaired_stimulus;
           return normalized;
@@ -180,14 +174,6 @@ async function generateItemPipeline(req) {
         throw new Error('normalizeItemJson 결과가 유효한 객체가 아닙니다.');
       }
 
-      // RC29 디버깅: normalized 객체 필드 확인
-      if (req.itemNo == 29) {
-        const nkeys = Object.keys(normalized).join(',');
-        const pLen = (normalized.passage||'').length;
-        const sLen = (normalized.stimulus||'').length;
-        console.log(`[RC29 디버깅] keys=${nkeys}, passage길이=${pLen}, stimulus길이=${sLen}`);
-        console.log(`[RC29 디버깅] passage처음50자: ${(normalized.passage||'없음').substring(0,50)}`);
-      }
 
       // itemNo 보완
       if (!normalized.itemNo && req.itemNo) {
@@ -206,12 +192,10 @@ async function generateItemPipeline(req) {
         // 원숫자 자동 삽입 시도 (LLM 후처리)
         const repairedNormalized = await repairRC29CircledNumbers(normalized, config);
         // 수정된 값을 normalized에 반영
-        if (repairedNormalized.passage !== normalized.passage) {
-          normalized.passage = repairedNormalized.passage;
-          normalized.stimulus = repairedNormalized.stimulus;
-          // req.passage도 업데이트 (검증에서 사용)
-          req.passage = repairedNormalized.passage;
-        }
+        normalized.passage = repairedNormalized.passage;
+        normalized.stimulus = repairedNormalized.stimulus;
+        // req.passage도 항상 업데이트 (검증에서 사용하기 때문)
+        req.passage = normalized.passage;
 
         const vg = validateGrammarItem(normalized, req);
         if (!vg || vg.pass === false) {
