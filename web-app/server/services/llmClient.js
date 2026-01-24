@@ -1,19 +1,165 @@
 /**
  * server/services/llmClient.js
- * LLM API 클라이언트 (Gemini / OpenAI 지원)
+ * LLM API 클라이언트 (Gemini / OpenAI / Azure 지원)
+ * Rate Limiter 포함 - 세트 문항 병렬 생성 시 API 제한 방지
  */
 
 const https = require('https');
 const http = require('http');
 
+// =============================================
+// Rate Limiter 구현 (Token Bucket 알고리즘)
+// =============================================
+
+class RateLimiter {
+  constructor(options = {}) {
+    this.maxConcurrent = options.maxConcurrent || 3;       // 최대 동시 요청 수
+    this.minDelayMs = options.minDelayMs || 500;           // 요청 간 최소 딜레이 (ms)
+    this.maxRetryDelay = options.maxRetryDelay || 30000;   // 재시도 최대 딜레이 (ms)
+
+    this.currentRequests = 0;
+    this.lastRequestTime = 0;
+    this.queue = [];
+    this.isProcessing = false;
+  }
+
+  /**
+   * Rate Limit을 적용하여 함수 실행
+   * @param {Function} fn - 실행할 비동기 함수
+   * @returns {Promise<any>} 함수 실행 결과
+   */
+  async execute(fn) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({ fn, resolve, reject });
+      this.processQueue();
+    });
+  }
+
+  async processQueue() {
+    if (this.isProcessing) return;
+    this.isProcessing = true;
+
+    while (this.queue.length > 0) {
+      // 동시 요청 수 체크
+      if (this.currentRequests >= this.maxConcurrent) {
+        await this.sleep(100);
+        continue;
+      }
+
+      // 최소 딜레이 체크
+      const elapsed = Date.now() - this.lastRequestTime;
+      if (elapsed < this.minDelayMs) {
+        await this.sleep(this.minDelayMs - elapsed);
+      }
+
+      const { fn, resolve, reject } = this.queue.shift();
+      this.currentRequests++;
+      this.lastRequestTime = Date.now();
+
+      // 비동기로 실행 (큐 처리 계속)
+      fn()
+        .then(result => {
+          this.currentRequests--;
+          resolve(result);
+        })
+        .catch(error => {
+          this.currentRequests--;
+          reject(error);
+        });
+    }
+
+    this.isProcessing = false;
+  }
+
+  sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * 현재 Rate Limiter 상태 조회
+   */
+  getStatus() {
+    return {
+      currentRequests: this.currentRequests,
+      queueLength: this.queue.length,
+      maxConcurrent: this.maxConcurrent,
+      minDelayMs: this.minDelayMs
+    };
+  }
+
+  /**
+   * 설정 업데이트
+   */
+  updateConfig(options) {
+    if (options.maxConcurrent !== undefined) {
+      this.maxConcurrent = options.maxConcurrent;
+    }
+    if (options.minDelayMs !== undefined) {
+      this.minDelayMs = options.minDelayMs;
+    }
+  }
+}
+
+// Provider별 Rate Limiter 인스턴스
+const rateLimiters = {
+  gemini: new RateLimiter({ maxConcurrent: 3, minDelayMs: 500 }),
+  openai: new RateLimiter({ maxConcurrent: 5, minDelayMs: 200 }),
+  azure: new RateLimiter({ maxConcurrent: 5, minDelayMs: 200 })
+};
+
 /**
- * LLM 호출 공통 함수
+ * Rate Limiter 상태 조회
+ * @returns {Object} 각 provider별 상태
+ */
+function getRateLimiterStatus() {
+  return {
+    gemini: rateLimiters.gemini.getStatus(),
+    openai: rateLimiters.openai.getStatus(),
+    azure: rateLimiters.azure.getStatus()
+  };
+}
+
+/**
+ * Rate Limiter 설정 업데이트
+ * @param {string} provider - 'gemini' | 'openai' | 'azure'
+ * @param {Object} options - { maxConcurrent, minDelayMs }
+ */
+function updateRateLimiterConfig(provider, options) {
+  if (rateLimiters[provider]) {
+    rateLimiters[provider].updateConfig(options);
+  }
+}
+
+/**
+ * LLM 호출 공통 함수 (Rate Limiter 적용)
  * @param {string} systemText - 시스템 프롬프트
  * @param {string} userText - 사용자 프롬프트
  * @param {Object} config - 설정 객체
  * @returns {Promise<string>} LLM 응답 텍스트
  */
 async function callLLM(systemText, userText, config) {
+  const provider = (config.PROVIDER || 'gemini').toLowerCase();
+
+  // Rate Limiter 적용
+  const limiter = rateLimiters[provider] || rateLimiters.gemini;
+
+  return limiter.execute(async () => {
+    if (provider === 'gemini') {
+      return await callGemini(systemText, userText, config);
+    } else if (provider === 'openai') {
+      return await callOpenAI(systemText, userText, config);
+    } else if (provider === 'azure') {
+      return await callAzureOpenAI(systemText, userText, config);
+    } else {
+      throw new Error(`지원하지 않는 PROVIDER: ${provider}. 'gemini', 'openai', 또는 'azure'를 사용하세요.`);
+    }
+  });
+}
+
+/**
+ * Rate Limiter 없이 직접 LLM 호출 (내부용 또는 단일 요청용)
+ */
+async function callLLMDirect(systemText, userText, config) {
   const provider = (config.PROVIDER || 'gemini').toLowerCase();
 
   if (provider === 'gemini') {
@@ -63,7 +209,7 @@ async function callGemini(systemText, userText, config) {
       'x-goog-api-key': apiKey
     },
     body: JSON.stringify(payload)
-  });
+  }, config);
 
   if (!response.candidates || !response.candidates[0]?.content?.parts?.[0]?.text) {
     throw new Error('Gemini 응답 형식이 예상과 다릅니다: ' + JSON.stringify(response).slice(0, 300));
@@ -102,7 +248,7 @@ async function callOpenAI(systemText, userText, config) {
       'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify(payload)
-  });
+  }, config);
 
   if (!response.choices || !response.choices[0]?.message?.content) {
     throw new Error('OpenAI 응답 형식이 예상과 다릅니다: ' + JSON.stringify(response).slice(0, 300));
@@ -151,7 +297,7 @@ async function callAzureOpenAI(systemText, userText, config) {
       'api-key': apiKey
     },
     body: JSON.stringify(payload)
-  });
+  }, config);
 
   if (!response.choices || !response.choices[0]?.message?.content) {
     throw new Error('Azure OpenAI 응답 형식이 예상과 다릅니다: ' + JSON.stringify(response).slice(0, 300));
@@ -162,8 +308,11 @@ async function callAzureOpenAI(systemText, userText, config) {
 
 /**
  * HTTP 요청 유틸리티
+ * @param {string} url - 요청 URL
+ * @param {Object} options - 요청 옵션
+ * @param {Object} config - 설정 (타임아웃 등)
  */
-function httpRequest(url, options) {
+function httpRequest(url, options, config = {}) {
   return new Promise((resolve, reject) => {
     const urlObj = new URL(url);
     const protocol = urlObj.protocol === 'https:' ? https : http;
@@ -193,9 +342,12 @@ function httpRequest(url, options) {
     });
 
     req.on('error', reject);
-    req.setTimeout(120000, () => {
+
+    // 타임아웃: config에서 설정 가능, 기본값 180초 (긴 지문 생성 대응)
+    const timeoutMs = parseInt(config?.TIMEOUT_MS) || 180000;
+    req.setTimeout(timeoutMs, () => {
       req.destroy();
-      reject(new Error('요청 시간 초과'));
+      reject(new Error(`요청 시간 초과 (${timeoutMs / 1000}초)`));
     });
 
     if (options.body) {
@@ -207,7 +359,10 @@ function httpRequest(url, options) {
 
 module.exports = {
   callLLM,
+  callLLMDirect,
   callGemini,
   callOpenAI,
-  callAzureOpenAI
+  callAzureOpenAI,
+  getRateLimiterStatus,
+  updateRateLimiterConfig
 };
