@@ -15,8 +15,16 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      - key: AZURE_OPENAI_ENDPOINT
+        sync: false
+      - key: AZURE_OPENAI_API_KEY
+        sync: false
+      - key: AZURE_OPENAI_DEPLOYMENT
+        sync: false
+      - key: AZURE_OPENAI_API_VERSION
+        value: "2024-12-01-preview"
       - key: PROVIDER
-        value: gemini
+        value: azure
       - key: GEMINI_MODEL
         value: gemini-2.5-pro
       - key: OPENAI_MODEL
