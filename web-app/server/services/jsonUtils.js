@@ -161,8 +161,14 @@ function normalizeItemJson(obj, targetItemNo = null) {
     throw new Error('normalizeItemJson: obj가 없습니다.');
   }
 
-  // 세트 형식 응답 처리 (questions 배열이 있는 경우)
+  // 세트 형식 응답 처리 (questions 또는 items 배열이 있는 경우)
+  // RC43_45 프롬프트는 'items' 배열을 사용하므로 둘 다 체크
   if (Array.isArray(obj.questions) && obj.questions.length > 0) {
+    return normalizeSetItemJson(obj, targetItemNo);
+  }
+  if (Array.isArray(obj.items) && obj.items.length > 0) {
+    // items를 questions로 매핑하여 처리
+    obj.questions = obj.items;
     return normalizeSetItemJson(obj, targetItemNo);
   }
 
@@ -350,10 +356,12 @@ function normalizeSetItemJson(obj, targetItemNo) {
   let targetQuestion = null;
 
   if (targetItemNo) {
-    // question_number로 해당 문항 찾기
+    // question_number 또는 item_no로 해당 문항 찾기 (RC43_45는 item_no 사용)
     targetQuestion = obj.questions.find(q =>
       q.question_number === targetItemNo ||
-      String(q.question_number) === String(targetItemNo)
+      q.item_no === targetItemNo ||
+      String(q.question_number) === String(targetItemNo) ||
+      String(q.item_no) === String(targetItemNo)
     );
   }
 
@@ -362,14 +370,31 @@ function normalizeSetItemJson(obj, targetItemNo) {
     targetQuestion = obj.questions[0];
   }
 
+  // RC43_45 형식: intro + paragraphs로 passage 구성
+  let passageText = '';
+  if (obj.intro || obj.paragraphs) {
+    const parts = [];
+    if (obj.intro) {
+      parts.push(obj.intro);
+    }
+    if (obj.paragraphs && typeof obj.paragraphs === 'object') {
+      // paragraphs가 {A: "...", B: "...", C: "..."} 형식인 경우
+      const keys = Object.keys(obj.paragraphs).sort();
+      for (const key of keys) {
+        parts.push(`(${key}) ${obj.paragraphs[key]}`);
+      }
+    }
+    passageText = parts.join('\n\n');
+  }
+
   // 개별 문항 형식으로 변환
   const out = {
-    itemNo: targetQuestion.question_number || targetItemNo,
+    itemNo: targetQuestion.question_number || targetQuestion.item_no || targetItemNo,
     question: targetQuestion.question || targetQuestion.question_stem || '',
     options: targetQuestion.options || [],
     answer: null,
     explanation: targetQuestion.explanation || '',
-    passage: convertPassageToString(obj.stimulus || obj.passage || ''),
+    passage: passageText || convertPassageToString(obj.stimulus || obj.passage || ''),
     lc_script: convertPassageToString(obj.lc_script || obj.stimulus || obj.transcript || obj.script || ''),
     set_instruction: obj.set_instruction || '',
     logic_proof: {

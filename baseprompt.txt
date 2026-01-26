@@ -1,0 +1,157 @@
+===========================================================
+KSAT 문항 생성 기본값 프롬프트 (Base Prompts)
+===========================================================
+
+[1] MASTER_PROMPT - KSAT System Prompt
+-----------------------------------------------------------
+[Role] You are an expert item writer for the Korean CSAT (KSAT) English test. Your task is to create exactly ONE test item in JSON format that strictly follows the MASTER schema and the item-specific instructions. Output ONLY a single JSON object (no code fences, no extra text). Required fields include: item_no, section (LC/RC), question, options (5), answer (1–5), explanation, and type-specific fields such as lc_script, passage, grammar_meta, gapped_passage, meta. Do not change the given passage text for RC. For LC, use lc_script for the listening script.
+
+
+[2] PASSAGE_MASTER - KSAT Passage Generator
+-----------------------------------------------------------
+[역할] 당신은 한국 수능 영어 지문을 쓰는 전문 출제위원입니다. 입력으로 주어지는 ITEM 유형, LEVEL(난이도), TOPIC(주제) 정보를 참고하여 KSAT 스타일의 영어 지문만 작성합니다. 지문에는 질문, 선택지, 밑줄, 빈칸, 해설 등을 절대 포함하지 않습니다. 여러 문단이 필요하면 문단 사이에 한 줄을 비워 구분합니다. TYPE(예: RC29/31/33, 세트 41–45 등)에 따라 요구되는 분량(단어 수)과 글의 성격(설명/논설)을 맞추되, 항상 자연스럽고 논리적인 영어 글을 생성합니다.
+
+
+===========================================================
+문항별 프롬프트 (LC 1-17)
+===========================================================
+
+[LC1 Purpose]
+Create a short 2–3 turn dialogue where the purpose of one speaker's speech can be inferred (e.g., to ask, to request, to confirm, to complain, to inform). Do NOT use explicit cues like "I'm calling to…". Question: "What is the purpose of the woman's (or man's) speech?" Provide 5 purpose options; only one must match the dialogue. Length: about 60–80 words.
+
+[LC2 Location]
+Generate a 2–3 turn conversation where the location is not named directly but is inferable from contextual clues (objects, actions, announcements). Question: "Where is the conversation most likely taking place?" Provide 5 location options; only one must be strongly supported. Length: 55–75 words.
+
+[LC3 Relationship]
+Generate a 2–3 turn conversation where the relationship between speakers (teacher–student, client–agent, buyer–seller, coworkers, etc.) is implied by tone and behavior, not explicitly stated. Question: "What is the relationship between the speakers?" Provide 5 relationship options; only one fits. Length: 55–80 words.
+
+[LC4 Attitude/Feeling]
+Create a conversation showing a clear emotional tone or attitude (relieved, disappointed, annoyed, grateful, worried) without naming it directly. Question: "How does the woman feel?" or "What is the man's attitude?" Provide 5 adjective options; one correct, others semantically close but wrong. Length: 60–80 words.
+
+[LC5 True/Not Mentioned]
+Write a 3-turn conversation including 3–4 key facts (time, place, plan, preference). Question: either "Which of the following is NOT mentioned?" or "Which statement is true according to the conversation?" Provide 5 statements; exactly one must satisfy the question type. Length: 65–90 words.
+
+[LC6 Picture Matching]
+Create a conversation that would match exactly one picture among five. In this system, each option is written as a short description of a picture. Question: "Which picture matches the conversation?" Provide 5 distinct descriptions; only one fully matches the dialogue. Length: 50–70 words.
+
+[LC7 Main Topic]
+Write a dialogue in which two speakers discuss one main topic (e.g., planning an event, solving a problem, sharing an opinion). Question: "What are the speakers mainly talking about?" Provide 5 topic options; only one must summarize the conversation. Length: 55–80 words.
+
+[LC8 Specific Detail]
+Construct a conversation that clearly includes a key detail (time, date, place, quantity, selected option). Question asks for this detail (e.g., "When will they meet?"). Provide 5 close options; only one matches. Length: 60–90 words.
+
+[LC9 Next Action]
+Create a dialogue where a logical next action of one speaker is implied by the discussion. Avoid explicit "I will now…" statements. Question: "What will the woman do next?" or similar. Provide 5 actions; only one naturally follows. Length: 60–85 words.
+
+[LC10 Reason/Cause]
+Generate a conversation where a reason or cause (for being late, disappointed, worried, etc.) is implied. Question: "Why does the man feel disappointed?" or similar. Provide 5 possible reasons; only one is supported by the dialogue. Length: 60–85 words.
+
+[LC11 Suggestion]
+Write a conversation where one speaker suggests or recommends something as a solution or idea. Question: "What does the woman suggest the man do?" Provide 5 suggestions; only one matches. Length: 60–90 words.
+
+[LC12 Phone Message]
+Create a phone message or voicemail-style monologue: greeting → main message (info + request) → closing. Question: "What is the purpose of the message?" Provide 5 purpose options (ask for help, confirm, apologize, invite, inform of a change); one correct. Length: 70–95 words.
+
+[LC13 Announcement/Ad]
+Produce a short announcement/advertisement/notice (e.g., event, sale, schedule change, lost item). Question: "What is the announcement mainly about?" or "What is being advertised?" Provide 5 topic options; only one correct. Length: 60–90 words.
+
+[LC14 Table/Chart Listening]
+Generate a conversation where speakers refer to simple quantitative info (prices, times, amounts). Question asks for a specific numerical fact. Provide 5 numeric options; only one is correct. Length: 65–95 words.
+
+[LC15 Informational Speech]
+Write a monologue-style informational speech or announcement (greeting → purpose → key points → closing). Question: "What is the main purpose of the announcement?" Provide 5 purpose options (inform, instruct, warn, invite, remind); one correct. Length: 80–110 words.
+
+[LC16 Set Q1]
+This item is the first question of the LC16–17 listening set sharing a single lc_script. For item 16, create a question focusing on global meaning or key information of the shared script (topic, main idea, or important detail). Use only the shared script; do not create a new one here. Provide 5 options; one correct.
+
+[LC17 Set Q2]
+This item is the second question of the LC16–17 set. Create a question targeting a different aspect of the same shared lc_script (e.g., speaker's attitude, another detail, or next action). Ensure there is no overlap with LC16's focus. Provide 5 options; one correct.
+
+
+===========================================================
+문항별 프롬프트 (RC 18-45)
+===========================================================
+
+[RC18 Topic]
+Given the reading passage, create a question asking for the main topic or subject. Provide 5 options; only one should clearly capture the topic of the whole passage. Distractors should be related but too narrow, too broad, or off-focus. Do not modify the passage.
+
+[RC19 Title]
+Create a 'best title' question for the given passage. The correct title must concisely express the overall message. Distractors should be plausible but incomplete, overly specific, or overly general. Provide 5 options; one correct.
+
+[RC20 Gist]
+Make a question asking for the gist or core message of the passage. Provide 5 summary statements; only one must match the main point. Distractors may focus on supporting details or partial ideas.
+
+[RC21 Author's Purpose]
+Create a question about the author's purpose (to persuade, to criticize, to explain, to warn, to encourage, etc.). Provide 5 options in the form "To ~". Only one should match the overall intent of the passage.
+
+[RC22 Emphasis]
+Produce a question asking what the author emphasizes in the passage. The correct option must represent the main argument or key emphasis. Distractors should represent secondary or background ideas.
+
+[RC23 Claim]
+Create a question identifying the author's main claim or assertion. Provide 5 statements; only one must match the central claim supported by the passage.
+
+[RC24 Function of Example]
+Create a question asking what role a specific example or illustration plays in the passage. Options should describe functions such as "to support the main idea", "to provide a contrast", "to give an explanation", "to show a consequence", etc.
+
+[RC25 Chart/Graph]
+Using CHART_DATA provided in context, create a KSAT-style chart/graph interpretation item. Generate 5 statements about the chart; exactly one must be correct (or incorrect) according to the instructions. All numeric and comparative information must be logically consistent with CHART_DATA. Do not rewrite or alter the underlying data.
+
+[RC26 Sentence-for-Blank]
+Create a question asking which sentence best fits a given blank in the passage. Provide 5 sentence options; only one must restore logical flow and coherence. Distractors should be locally plausible but globally inconsistent. Do not modify other sentences.
+
+[RC27 Abstract Blank]
+Make a higher-level blank-completion question requiring abstract or conceptual inference. One option must integrate ideas before and after the blank in a meaningful way. Avoid trivial or purely factual completions. Provide 5 options; one correct.
+
+[RC28 Sentence Function/Transition]
+Create a question asking how a specific underlined sentence functions in the passage (introducing a topic, contrasting, giving an example, summarizing, etc.). Provide 5 functional descriptions; only one fits the sentence in context.
+
+[RC29 Grammar]
+Based on the given passage with exactly 5 underlined segments (<u>...</u>), write a question asking which underlined part is grammatically incorrect or inappropriate. Provide 5 options corresponding to each underlined segment, answer (1–5), explanation, and grammar_meta (error type). Never change non-underlined text.
+
+[RC30 Vocabulary-in-Context]
+Create a vocabulary-in-context question about an underlined word/phrase. Provide 5 meaning options; one closest in meaning, others semantically related but incorrect. Avoid dictionary-style meta-language; stay within context.
+
+[RC31 Single Blank]
+From the given passage, form a single-blank item by removing one key sentence or clause. Output gapped_passage (with a single [BLANK] or equivalent marker) and 5 completion options. Only one option must make the passage logically and semantically coherent. Do not alter non-blank text.
+
+[RC32 Paragraph Summary]
+Create a question asking for the best summary of a specified paragraph or section. Provide 5 summary statements; only one accurately reflects the central content. Distractors must focus on partial or peripheral information.
+
+[RC33 Long Single Blank]
+For a longer multi-paragraph passage, create a single-blank completion item that tests global logical flow. Provide 5 options; only one should maintain the deeper argument or reasoning. Academic/abstract style required.
+
+[RC34 Sentence Insertion]
+Design a sentence insertion item. Provide 5 sentence options; only one must fit at a marked insertion point in the passage, given pronoun reference, discourse markers, and logical order.
+
+[RC35 Sentence Ordering]
+Provide 5 choices representing different orders of 3–5 given scrambled sentences. Only one order should form a coherent paragraph. Ensure that temporal, causal, and referential cues support the correct sequence.
+
+[RC36 Logical Completion]
+Create a blank-completion item requiring higher-order logical inference (e.g., contrast, concession, cause–effect). The correct option must be consistent with both the local sentence and the global argument.
+
+[RC37 Practical Reading]
+Create a question based on a practical text (notice, flyer, schedule, instructions). Provide 5 options; only one matches explicit information in the text. Focus on realistic reading tasks.
+
+[RC38 Rhetorical Structure]
+Make a question asking about the passage's overall organizational pattern (comparison-contrast, cause-effect, problem-solution, definition-example, etc.). Provide 5 structure labels or descriptions; one correct.
+
+[RC39 Reference]
+Create a question asking what a pronoun or referring expression (it, they, this, such a phenomenon, etc.) refers to. Provide 5 candidate antecedents; only one is correct in context.
+
+[RC40 Logical Flow]
+Construct a question about the logical relation between ideas or paragraphs (e.g., cause–effect, contrast, elaboration, concession, sequence). Provide 5 descriptions; only one matches the relation in the passage.
+
+[RC41 Set Q1]
+This is the first item of a two-question reading set (41–42) sharing one passage. For item 41, create a global comprehension question (main idea, best title, or author's purpose). The question must require understanding of the entire passage. Provide 5 options; one correct.
+
+[RC42 Set Q2]
+This is the second item of the 41–42 set. Using the same passage, create a question that focuses on a different skill (inference, specific detail, paragraph function, etc.). Ensure that RC42 does not duplicate the focus of RC41.
+
+[RC43 Set Q1]
+This is the first item of a three-question reading set (43–45). Using the shared passage, create a global comprehension question (main idea, title, or purpose). Provide 5 options; one correct.
+
+[RC44 Set Q2]
+Using the same passage as RC43, create a question focusing on inference, detail, or author's attitude. Avoid overlap with RC43 and RC45. Provide 5 options; one correct.
+
+[RC45 Set Q3]
+Using the same passage as RC43 and RC44, create a question about logical structure, sentence insertion, or partial summary. Ensure that the three questions together cover complementary aspects of the passage.

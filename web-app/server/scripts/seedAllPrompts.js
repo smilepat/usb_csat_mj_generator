@@ -849,22 +849,22 @@ const SET_PROMPTS = {
       "item_no": 43,
       "question": "주어진 글 다음에 이어질 글의 순서로 가장 적절한 것은?",
       "options": ["(A)-(C)-(B)", "(B)-(A)-(C)", "(B)-(C)-(A)", "(C)-(A)-(B)", "(C)-(B)-(A)"],
-      "answer": [1-5],
-      "explanation": "[Korean explanation]"
+      "answer": 3,
+      "explanation": "[Korean explanation for why this order is correct]"
     },
     {
       "item_no": 44,
       "question": "밑줄 친 [expression]이 가리키는 대상이 나머지 넷과 다른 것은?",
       "options": ["①", "②", "③", "④", "⑤"],
-      "answer": [1-5],
-      "explanation": "[Korean explanation]"
+      "answer": 2,
+      "explanation": "[Korean explanation for the referent]"
     },
     {
       "item_no": 45,
       "question": "다음 글의 내용과 일치하지 않는 것은?",
       "options": ["Statement 1", "Statement 2", "Statement 3", "Statement 4", "Statement 5"],
-      "answer": [1-5],
-      "explanation": "[Korean explanation]"
+      "answer": 4,
+      "explanation": "[Korean explanation for the inconsistency]"
     }
   ]
 }`,

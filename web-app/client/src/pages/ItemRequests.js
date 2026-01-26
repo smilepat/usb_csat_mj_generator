@@ -225,14 +225,40 @@ function ItemRequests() {
                 <p><strong>난이도:</strong> {selectedItem.request?.level || '-'}</p>
               </div>
 
-              {selectedItem.request?.passage && (
-                <>
-                  <h4 className="mb-2">지문</h4>
-                  <div className="item-preview" style={{ marginBottom: '16px' }}>
-                    <div className="passage">{selectedItem.request.passage}</div>
-                  </div>
-                </>
-              )}
+              {/* 지문 표시: request.passage 또는 final_json에서 추출 */}
+              {(() => {
+                // 1. 요청에 입력된 지문
+                let passageText = selectedItem.request?.passage;
+
+                // 2. 생성된 JSON에서 지문 추출 (세트 문항 등)
+                if (!passageText && selectedItem.results?.[0]?.final_json) {
+                  try {
+                    const finalJson = typeof selectedItem.results[0].final_json === 'string'
+                      ? JSON.parse(selectedItem.results[0].final_json)
+                      : selectedItem.results[0].final_json;
+                    passageText = finalJson.passage || finalJson.stimulus || finalJson.lc_script || '';
+                  } catch (e) {}
+                }
+
+                // 3. normalized_json에서도 시도
+                if (!passageText && selectedItem.results?.[0]?.normalized_json) {
+                  try {
+                    const normalizedJson = typeof selectedItem.results[0].normalized_json === 'string'
+                      ? JSON.parse(selectedItem.results[0].normalized_json)
+                      : selectedItem.results[0].normalized_json;
+                    passageText = normalizedJson.passage || normalizedJson.stimulus || normalizedJson.lc_script || '';
+                  } catch (e) {}
+                }
+
+                return passageText ? (
+                  <>
+                    <h4 className="mb-2">지문</h4>
+                    <div className="item-preview" style={{ marginBottom: '16px' }}>
+                      <div className="passage" style={{ whiteSpace: 'pre-wrap' }}>{passageText}</div>
+                    </div>
+                  </>
+                ) : null;
+              })()}
 
               {selectedItem.output && (
                 <>

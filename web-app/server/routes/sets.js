@@ -48,8 +48,9 @@ router.get('/:setId', (req, res) => {
       SELECT * FROM item_requests WHERE set_id = ? ORDER BY item_no
     `).all(setId);
 
-    // 각 요청의 결과
+    // 각 요청의 결과 (output + json 포함)
     const outputs = [];
+    const itemJsons = [];
     for (const req of requests) {
       const output = db.prepare(`
         SELECT * FROM item_output WHERE request_id = ?
@@ -57,6 +58,23 @@ router.get('/:setId', (req, res) => {
       if (output) {
         outputs.push(output);
       }
+
+      // item_json에서 생성된 지문 정보 추출
+      const itemJson = db.prepare(`
+        SELECT final_json, normalized_json FROM item_json WHERE request_id = ?
+      `).get(req.request_id);
+      if (itemJson) {
+        itemJsons.push({ request_id: req.request_id, ...itemJson });
+      }
+    }
+
+    // 첫 번째 문항의 지문을 공통 지문으로 사용 (세트 문항은 동일 지문 공유)
+    let generatedPassage = null;
+    if (itemJsons.length > 0 && itemJsons[0].final_json) {
+      try {
+        const parsed = JSON.parse(itemJsons[0].final_json);
+        generatedPassage = parsed.passage || parsed.stimulus || parsed.lc_script || null;
+      } catch (e) {}
     }
 
     res.json({
@@ -64,7 +82,9 @@ router.get('/:setId', (req, res) => {
       data: {
         set: setInfo,
         requests,
-        outputs
+        outputs,
+        itemJsons,
+        generatedPassage  // 생성된 지문 (세트 공통)
       }
     });
   } catch (error) {

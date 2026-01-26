@@ -32,7 +32,7 @@ const THINKING_TYPES = {
   26: { type: '내용 일치', keywords: ['일치', 'match', '내용', '인물'] },
   27: { type: '안내문 일치', keywords: ['안내문', '일치', '내용'] },
   28: { type: '어휘 추론', keywords: ['어휘', 'vocabulary', 'word', '낱말'] },
-  29: { type: '어법 판단', keywords: ['어법', 'grammar', '밑줄', '문법'] },
+  29: { type: '어법 판단', keywords: ['어법', 'grammar', '밑줄', '문법', 'underlined'] },
   30: { type: '지칭 추론', keywords: ['지칭', 'refer', 'reference'] },
   31: { type: '빈칸 추론', keywords: ['빈칸', 'blank', 'gap', '추론'] },
   32: { type: '빈칸 추론', keywords: ['빈칸', 'blank', 'gap', '추론'] },
@@ -44,24 +44,33 @@ const THINKING_TYPES = {
   38: { type: '문장 삽입', keywords: ['삽입', 'insert', 'position', '위치'] },
   39: { type: '문장 삽입', keywords: ['삽입', 'insert', '위치'] },
   40: { type: '요약문 완성', keywords: ['요약', 'summary', 'summarize'] },
-  // 세트 문항
-  '41-42': { type: '장문 독해', keywords: ['장문', 'long passage'] },
-  '43-45': { type: '장문 독해', keywords: ['장문', 'long passage'] },
+  // 세트 문항 (개별 문항 특성 반영)
+  41: { type: '장문 제목/주제', keywords: ['장문', 'long passage', '제목', 'title', '주제', 'topic', 'main idea'] },
+  42: { type: '장문 세부추론', keywords: ['장문', 'long passage', '세부', 'detail', '추론', 'inference'] },
+  43: { type: '장문 제목/주제', keywords: ['장문', 'long passage', '제목', 'title', '주제', 'topic'] },
+  44: { type: '장문 어휘/순서', keywords: ['장문', 'long passage', '어휘', 'vocabulary', '순서', 'order'] },
+  45: { type: '장문 삽입/내용일치', keywords: ['장문', 'long passage', '삽입', 'insert', '일치', 'match'] },
+  '41-42': { type: '장문 독해 세트', keywords: ['장문', 'long passage', '세트', 'set'] },
+  '43-45': { type: '장문 독해 세트', keywords: ['장문', 'long passage', '세트', 'set'] },
   // LC (듣기)
-  1: { type: '대화 목적', keywords: ['대화', 'dialogue', '목적'] },
-  2: { type: '의견 파악', keywords: ['대화', 'dialogue', '의견'] },
+  1: { type: '대화 목적', keywords: ['대화', 'dialogue', '목적', 'purpose'] },
+  2: { type: '의견 파악', keywords: ['대화', 'dialogue', '의견', 'opinion'] },
   3: { type: '관계 추론', keywords: ['관계', 'relationship'] },
-  4: { type: '그림 선택', keywords: ['그림', 'picture'] },
-  5: { type: '할 일 파악', keywords: ['할 일', 'task'] },
-  6: { type: '이유 파악', keywords: ['이유', 'reason'] },
-  7: { type: '숫자 정보', keywords: ['숫자', 'number', '금액', '시간'] },
-  8: { type: '언급 여부', keywords: ['언급', 'mention'] },
-  9: { type: '내용 일치', keywords: ['일치', 'match'] },
-  10: { type: '도표 일치', keywords: ['도표', 'chart'] },
-  11: { type: '적절한 응답', keywords: ['응답', 'response'] },
-  12: { type: '적절한 응답', keywords: ['응답', 'response'] },
-  13: { type: '상황 응답', keywords: ['상황', 'situation'] },
-  '16-17': { type: '담화 이해', keywords: ['담화', 'lecture', '강의'] }
+  4: { type: '그림 선택', keywords: ['그림', 'picture', 'image'] },
+  5: { type: '할 일 파악', keywords: ['할 일', 'task', 'do next'] },
+  6: { type: '이유 파악', keywords: ['이유', 'reason', 'why'] },
+  7: { type: '숫자 정보', keywords: ['숫자', 'number', '금액', '시간', 'price', 'time'] },
+  8: { type: '언급 여부', keywords: ['언급', 'mention', 'NOT mentioned'] },
+  9: { type: '내용 일치', keywords: ['일치', 'match', 'true'] },
+  10: { type: '도표 일치', keywords: ['도표', 'chart', 'table'] },
+  11: { type: '적절한 응답', keywords: ['응답', 'response', 'reply'] },
+  12: { type: '적절한 응답', keywords: ['응답', 'response', 'reply'] },
+  13: { type: '상황 응답', keywords: ['상황', 'situation', 'context'] },
+  14: { type: '표/도표 선택', keywords: ['표', 'table', '도표', 'chart', '선택', 'select'] },
+  15: { type: '안내문/공지', keywords: ['안내', 'announcement', '공지', 'notice', 'information'] },
+  16: { type: '담화 주제', keywords: ['담화', 'lecture', '강의', '주제', 'topic'] },
+  17: { type: '담화 세부정보', keywords: ['담화', 'lecture', '세부', 'detail', '언급', 'mention'] },
+  '16-17': { type: '담화 이해 세트', keywords: ['담화', 'lecture', '강의', '세트', 'set'] }
 };
 
 // 오답 설계 관련 필수 키워드
@@ -96,13 +105,23 @@ const DIFFICULTY_KEYWORDS = [
   '상위권', '중위권', '하위권'
 ];
 
-// 출력 포맷 필수 키워드
+// 출력 포맷 필수 키워드 (일반적인 단어 제거하여 오탐 방지)
 const OUTPUT_FORMAT_KEYWORDS = {
-  passage: ['passage', 'stimulus', 'transcript', 'text', '지문', '대본'],
-  question: ['question', 'question_stem', 'questionStem', 'prompt', 'stem', '발문', '문제'],
+  passage: ['passage', 'stimulus', 'transcript', '지문', '대본'],  // 'text' 제거 (너무 일반적)
+  question: ['question', 'question_stem', 'questionStem', 'stem', '발문', '문제'],  // 'prompt' 제거 (혼동 가능)
   options: ['options', 'choices', 'alternatives', '선택지', '보기'],
   answer: ['answer', 'correct_answer', 'correctAnswer', 'answer_key', '정답'],
   explanation: ['explanation', 'rationale', 'solution', '해설', '풀이']
+};
+
+// LC 문항 전용 필수 키워드
+const LC_SPECIFIC_KEYWORDS = {
+  lc_script: ['lc_script', 'script', 'listening script', '듣기 대본', '스크립트', 'dialogue', 'conversation']
+};
+
+// RC29 어법 문항 전용 필드
+const RC29_REQUIRED_FIELDS = {
+  grammar_meta: ['grammar_meta', 'error_type', 'error type', '문법 오류', '어법 오류', 'grammatical']
 };
 
 // 금지 패턴 (단문/모호한 프롬프트)
@@ -144,8 +163,10 @@ function validateMasterPromptReference(promptText) {
 
 /**
  * 출력 포맷 명시 여부 검증
+ * @param {string} promptText - 프롬프트 텍스트
+ * @param {string|number} itemNo - 문항 번호 (LC/RC 구분용)
  */
-function validateOutputFormat(promptText) {
+function validateOutputFormat(promptText, itemNo = null) {
   const errors = [];
   const warnings = [];
   const missingFormats = [];
@@ -170,6 +191,28 @@ function validateOutputFormat(promptText) {
   const hasFiveOptions = /5\s*개|five|5\s*options|선택지\s*5|①②③④⑤/i.test(promptText);
   if (!hasFiveOptions) {
     warnings.push('[A4] 선택지 개수(5개) 고정이 명시되지 않았습니다.');
+  }
+
+  // LC 문항 전용: lc_script 필드 검증
+  const numItemNo = parseInt(itemNo);
+  const isLCItem = (numItemNo >= 1 && numItemNo <= 17) || String(itemNo) === '16-17';
+  if (isLCItem) {
+    const hasLcScript = LC_SPECIFIC_KEYWORDS.lc_script.some(kw =>
+      promptText.toLowerCase().includes(kw.toLowerCase())
+    );
+    if (!hasLcScript) {
+      warnings.push('[A5] LC 문항에 lc_script/듣기대본 관련 키워드가 없습니다.');
+    }
+  }
+
+  // RC29 어법 문항 전용: grammar_meta 필드 검증
+  if (numItemNo === 29) {
+    const hasGrammarMeta = RC29_REQUIRED_FIELDS.grammar_meta.some(kw =>
+      promptText.toLowerCase().includes(kw.toLowerCase())
+    );
+    if (!hasGrammarMeta) {
+      warnings.push('[A6] RC29(어법) 문항에 grammar_meta/오류유형 관련 키워드가 없습니다.');
+    }
   }
 
   return { errors, warnings };
@@ -408,11 +451,23 @@ function validatePromptQuality(promptText, itemNo) {
 
   // A. 기본 구조 검증
   const a1 = validateMasterPromptReference(promptText);
-  const a3 = validateOutputFormat(promptText);
+  const a3 = validateOutputFormat(promptText, itemNo);  // itemNo 전달하여 LC/RC 구분
 
   checklist.A.items.push({ code: 'A1', name: 'MASTER_PROMPT 참조', pass: a1.errors.length === 0 });
   checklist.A.items.push({ code: 'A3', name: '출력 포맷 명시', pass: a3.errors.length === 0 });
   checklist.A.items.push({ code: 'A4', name: '선택지 5개 고정', pass: !a3.warnings.some(w => w.includes('A4')) });
+
+  // LC 전용 필드 검증
+  const numItemNo = parseInt(itemNo);
+  const isLCItem = (numItemNo >= 1 && numItemNo <= 17) || String(itemNo) === '16-17';
+  if (isLCItem) {
+    checklist.A.items.push({ code: 'A5', name: 'LC 스크립트 명시', pass: !a3.warnings.some(w => w.includes('A5')) });
+  }
+
+  // RC29 전용 필드 검증
+  if (numItemNo === 29) {
+    checklist.A.items.push({ code: 'A6', name: 'grammar_meta 명시', pass: !a3.warnings.some(w => w.includes('A6')) });
+  }
 
   allErrors.push(...a1.errors, ...a3.errors);
   allWarnings.push(...a1.warnings, ...a3.warnings);
@@ -453,12 +508,28 @@ function validatePromptQuality(promptText, itemNo) {
   // 전체 통과 여부
   const pass = allErrors.length === 0;
 
-  // 점수 계산 (100점 만점)
-  const totalItems = Object.values(checklist).reduce((sum, cat) => sum + cat.items.length, 0);
-  const passedItems = Object.values(checklist).reduce((sum, cat) =>
-    sum + cat.items.filter(item => item.pass).length, 0
-  );
-  const score = Math.round((passedItems / totalItems) * 100);
+  // 카테고리별 가중치 설정 (오답 설계 > 사고 유형 > 기본 구조 > 금지 패턴)
+  const CATEGORY_WEIGHTS = {
+    A: 1.0,   // 기본 구조
+    B: 1.5,   // 문항 번호별 필수 선언 (사고 유형 포함)
+    C: 2.0,   // 오답 설계 선언 (핵심, 가장 높은 가중치)
+    D: 0.8    // 금지/경고 패턴
+  };
+
+  // 가중치 적용 점수 계산 (100점 만점)
+  let totalWeightedScore = 0;
+  let maxWeightedScore = 0;
+
+  for (const [catKey, cat] of Object.entries(checklist)) {
+    const weight = CATEGORY_WEIGHTS[catKey] || 1.0;
+    const catItemCount = cat.items.length;
+    const catPassedCount = cat.items.filter(item => item.pass).length;
+
+    totalWeightedScore += catPassedCount * weight;
+    maxWeightedScore += catItemCount * weight;
+  }
+
+  const score = maxWeightedScore > 0 ? Math.round((totalWeightedScore / maxWeightedScore) * 100) : 0;
 
   return {
     pass,
@@ -796,5 +867,8 @@ module.exports = {
   DISTRACTOR_KEYWORDS,
   DISCRIMINATION_KEYWORDS,
   DIFFICULTY_KEYWORDS,
+  OUTPUT_FORMAT_KEYWORDS,
+  LC_SPECIFIC_KEYWORDS,
+  RC29_REQUIRED_FIELDS,
   MIN_PROMPT_LENGTH
 };

@@ -17,9 +17,9 @@ const THRESHOLDS = {
   APPROVE_RATE_WARNING: 50,      // 50% 미만: 주의 필요
   APPROVE_RATE_GOOD: 70,         // 70% 이상: 양호
 
-  // 최소 샘플 수
-  MIN_SAMPLES_FOR_ANALYSIS: 3,
-  MIN_SAMPLES_FOR_PATTERN: 5,
+  // 최소 샘플 수 (1개부터 분석 시작, 패턴 감지는 3개 이상)
+  MIN_SAMPLES_FOR_ANALYSIS: 1,
+  MIN_SAMPLES_FOR_PATTERN: 3,
 
   // 점수 기반
   AVG_SCORE_CRITICAL: 60,

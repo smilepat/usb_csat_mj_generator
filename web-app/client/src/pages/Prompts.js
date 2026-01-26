@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { promptsApi, libraryApi } from '../api';
 import { formatKST } from '../utils/dateUtils';
 
 function Prompts() {
+  const location = useLocation();
   const [prompts, setPrompts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
@@ -79,6 +81,35 @@ function Prompts() {
   useEffect(() => {
     loadPrompts();
   }, []);
+
+  // URL의 highlight 파라미터 처리 (대시보드 알림에서 이동 시)
+  useEffect(() => {
+    if (prompts.length > 0 && !loading) {
+      const params = new URLSearchParams(location.search);
+      const highlightItemNo = params.get('highlight');
+      if (highlightItemNo) {
+        // RC{itemNo} 형식으로 프롬프트 찾기
+        const targetKey = `RC${highlightItemNo}`;
+        const targetPrompt = prompts.find(p =>
+          p.prompt_key === targetKey ||
+          p.prompt_key === highlightItemNo ||
+          p.prompt_key === `LC${highlightItemNo}`
+        );
+        if (targetPrompt) {
+          setSelectedPrompt(targetPrompt);
+          setFormData({
+            prompt_key: targetPrompt.prompt_key,
+            title: targetPrompt.title || '',
+            prompt_text: targetPrompt.prompt_text || '',
+            active: targetPrompt.active === 1
+          });
+          setMessage({ type: 'info', text: `⚠️ 프롬프트 개선 알림: RC${highlightItemNo} 프롬프트가 선택되었습니다. 아래의 성능 분석을 확인하세요.` });
+          // 성능 분석 자동 로드
+          loadPerformanceAnalysis(targetPrompt.prompt_key);
+        }
+      }
+    }
+  }, [prompts, loading, location.search]);
 
   // 프롬프트 정렬 순서 결정 함수
   // 정렬 우선순위: MASTER_PROMPT → PASSAGE_MASTER → LC01~LC17 → RC18~RC45 → 순수숫자 → P1~P45 → 기타
@@ -602,6 +633,37 @@ function Prompts() {
       }
     } catch (error) {
       setMessage({ type: 'error', text: '성능 분석 실패: ' + error.message });
+    } finally {
+      setLoadingPerformance(false);
+    }
+  };
+
+  // 프롬프트 피드백 분석 로드 (URL highlight 파라미터에서 사용)
+  const loadPerformanceAnalysis = async (promptKey) => {
+    try {
+      setLoadingPerformance(true);
+      // 피드백 분석 API 호출
+      const response = await fetch(`/api/prompts/${promptKey}/feedback-analysis`);
+      const res = await response.json();
+
+      if (res.success && res.data.hasData) {
+        setPerformanceData({
+          ...res.data.analysis,
+          alerts: res.data.alerts,
+          suggestions: res.data.suggestions
+        });
+        setShowPerformance(true);
+      } else {
+        // 메트릭스 API로 대체 시도
+        const metricsResponse = await fetch(`/api/prompts/${promptKey}/metrics`);
+        const metricsRes = await metricsResponse.json();
+        if (metricsRes.success && metricsRes.data) {
+          setPerformanceData(metricsRes.data);
+          setShowPerformance(true);
+        }
+      }
+    } catch (error) {
+      console.warn('성능 분석 로드 실패:', error);
     } finally {
       setLoadingPerformance(false);
     }

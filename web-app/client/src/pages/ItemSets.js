@@ -302,11 +302,16 @@ function ItemSets() {
                 <p><strong>프로파일:</strong> {selectedSet.set?.profile || '-'}</p>
               </div>
 
-              {selectedSet.set?.common_passage && (
+              {/* 공통 지문: 입력된 지문 또는 생성된 지문 표시 */}
+              {(selectedSet.set?.common_passage || selectedSet.generatedPassage) && (
                 <>
-                  <h4 className="mb-2">공통 지문</h4>
+                  <h4 className="mb-2">
+                    {selectedSet.set?.common_passage ? '공통 지문' : '생성된 지문'}
+                  </h4>
                   <div className="item-preview" style={{ marginBottom: '16px' }}>
-                    <div className="passage">{selectedSet.set.common_passage}</div>
+                    <div className="passage" style={{ whiteSpace: 'pre-wrap' }}>
+                      {selectedSet.set?.common_passage || selectedSet.generatedPassage}
+                    </div>
                   </div>
                 </>
               )}
