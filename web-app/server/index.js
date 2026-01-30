@@ -99,10 +99,8 @@ app.get('/api/health', (req, res) => {
 // API 인증 미들웨어 적용
 app.use('/api', apiKeyAuth);
 
-// 정적 파일 서빙 (프로덕션)
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/build')));
-}
+// 정적 파일 서빙
+app.use(express.static(path.join(__dirname, '../client/build')));
 
 // API 라우트
 app.use('/api/config', configRoutes);
@@ -115,12 +113,10 @@ app.use('/api/metrics', metricsRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/docs', docsRoutes);
 
-// SPA 폴백 (프로덕션)
-if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build/index.html'));
-  });
-}
+// SPA 폴백
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/build/index.html'));
+});
 
 // 404 핸들러 (API 라우트에만)
 app.use('/api', notFoundHandler);
