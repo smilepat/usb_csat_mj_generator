@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { itemsApi, logsApi, healthCheck, promptsApi } from '../api';
 import { formatKST } from '../utils/dateUtils';
+import { getStatusDisplay, getItemType } from '../constants';
 
 function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -68,14 +69,15 @@ function Dashboard() {
   };
 
   const getStatusBadge = (status) => {
-    const statusMap = {
-      PENDING: { class: 'badge-pending', text: '대기 중' },
-      RUNNING: { class: 'badge-running', text: '실행 중' },
-      OK: { class: 'badge-ok', text: '성공' },
-      FAIL: { class: 'badge-fail', text: '실패' }
-    };
-    const info = statusMap[status] || { class: 'badge-pending', text: status };
-    return <span className={`badge ${info.class}`}>{info.text}</span>;
+    const info = getStatusDisplay(status);
+    return (
+      <span
+        className={`badge ${info.class}`}
+        title={info.description}
+      >
+        {info.label}
+      </span>
+    );
   };
 
   const getIssueLabel = (pattern) => {
@@ -118,19 +120,19 @@ function Dashboard() {
           </div>
           <div className="text-muted">전체 요청</div>
         </div>
-        <div className="card" style={{ textAlign: 'center' }}>
+        <div className="card" style={{ textAlign: 'center' }} title="요청이 등록되어 생성 대기 중인 문항">
           <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#fbbc04' }}>
             {stats?.pending || 0}
           </div>
-          <div className="text-muted">대기 중</div>
+          <div className="text-muted">입력 완료 (대기)</div>
         </div>
-        <div className="card" style={{ textAlign: 'center' }}>
+        <div className="card" style={{ textAlign: 'center' }} title="문항 생성 및 검증 완료">
           <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success-color)' }}>
             {stats?.ok || 0}
           </div>
-          <div className="text-muted">성공</div>
+          <div className="text-muted">생성 완료</div>
         </div>
-        <div className="card" style={{ textAlign: 'center' }}>
+        <div className="card" style={{ textAlign: 'center' }} title="생성 또는 검증 실패">
           <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--error-color)' }}>
             {stats?.fail || 0}
           </div>
@@ -329,7 +331,7 @@ function Dashboard() {
                     <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
                       {item.request_id?.slice(0, 8)}...
                     </td>
-                    <td>RC{item.item_no}</td>
+                    <td>{getItemType(item.item_no)}{item.item_no}</td>
                     <td>{getStatusBadge(item.status)}</td>
                     <td className="text-muted" style={{ fontSize: '0.85rem' }}>
                       {formatKST(item.created_at)}

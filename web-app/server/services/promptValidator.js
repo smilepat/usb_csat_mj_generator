@@ -18,59 +18,59 @@ const { buildPromptBundle, readMasterPrompt, readItemPrompt } = require('./promp
 // 최소 프롬프트 길이 (단문 프롬프트 차단)
 const MIN_PROMPT_LENGTH = 200;
 
-// 문항 유형별 사고 유형 정의
+// 문항 유형별 사고 유형 정의 (확장: focus, wordRange, skillLevel, 특수 요구사항)
 const THINKING_TYPES = {
-  // RC (독해)
-  18: { type: '목적 파악', keywords: ['목적', 'purpose', '글의 목적'] },
-  19: { type: '심경 변화', keywords: ['심경', '변화', 'feeling', 'mood', '심정'] },
-  20: { type: '주장 파악', keywords: ['주장', 'claim', 'argue', '필자'] },
-  21: { type: '함축 의미', keywords: ['함축', 'imply', 'meaning', '의미하는'] },
-  22: { type: '요지 파악', keywords: ['요지', 'main point', 'gist'] },
-  23: { type: '주제 파악', keywords: ['주제', 'topic', 'subject'] },
-  24: { type: '제목 추론', keywords: ['제목', 'title'] },
-  25: { type: '도표 이해', keywords: ['도표', 'chart', 'graph', 'table', '그래프'] },
-  26: { type: '내용 일치', keywords: ['일치', 'match', '내용', '인물'] },
-  27: { type: '안내문 일치', keywords: ['안내문', '일치', '내용'] },
-  28: { type: '어휘 추론', keywords: ['어휘', 'vocabulary', 'word', '낱말'] },
-  29: { type: '어법 판단', keywords: ['어법', 'grammar', '밑줄', '문법', 'underlined'] },
-  30: { type: '지칭 추론', keywords: ['지칭', 'refer', 'reference'] },
-  31: { type: '빈칸 추론', keywords: ['빈칸', 'blank', 'gap', '추론'] },
-  32: { type: '빈칸 추론', keywords: ['빈칸', 'blank', 'gap', '추론'] },
-  33: { type: '빈칸 추론', keywords: ['빈칸', 'blank', 'gap', '추론'] },
-  34: { type: '빈칸 추론', keywords: ['빈칸', 'blank', '연결어'] },
-  35: { type: '흐름 무관', keywords: ['무관', '흐름', 'irrelevant', '관계 없는'] },
-  36: { type: '순서 배열', keywords: ['순서', 'order', 'sequence', '배열'] },
-  37: { type: '순서 배열', keywords: ['순서', 'order', '배열'] },
-  38: { type: '문장 삽입', keywords: ['삽입', 'insert', 'position', '위치'] },
-  39: { type: '문장 삽입', keywords: ['삽입', 'insert', '위치'] },
-  40: { type: '요약문 완성', keywords: ['요약', 'summary', 'summarize'] },
+  // RC (독해) - 18~45번
+  18: { type: '목적 파악', keywords: ['목적', 'purpose', '글의 목적'], focus: 'Skimming for purpose', wordRange: [120, 150], skillLevel: '이해' },
+  19: { type: '심경 변화', keywords: ['심경', '변화', 'feeling', 'mood', '심정'], focus: 'Inferring mood/atmosphere', wordRange: [150, 180], skillLevel: '추론' },
+  20: { type: '주장 파악', keywords: ['주장', 'claim', 'argue', '필자'], focus: 'Identifying main claim', wordRange: [150, 180], skillLevel: '분석' },
+  21: { type: '함축 의미', keywords: ['함축', 'imply', 'meaning', '의미하는'], focus: 'Interpreting implied meaning', wordRange: [150, 180], skillLevel: '추론' },
+  22: { type: '요지 파악', keywords: ['요지', 'main point', 'gist'], focus: 'Grasping the gist', wordRange: [150, 180], skillLevel: '이해' },
+  23: { type: '주제 파악', keywords: ['주제', 'topic', 'subject'], focus: 'Identifying topic/theme', wordRange: [150, 200], skillLevel: '분석' },
+  24: { type: '제목 추론', keywords: ['제목', 'title'], focus: 'Inferring appropriate title', wordRange: [150, 200], skillLevel: '종합' },
+  25: { type: '도표 이해', keywords: ['도표', 'chart', 'graph', 'table', '그래프'], focus: 'Scanning for specific details', wordRange: [100, 130], skillLevel: '이해', requiresChart: true },
+  26: { type: '내용 일치', keywords: ['일치', 'match', '내용', '인물'], focus: 'Scanning for factual details', wordRange: [180, 220], skillLevel: '이해', format: 'biography' },
+  27: { type: '안내문 일치', keywords: ['안내문', '일치', '내용'], focus: 'Reading practical texts', wordRange: [150, 180], skillLevel: '이해', format: 'notice' },
+  28: { type: '어휘 추론', keywords: ['어휘', 'vocabulary', 'word', '낱말'], focus: 'Inferring word meaning in context', wordRange: [150, 180], skillLevel: '추론' },
+  29: { type: '어법 판단', keywords: ['어법', 'grammar', '밑줄', '문법', 'underlined'], focus: 'Identifying grammatical errors', wordRange: [150, 180], skillLevel: '적용', requiresUnderline: 5 },
+  30: { type: '지칭 추론', keywords: ['지칭', 'refer', 'reference'], focus: 'Tracking referents', wordRange: [180, 220], skillLevel: '추론' },
+  31: { type: '빈칸 추론', keywords: ['빈칸', 'blank', 'gap', '추론'], focus: 'Inferring missing phrase', wordRange: [150, 180], skillLevel: '추론', blankType: 'phrase' },
+  32: { type: '빈칸 추론', keywords: ['빈칸', 'blank', 'gap', '추론'], focus: 'Inferring missing phrase', wordRange: [150, 180], skillLevel: '추론', blankType: 'phrase' },
+  33: { type: '빈칸 추론', keywords: ['빈칸', 'blank', 'gap', '추론'], focus: 'Inferring missing sentence', wordRange: [180, 220], skillLevel: '추론', blankType: 'sentence' },
+  34: { type: '빈칸 추론', keywords: ['빈칸', 'blank', '연결어'], focus: 'Inferring logical connectors', wordRange: [180, 220], skillLevel: '분석', blankType: 'connector' },
+  35: { type: '흐름 무관', keywords: ['무관', '흐름', 'irrelevant', '관계 없는'], focus: 'Identifying irrelevant sentence', wordRange: [180, 220], skillLevel: '분석' },
+  36: { type: '순서 배열', keywords: ['순서', 'order', 'sequence', '배열'], focus: 'Organizing paragraph order', wordRange: [180, 220], skillLevel: '종합', format: 'ABC_paragraphs' },
+  37: { type: '순서 배열', keywords: ['순서', 'order', '배열'], focus: 'Organizing paragraph order', wordRange: [180, 220], skillLevel: '종합', format: 'ABC_paragraphs' },
+  38: { type: '문장 삽입', keywords: ['삽입', 'insert', 'position', '위치'], focus: 'Inserting sentence appropriately', wordRange: [180, 220], skillLevel: '분석' },
+  39: { type: '문장 삽입', keywords: ['삽입', 'insert', '위치'], focus: 'Inserting sentence appropriately', wordRange: [180, 220], skillLevel: '분석' },
+  40: { type: '요약문 완성', keywords: ['요약', 'summary', 'summarize'], focus: 'Completing summary', wordRange: [200, 250], skillLevel: '종합', requiresSummary: true, blankCount: 2 },
   // 세트 문항 (개별 문항 특성 반영)
-  41: { type: '장문 제목/주제', keywords: ['장문', 'long passage', '제목', 'title', '주제', 'topic', 'main idea'] },
-  42: { type: '장문 세부추론', keywords: ['장문', 'long passage', '세부', 'detail', '추론', 'inference'] },
-  43: { type: '장문 제목/주제', keywords: ['장문', 'long passage', '제목', 'title', '주제', 'topic'] },
-  44: { type: '장문 어휘/순서', keywords: ['장문', 'long passage', '어휘', 'vocabulary', '순서', 'order'] },
-  45: { type: '장문 삽입/내용일치', keywords: ['장문', 'long passage', '삽입', 'insert', '일치', 'match'] },
-  '41-42': { type: '장문 독해 세트', keywords: ['장문', 'long passage', '세트', 'set'] },
-  '43-45': { type: '장문 독해 세트', keywords: ['장문', 'long passage', '세트', 'set'] },
-  // LC (듣기)
-  1: { type: '대화 목적', keywords: ['대화', 'dialogue', '목적', 'purpose'] },
-  2: { type: '의견 파악', keywords: ['대화', 'dialogue', '의견', 'opinion'] },
-  3: { type: '관계 추론', keywords: ['관계', 'relationship'] },
-  4: { type: '그림 선택', keywords: ['그림', 'picture', 'image'] },
-  5: { type: '할 일 파악', keywords: ['할 일', 'task', 'do next'] },
-  6: { type: '이유 파악', keywords: ['이유', 'reason', 'why'] },
-  7: { type: '숫자 정보', keywords: ['숫자', 'number', '금액', '시간', 'price', 'time'] },
-  8: { type: '언급 여부', keywords: ['언급', 'mention', 'NOT mentioned'] },
-  9: { type: '내용 일치', keywords: ['일치', 'match', 'true'] },
-  10: { type: '도표 일치', keywords: ['도표', 'chart', 'table'] },
-  11: { type: '적절한 응답', keywords: ['응답', 'response', 'reply'] },
-  12: { type: '적절한 응답', keywords: ['응답', 'response', 'reply'] },
-  13: { type: '상황 응답', keywords: ['상황', 'situation', 'context'] },
-  14: { type: '표/도표 선택', keywords: ['표', 'table', '도표', 'chart', '선택', 'select'] },
-  15: { type: '안내문/공지', keywords: ['안내', 'announcement', '공지', 'notice', 'information'] },
-  16: { type: '담화 주제', keywords: ['담화', 'lecture', '강의', '주제', 'topic'] },
-  17: { type: '담화 세부정보', keywords: ['담화', 'lecture', '세부', 'detail', '언급', 'mention'] },
-  '16-17': { type: '담화 이해 세트', keywords: ['담화', 'lecture', '강의', '세트', 'set'] }
+  41: { type: '장문 제목/주제', keywords: ['장문', 'long passage', '제목', 'title', '주제', 'topic', 'main idea'], focus: 'Long passage comprehension - title', wordRange: [350, 420], skillLevel: '종합', isSet: true },
+  42: { type: '장문 세부추론', keywords: ['장문', 'long passage', '세부', 'detail', '추론', 'inference'], focus: 'Long passage comprehension - details', skillLevel: '추론', isSet: true, sharedPassage: 41 },
+  43: { type: '장문 제목/주제', keywords: ['장문', 'long passage', '제목', 'title', '주제', 'topic'], focus: 'Long passage - paragraph order', wordRange: [350, 420], skillLevel: '종합', isSet: true },
+  44: { type: '장문 어휘/순서', keywords: ['장문', 'long passage', '어휘', 'vocabulary', '순서', 'order'], focus: 'Long passage - reference/vocabulary', skillLevel: '추론', isSet: true, sharedPassage: 43 },
+  45: { type: '장문 삽입/내용일치', keywords: ['장문', 'long passage', '삽입', 'insert', '일치', 'match'], focus: 'Long passage - content match', skillLevel: '이해', isSet: true, sharedPassage: 43 },
+  '41-42': { type: '장문 독해 세트', keywords: ['장문', 'long passage', '세트', 'set'], wordRange: [350, 420], isSet: true },
+  '43-45': { type: '장문 독해 세트', keywords: ['장문', 'long passage', '세트', 'set'], wordRange: [350, 420], isSet: true },
+  // LC (듣기) - 1~17번
+  1: { type: '대화 목적', keywords: ['대화', 'dialogue', '목적', 'purpose'], focus: 'Listening for purpose', wordRange: [60, 80], skillLevel: '이해', format: 'dialogue' },
+  2: { type: '의견 파악', keywords: ['대화', 'dialogue', '의견', 'opinion'], focus: 'Identifying opinions', wordRange: [60, 80], skillLevel: '이해', format: 'dialogue' },
+  3: { type: '관계 추론', keywords: ['관계', 'relationship'], focus: 'Inferring relationships', wordRange: [60, 80], skillLevel: '추론', format: 'dialogue' },
+  4: { type: '그림 선택', keywords: ['그림', 'picture', 'image'], focus: 'Matching description to image', wordRange: [60, 80], skillLevel: '이해', format: 'dialogue' },
+  5: { type: '할 일 파악', keywords: ['할 일', 'task', 'do next'], focus: 'Identifying tasks/actions', wordRange: [60, 80], skillLevel: '이해', format: 'dialogue' },
+  6: { type: '이유 파악', keywords: ['이유', 'reason', 'why'], focus: 'Identifying reasons', wordRange: [60, 80], skillLevel: '이해', format: 'dialogue' },
+  7: { type: '숫자 정보', keywords: ['숫자', 'number', '금액', '시간', 'price', 'time'], focus: 'Scanning for numerical details', wordRange: [60, 80], skillLevel: '이해', format: 'dialogue' },
+  8: { type: '언급 여부', keywords: ['언급', 'mention', 'NOT mentioned'], focus: 'Identifying mentioned/not mentioned', wordRange: [80, 100], skillLevel: '이해', format: 'dialogue' },
+  9: { type: '내용 일치', keywords: ['일치', 'match', 'true'], focus: 'Matching content', wordRange: [80, 100], skillLevel: '이해', format: 'dialogue' },
+  10: { type: '도표 일치', keywords: ['도표', 'chart', 'table'], focus: 'Matching chart/table info', wordRange: [80, 100], skillLevel: '이해', format: 'dialogue', requiresChart: true },
+  11: { type: '적절한 응답', keywords: ['응답', 'response', 'reply'], focus: 'Selecting appropriate response', wordRange: [40, 60], skillLevel: '적용', format: 'dialogue' },
+  12: { type: '적절한 응답', keywords: ['응답', 'response', 'reply'], focus: 'Selecting appropriate response', wordRange: [40, 60], skillLevel: '적용', format: 'dialogue' },
+  13: { type: '상황 응답', keywords: ['상황', 'situation', 'context'], focus: 'Responding to situation', wordRange: [40, 60], skillLevel: '적용', format: 'situation' },
+  14: { type: '표/도표 선택', keywords: ['표', 'table', '도표', 'chart', '선택', 'select'], focus: 'Selecting correct table/chart', wordRange: [80, 100], skillLevel: '이해', format: 'dialogue', requiresChart: true },
+  15: { type: '안내문/공지', keywords: ['안내', 'announcement', '공지', 'notice', 'information'], focus: 'Understanding announcements', wordRange: [80, 100], skillLevel: '이해', format: 'announcement' },
+  16: { type: '담화 주제', keywords: ['담화', 'lecture', '강의', '주제', 'topic'], focus: 'Identifying lecture topic', wordRange: [120, 150], skillLevel: '분석', format: 'lecture', isSet: true },
+  17: { type: '담화 세부정보', keywords: ['담화', 'lecture', '세부', 'detail', '언급', 'mention'], focus: 'Scanning lecture details', wordRange: null, skillLevel: '이해', format: 'lecture', isSet: true, sharedPassage: 16 },
+  '16-17': { type: '담화 이해 세트', keywords: ['담화', 'lecture', '강의', '세트', 'set'], wordRange: [120, 150], isSet: true, format: 'lecture' }
 };
 
 // 오답 설계 관련 필수 키워드
@@ -130,6 +130,112 @@ const FORBIDDEN_PATTERNS = [
   /^.{0,50}문항.{0,30}(생성|만들어).{0,30}$/i,        // "문항 생성해줘" 단문
   /^(create|generate|make).{0,50}(question|item).{0,50}$/i  // 영문 단문
 ];
+
+// 역할(Persona) 관련 키워드
+const PERSONA_KEYWORDS = [
+  '출제위원', '출제자', 'item writer', 'test developer',
+  '역할', 'role', 'expert', '전문가',
+  'You are', '당신은', 'Act as', '~로서'
+];
+
+/**
+ * ============================================
+ * E. 제약조건(Constraints) 검증
+ * ============================================
+ */
+
+/**
+ * 문항별 제약조건 검증
+ * @param {string} promptText - 프롬프트 텍스트
+ * @param {string|number} itemNo - 문항 번호
+ */
+function validateConstraints(promptText, itemNo) {
+  const errors = [];
+  const warnings = [];
+  const numItemNo = parseInt(itemNo);
+  const thinkingType = THINKING_TYPES[itemNo] || THINKING_TYPES[numItemNo];
+
+  // E1: 단어 수 범위 명시 확인
+  if (thinkingType?.wordRange) {
+    const [min, max] = thinkingType.wordRange;
+    const hasWordCount = /\d+\s*(단어|words?|어절)/.test(promptText) ||
+                         new RegExp(`${min}|${max}`, 'i').test(promptText);
+    if (!hasWordCount) {
+      warnings.push(`[E1] 지문 단어 수 미명시: 권장 ${min}-${max} words`);
+    }
+  }
+
+  // E2: 도표 필수 (RC25, LC10, LC14)
+  if (thinkingType?.requiresChart) {
+    const hasChart = /chart|도표|graph|표|그래프|table/i.test(promptText);
+    if (!hasChart) {
+      errors.push('[E2] 도표 문항에 차트/도표 데이터 언급 필요');
+    }
+  }
+
+  // E3: 밑줄 5개 (RC29)
+  if (thinkingType?.requiresUnderline) {
+    const hasUnderline = /밑줄.*5|5.*밑줄|①②③④⑤|5\s*개.*밑줄|underline.*5/i.test(promptText);
+    if (!hasUnderline) {
+      warnings.push(`[E3] 어법 문항: 밑줄 ${thinkingType.requiresUnderline}개 명시 권장`);
+    }
+  }
+
+  // E4: 요약문 형식 (RC40)
+  if (thinkingType?.requiresSummary) {
+    const hasSummary = /\(A\).*\(B\)|요약문|summary.*blank|빈칸.*2/i.test(promptText);
+    if (!hasSummary) {
+      warnings.push('[E4] 요약문 (A), (B) 빈칸 형식 명시 권장');
+    }
+  }
+
+  // E5: 선택지 언어 명시
+  const hasOptionLang = /한글|korean|영어|english|선택지.*언어|옵션.*언어/i.test(promptText);
+  if (!hasOptionLang) {
+    warnings.push('[E5] 선택지 언어 미명시 (한글/영어)');
+  }
+
+  // E6: ABC 단락 형식 (RC36, RC37)
+  if (thinkingType?.format === 'ABC_paragraphs') {
+    const hasABC = /\(A\).*\(B\).*\(C\)|단락.*A.*B.*C|paragraph/i.test(promptText);
+    if (!hasABC) {
+      warnings.push('[E6] 순서 배열 문항: (A), (B), (C) 단락 형식 명시 권장');
+    }
+  }
+
+  return { errors, warnings };
+}
+
+/**
+ * ============================================
+ * F. 역할(Persona) 검증
+ * ============================================
+ */
+
+/**
+ * 역할 명시 검증
+ * @param {string} promptText - 프롬프트 텍스트
+ */
+function validatePersona(promptText) {
+  const errors = [];
+  const warnings = [];
+
+  const hasPersona = PERSONA_KEYWORDS.some(kw =>
+    promptText.toLowerCase().includes(kw.toLowerCase())
+  );
+
+  if (!hasPersona) {
+    warnings.push('[F1] 역할(Persona) 미명시: "수능 영어 출제위원" 등 역할 명시 권장');
+  }
+
+  // 부적절한 역할 체크
+  const inappropriateRoles = /학생|student|초보|beginner|아마추어/i;
+  if (inappropriateRoles.test(promptText)) {
+    errors.push('[F2] 부적절한 역할 설정: 출제위원/전문가 역할 사용 필요');
+  }
+
+  return { errors, warnings };
+}
 
 
 /**
@@ -446,7 +552,9 @@ function validatePromptQuality(promptText, itemNo) {
     A: { name: '기본 구조', items: [] },
     B: { name: '문항 번호별 필수 선언', items: [] },
     C: { name: '오답 설계 선언', items: [] },
-    D: { name: '금지/경고 패턴', items: [] }
+    D: { name: '금지/경고 패턴', items: [] },
+    E: { name: '제약조건 명시', items: [] },
+    F: { name: '역할 명시', items: [] }
   };
 
   // A. 기본 구조 검증
@@ -505,15 +613,44 @@ function validatePromptQuality(promptText, itemNo) {
   allErrors.push(...d1.errors, ...d1b.errors, ...d3.errors);
   allWarnings.push(...d1.warnings, ...d1b.warnings, ...d3.warnings);
 
+  // E. 제약조건(Constraints) 검증
+  const e1 = validateConstraints(promptText, itemNo);
+
+  checklist.E.items.push({ code: 'E1', name: '단어 수/형식 제약', pass: e1.errors.length === 0 });
+  // 개별 제약 항목을 체크리스트에 추가 (존재하는 경우만)
+  const thinkingType = THINKING_TYPES[itemNo] || THINKING_TYPES[parseInt(itemNo)];
+  if (thinkingType?.requiresChart) {
+    checklist.E.items.push({ code: 'E2', name: '도표 필수', pass: !e1.errors.some(e => e.includes('E2')) });
+  }
+  if (thinkingType?.requiresUnderline) {
+    checklist.E.items.push({ code: 'E3', name: '밑줄 개수', pass: !e1.warnings.some(w => w.includes('E3')) });
+  }
+  if (thinkingType?.requiresSummary) {
+    checklist.E.items.push({ code: 'E4', name: '요약문 형식', pass: !e1.warnings.some(w => w.includes('E4')) });
+  }
+
+  allErrors.push(...e1.errors);
+  allWarnings.push(...e1.warnings);
+
+  // F. 역할(Persona) 검증
+  const f1 = validatePersona(promptText);
+
+  checklist.F.items.push({ code: 'F1', name: '역할 명시', pass: f1.errors.length === 0 && f1.warnings.length === 0 });
+
+  allErrors.push(...f1.errors);
+  allWarnings.push(...f1.warnings);
+
   // 전체 통과 여부
   const pass = allErrors.length === 0;
 
-  // 카테고리별 가중치 설정 (오답 설계 > 사고 유형 > 기본 구조 > 금지 패턴)
+  // 카테고리별 가중치 설정 (오답 설계 > 사고 유형 > 제약조건 > 기본 구조 > 금지 패턴 > 역할)
   const CATEGORY_WEIGHTS = {
     A: 1.0,   // 기본 구조
     B: 1.5,   // 문항 번호별 필수 선언 (사고 유형 포함)
     C: 2.0,   // 오답 설계 선언 (핵심, 가장 높은 가중치)
-    D: 0.8    // 금지/경고 패턴
+    D: 0.8,   // 금지/경고 패턴
+    E: 1.2,   // 제약조건 명시 (단어 수, 도표, 밑줄 등)
+    F: 0.5    // 역할 명시 (권장사항)
   };
 
   // 가중치 적용 점수 계산 (100점 만점)
@@ -531,12 +668,23 @@ function validatePromptQuality(promptText, itemNo) {
 
   const score = maxWeightedScore > 0 ? Math.round((totalWeightedScore / maxWeightedScore) * 100) : 0;
 
+  // 문항 정보 (THINKING_TYPES에서 추출)
+  const itemInfo = thinkingType ? {
+    type: thinkingType.type,
+    focus: thinkingType.focus || null,
+    wordRange: thinkingType.wordRange || null,
+    skillLevel: thinkingType.skillLevel || null,
+    isSet: thinkingType.isSet || false,
+    format: thinkingType.format || null
+  } : null;
+
   return {
     pass,
     score,
     errors: allErrors,
     warnings: allWarnings,
     checklist,
+    itemInfo,
     summary: pass
       ? `프롬프트 검증 통과 (${score}점)`
       : `프롬프트 검증 실패 - ${allErrors.length}개 오류 발견. 문항 생성이 차단됩니다.`
@@ -862,6 +1010,8 @@ module.exports = {
   validateThinkingType,
   validateDifficultyTarget,
   validateOutputFormat,
+  validateConstraints,    // 신규: 제약조건 검증
+  validatePersona,        // 신규: 역할 검증
   // 상수들
   THINKING_TYPES,
   DISTRACTOR_KEYWORDS,
@@ -870,5 +1020,6 @@ module.exports = {
   OUTPUT_FORMAT_KEYWORDS,
   LC_SPECIFIC_KEYWORDS,
   RC29_REQUIRED_FIELDS,
+  PERSONA_KEYWORDS,       // 신규: 역할 키워드
   MIN_PROMPT_LENGTH
 };

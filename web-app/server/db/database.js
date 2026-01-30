@@ -457,8 +457,12 @@ async function initDatabase() {
     ['TEMP_BASE', '0.4', '공통 temperature'],
     ['TEMP_HIGH', '0.7', '높은 temperature (창의적 생성용)'],
     ['MAX_RETRY', '3', 'retry 횟수'],
-    ['TIMEOUT_MS', '60000', 'API 타임아웃 (밀리초)'],
-    ['LOG_LEVEL', 'INFO', '로그 레벨 (INFO, WARN, ERROR)']
+    ['TIMEOUT_MS', '180000', 'API 타임아웃 (밀리초, 기본: 180초)'],
+    ['LOG_LEVEL', 'INFO', '로그 레벨 (INFO, WARN, ERROR)'],
+    // 성능 최적화 설정
+    ['ENABLE_LLM_EVALUATION', 'false', 'LLM 기반 2차 품질 평가 활성화 (true/false, 기본: false - 성능 우선)'],
+    ['ENABLE_SET_PARALLEL', 'true', '세트 문항 병렬 생성 활성화 (true/false, 기본: true)'],
+    ['ALWAYS_RUN_LLM_EVAL', 'false', '모든 시도에서 LLM 평가 실행 (true/false, 기본: false)']
   ];
 
   for (const [key, value, desc] of defaultConfigs) {

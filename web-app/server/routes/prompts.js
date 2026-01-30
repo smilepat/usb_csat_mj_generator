@@ -1428,4 +1428,372 @@ router.post('/:key/ab-test', (req, res) => {
   }
 });
 
+// ============================================
+// 프롬프트 Export/Import 엔드포인트
+// ============================================
+
+/**
+ * GET /api/prompts/export
+ * 모든 프롬프트를 JSON으로 내보내기
+ */
+router.get('/export', (req, res) => {
+  try {
+    const { includeInactive = false, format = 'json' } = req.query;
+    const db = getDb();
+
+    let query = 'SELECT * FROM prompts';
+    if (!includeInactive || includeInactive === 'false') {
+      query += ' WHERE active = 1';
+    }
+    query += ' ORDER BY prompt_key';
+
+    const prompts = db.prepare(query).all();
+
+    const exportData = {
+      exported_at: new Date().toISOString(),
+      total_count: prompts.length,
+      prompts: prompts.map(p => ({
+        prompt_key: p.prompt_key,
+        title: p.title,
+        prompt_text: p.prompt_text,
+        active: p.active,
+        is_default: p.is_default,
+        status: p.status
+      }))
+    };
+
+    if (format === 'download') {
+      const timestamp = new Date().toISOString().slice(0, 10);
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename=prompts_export_${timestamp}.json`);
+      return res.send(JSON.stringify(exportData, null, 2));
+    }
+
+    res.json({
+      success: true,
+      data: exportData
+    });
+  } catch (error) {
+    logger.error('프롬프트 내보내기 오류', 'system', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/import
+ * JSON 파일에서 프롬프트 가져오기
+ */
+router.post('/import', async (req, res) => {
+  try {
+    const { prompts, overwrite = false, backupFirst = true } = req.body;
+
+    if (!prompts || !Array.isArray(prompts)) {
+      return res.status(400).json({
+        success: false,
+        error: 'prompts 배열이 필요합니다.'
+      });
+    }
+
+    const db = getDb();
+    let imported = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    // 백업 수행
+    if (backupFirst) {
+      const existingPrompts = db.prepare('SELECT * FROM prompts').all();
+      if (existingPrompts.length > 0) {
+        logger.info('프롬프트 가져오기 전 백업', 'system', `${existingPrompts.length}개 프롬프트`);
+      }
+    }
+
+    for (const p of prompts) {
+      if (!p.prompt_key || !p.prompt_text) {
+        skipped++;
+        continue;
+      }
+
+      const existing = db.prepare('SELECT id, prompt_text FROM prompts WHERE prompt_key = ?').get(p.prompt_key);
+
+      if (existing) {
+        if (overwrite) {
+          // 버전 히스토리 저장
+          if (existing.prompt_text !== p.prompt_text) {
+            const latestVersion = db.prepare(
+              'SELECT MAX(version) as max_version FROM prompt_versions WHERE prompt_id = ?'
+            ).get(existing.id);
+
+            const newVersion = (latestVersion?.max_version || 0) + 1;
+            db.prepare(`
+              INSERT INTO prompt_versions (prompt_id, prompt_key, version, prompt_text, change_reason)
+              VALUES (?, ?, ?, ?, ?)
+            `).run(existing.id, p.prompt_key, newVersion, existing.prompt_text, 'Import 전 자동 백업');
+          }
+
+          db.prepare(`
+            UPDATE prompts
+            SET title = ?, prompt_text = ?, active = ?, is_default = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE prompt_key = ?
+          `).run(
+            p.title || existing.title,
+            p.prompt_text,
+            p.active !== undefined ? p.active : 1,
+            p.is_default !== undefined ? p.is_default : 0,
+            p.prompt_key
+          );
+          updated++;
+        } else {
+          skipped++;
+        }
+      } else {
+        db.prepare(`
+          INSERT INTO prompts (prompt_key, title, prompt_text, active, is_default)
+          VALUES (?, ?, ?, ?, ?)
+        `).run(
+          p.prompt_key,
+          p.title || '',
+          p.prompt_text,
+          p.active !== undefined ? p.active : 1,
+          p.is_default !== undefined ? p.is_default : 0
+        );
+        imported++;
+      }
+    }
+
+    // 캐시 무효화
+    clearPromptCache();
+
+    logger.info('프롬프트 가져오기 완료', 'system', `신규: ${imported}, 업데이트: ${updated}, 건너뜀: ${skipped}`);
+
+    res.json({
+      success: true,
+      message: '프롬프트 가져오기가 완료되었습니다.',
+      data: {
+        imported,
+        updated,
+        skipped,
+        total: prompts.length
+      }
+    });
+  } catch (error) {
+    logger.error('프롬프트 가져오기 오류', 'system', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/prompts/available-json-files
+ * 사용 가능한 JSON 파일 목록
+ */
+router.get('/available-json-files', (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const baseDir = path.join(__dirname, '../../..');
+
+    const files = [];
+
+    // 루트 디렉토리의 prompt*.json 파일
+    const rootFiles = fs.readdirSync(baseDir).filter(f =>
+      f.startsWith('prompt') && f.endsWith('.json')
+    );
+    for (const f of rootFiles) {
+      const filePath = path.join(baseDir, f);
+      const stats = fs.statSync(filePath);
+      try {
+        const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        files.push({
+          name: f,
+          path: f,
+          size: stats.size,
+          modified: stats.mtime,
+          promptCount: content.total_count || (content.prompts?.length) || 0
+        });
+      } catch (e) {
+        files.push({
+          name: f,
+          path: f,
+          size: stats.size,
+          modified: stats.mtime,
+          promptCount: 'unknown',
+          error: 'JSON 파싱 실패'
+        });
+      }
+    }
+
+    // docs 디렉토리의 prompt*.json 파일
+    const docsDir = path.join(baseDir, 'docs');
+    if (fs.existsSync(docsDir)) {
+      const docsFiles = fs.readdirSync(docsDir).filter(f =>
+        f.startsWith('prompt') && f.endsWith('.json')
+      );
+      for (const f of docsFiles) {
+        const filePath = path.join(docsDir, f);
+        const stats = fs.statSync(filePath);
+        try {
+          const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+          files.push({
+            name: f,
+            path: `docs/${f}`,
+            size: stats.size,
+            modified: stats.mtime,
+            promptCount: content.total_count || (content.prompts?.length) || 0
+          });
+        } catch (e) {
+          files.push({
+            name: f,
+            path: `docs/${f}`,
+            size: stats.size,
+            modified: stats.mtime,
+            promptCount: 'unknown',
+            error: 'JSON 파싱 실패'
+          });
+        }
+      }
+    }
+
+    // backups 디렉토리
+    const backupsDir = path.join(baseDir, 'backups');
+    if (fs.existsSync(backupsDir)) {
+      const backupFiles = fs.readdirSync(backupsDir).filter(f => f.endsWith('.json'));
+      for (const f of backupFiles) {
+        const filePath = path.join(backupsDir, f);
+        const stats = fs.statSync(filePath);
+        try {
+          const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+          files.push({
+            name: f,
+            path: `backups/${f}`,
+            size: stats.size,
+            modified: stats.mtime,
+            promptCount: content.total_count || (content.prompts?.length) || 0,
+            isBackup: true
+          });
+        } catch (e) {
+          // 백업 파일 파싱 실패는 무시
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      data: files.sort((a, b) => new Date(b.modified) - new Date(a.modified))
+    });
+  } catch (error) {
+    logger.error('JSON 파일 목록 조회 오류', 'system', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prompts/load-from-file
+ * 특정 JSON 파일에서 프롬프트 로드
+ */
+router.post('/load-from-file', (req, res) => {
+  try {
+    const { filePath, overwrite = false } = req.body;
+    const fs = require('fs');
+    const path = require('path');
+
+    if (!filePath) {
+      return res.status(400).json({ success: false, error: '파일 경로가 필요합니다.' });
+    }
+
+    const baseDir = path.join(__dirname, '../../..');
+    const fullPath = path.join(baseDir, filePath);
+
+    // 보안: baseDir 외부 접근 방지
+    if (!fullPath.startsWith(baseDir)) {
+      return res.status(400).json({ success: false, error: '잘못된 파일 경로입니다.' });
+    }
+
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ success: false, error: '파일을 찾을 수 없습니다.' });
+    }
+
+    const content = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+    const prompts = Array.isArray(content) ? content : (content.prompts || []);
+
+    // Import API를 재사용
+    req.body = { prompts, overwrite, backupFirst: true };
+
+    // 다음 미들웨어로 전달하지 않고 직접 처리
+    const db = getDb();
+    let imported = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const p of prompts) {
+      if (!p.prompt_key || !p.prompt_text) {
+        skipped++;
+        continue;
+      }
+
+      const existing = db.prepare('SELECT id, prompt_text FROM prompts WHERE prompt_key = ?').get(p.prompt_key);
+
+      if (existing) {
+        if (overwrite) {
+          if (existing.prompt_text !== p.prompt_text) {
+            const latestVersion = db.prepare(
+              'SELECT MAX(version) as max_version FROM prompt_versions WHERE prompt_id = ?'
+            ).get(existing.id);
+
+            const newVersion = (latestVersion?.max_version || 0) + 1;
+            db.prepare(`
+              INSERT INTO prompt_versions (prompt_id, prompt_key, version, prompt_text, change_reason)
+              VALUES (?, ?, ?, ?, ?)
+            `).run(existing.id, p.prompt_key, newVersion, existing.prompt_text, `파일 로드: ${filePath}`);
+          }
+
+          db.prepare(`
+            UPDATE prompts
+            SET title = ?, prompt_text = ?, active = ?, is_default = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE prompt_key = ?
+          `).run(
+            p.title || '',
+            p.prompt_text,
+            p.active !== undefined ? p.active : 1,
+            p.is_default !== undefined ? p.is_default : 0,
+            p.prompt_key
+          );
+          updated++;
+        } else {
+          skipped++;
+        }
+      } else {
+        db.prepare(`
+          INSERT INTO prompts (prompt_key, title, prompt_text, active, is_default)
+          VALUES (?, ?, ?, ?, ?)
+        `).run(
+          p.prompt_key,
+          p.title || '',
+          p.prompt_text,
+          p.active !== undefined ? p.active : 1,
+          p.is_default !== undefined ? p.is_default : 0
+        );
+        imported++;
+      }
+    }
+
+    clearPromptCache();
+
+    logger.info('파일에서 프롬프트 로드', 'system', `파일: ${filePath}, 신규: ${imported}, 업데이트: ${updated}`);
+
+    res.json({
+      success: true,
+      message: `${filePath}에서 프롬프트를 로드했습니다.`,
+      data: {
+        file: filePath,
+        imported,
+        updated,
+        skipped,
+        total: prompts.length
+      }
+    });
+  } catch (error) {
+    logger.error('파일에서 프롬프트 로드 오류', 'system', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;

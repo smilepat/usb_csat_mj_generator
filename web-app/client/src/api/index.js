@@ -113,6 +113,22 @@ export const promptsApi = {
   getFeedbackSummary: () => request('/prompts/feedback-analysis/summary'),
   getAllAlerts: () => request('/prompts/feedback-analysis/alerts'),
   getPromptFeedbackAnalysis: (key) => request(`/prompts/${key}/feedback-analysis`),
+  // Export/Import
+  exportPrompts: (includeInactive = false) =>
+    request(`/prompts/export?includeInactive=${includeInactive}`),
+  downloadPrompts: (includeInactive = false) =>
+    `${API_BASE_URL}/prompts/export?format=download&includeInactive=${includeInactive}`,
+  importPrompts: (prompts, overwrite = false) =>
+    request('/prompts/import', {
+      method: 'POST',
+      body: { prompts, overwrite, backupFirst: true },
+    }),
+  getAvailableJsonFiles: () => request('/prompts/available-json-files'),
+  loadFromFile: (filePath, overwrite = false) =>
+    request('/prompts/load-from-file', {
+      method: 'POST',
+      body: { filePath, overwrite },
+    }),
 };
 
 // 문항 요청 API
@@ -138,6 +154,17 @@ export const itemsApi = {
   generatePending: () =>
     request('/items/generate-pending', {
       method: 'POST',
+    }),
+  // 2단계 워크플로우: 지문만 생성
+  generatePassage: (id) =>
+    request(`/items/generate-passage/${id}`, {
+      method: 'POST',
+    }),
+  // 2단계 워크플로우: 지문 수정
+  updatePassage: (id, passage) =>
+    request(`/items/requests/${id}/passage`, {
+      method: 'PUT',
+      body: { passage },
     }),
   getOutputs: (params = {}) => {
     const query = new URLSearchParams(params).toString();

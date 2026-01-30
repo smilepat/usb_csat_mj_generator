@@ -101,10 +101,12 @@ class RateLimiter {
 }
 
 // Provider별 Rate Limiter 인스턴스
+// Gemini API는 기본적으로 분당 15 RPM (무료) ~ 60 RPM (유료) 지원
+// 성능 최적화를 위해 동시 요청 수와 딜레이 조정
 const rateLimiters = {
-  gemini: new RateLimiter({ maxConcurrent: 3, minDelayMs: 500 }),
-  openai: new RateLimiter({ maxConcurrent: 5, minDelayMs: 200 }),
-  azure: new RateLimiter({ maxConcurrent: 5, minDelayMs: 200 })
+  gemini: new RateLimiter({ maxConcurrent: 5, minDelayMs: 200 }),  // 3→5, 500→200
+  openai: new RateLimiter({ maxConcurrent: 8, minDelayMs: 100 }),  // 5→8, 200→100
+  azure: new RateLimiter({ maxConcurrent: 8, minDelayMs: 100 })    // 5→8, 200→100
 };
 
 /**

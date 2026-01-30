@@ -284,6 +284,134 @@ router.post('/generate/:id', async (req, res) => {
 });
 
 /**
+ * POST /api/items/generate-passage/:id
+ * 지문만 생성 (2단계 워크플로우 Step 1)
+ */
+router.post('/generate-passage/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDb();
+
+    const row = db.prepare('SELECT * FROM item_requests WHERE request_id = ?').get(id);
+    if (!row) {
+      return res.status(404).json({ success: false, error: '요청을 찾을 수 없습니다.' });
+    }
+
+    // 이미 지문이 있는 경우
+    if (row.passage && row.passage.trim() !== '' && row.passage.trim() !== '(AUTO)') {
+      return res.json({
+        success: true,
+        message: '이미 지문이 존재합니다.',
+        data: {
+          requestId: id,
+          passage: row.passage,
+          passageSource: row.passage_source || 'MANUAL',
+          status: 'PASSAGE_READY'
+        }
+      });
+    }
+
+    // 상태 업데이트: GENERATING_PASSAGE
+    db.prepare(`
+      UPDATE item_requests
+      SET status = 'GENERATING_PASSAGE', updated_at = CURRENT_TIMESTAMP
+      WHERE request_id = ?
+    `).run(id);
+
+    const request = {
+      requestId: row.request_id,
+      itemNo: row.item_no,
+      passage: row.passage,
+      level: row.level,
+      extra: row.extra,
+      chartId: row.chart_id,
+      setId: row.set_id,
+      passageSource: row.passage_source,
+      topic: row.topic
+    };
+
+    // 지문 생성
+    const { generatePassageIfNeeded } = require('../services/passageGenerator');
+    const updatedReq = await generatePassageIfNeeded(request, logger);
+
+    // 상태 업데이트: PASSAGE_READY
+    db.prepare(`
+      UPDATE item_requests
+      SET status = 'PASSAGE_READY', updated_at = CURRENT_TIMESTAMP
+      WHERE request_id = ?
+    `).run(id);
+
+    logger.info('지문 생성 완료 (Step 1)', id, `${updatedReq.passage.length}자`);
+
+    res.json({
+      success: true,
+      message: '지문이 생성되었습니다. 검토 후 문항 생성을 진행하세요.',
+      data: {
+        requestId: id,
+        passage: updatedReq.passage,
+        passageSource: updatedReq.passageSource,
+        status: 'PASSAGE_READY'
+      }
+    });
+  } catch (error) {
+    // 실패 시 상태 복구
+    const db = getDb();
+    db.prepare(`
+      UPDATE item_requests
+      SET status = 'PENDING', updated_at = CURRENT_TIMESTAMP
+      WHERE request_id = ?
+    `).run(req.params.id);
+
+    logger.error('지문 생성 오류', req.params.id, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * PUT /api/items/requests/:id/passage
+ * 지문 수정 (2단계 워크플로우 - 검토 후 수정)
+ */
+router.put('/requests/:id/passage', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { passage } = req.body;
+    const db = getDb();
+
+    if (!passage || passage.trim() === '') {
+      return res.status(400).json({ success: false, error: '지문은 필수입니다.' });
+    }
+
+    const row = db.prepare('SELECT * FROM item_requests WHERE request_id = ?').get(id);
+    if (!row) {
+      return res.status(404).json({ success: false, error: '요청을 찾을 수 없습니다.' });
+    }
+
+    // 지문 업데이트
+    db.prepare(`
+      UPDATE item_requests
+      SET passage = ?, passage_source = 'MANUAL_EDIT', status = 'PASSAGE_READY', updated_at = CURRENT_TIMESTAMP
+      WHERE request_id = ?
+    `).run(passage.trim(), id);
+
+    logger.info('지문 수정 완료', id, `${passage.length}자`);
+
+    res.json({
+      success: true,
+      message: '지문이 수정되었습니다.',
+      data: {
+        requestId: id,
+        passage: passage.trim(),
+        passageSource: 'MANUAL_EDIT',
+        status: 'PASSAGE_READY'
+      }
+    });
+  } catch (error) {
+    logger.error('지문 수정 오류', req.params.id, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * POST /api/items/generate-pending
  * PENDING 상태인 모든 요청 처리
  */

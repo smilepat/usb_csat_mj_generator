@@ -921,12 +921,153 @@ Output only the passage, no additional text.`,
 }
 
 // =============================================
+// 유틸리티 함수
+// =============================================
+
+/**
+ * 사용자 확인 프롬프트 (CLI)
+ */
+function askConfirmation(question) {
+  return new Promise((resolve) => {
+    const readline = require('readline');
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
+    });
+  });
+}
+
+/**
+ * 현재 DB의 프롬프트를 백업 JSON 파일로 저장
+ */
+function backupCurrentPrompts(db) {
+  const prompts = db.prepare('SELECT * FROM prompts').all();
+  if (prompts.length === 0) {
+    console.log('  백업할 프롬프트가 없습니다.\n');
+    return null;
+  }
+
+  const backupDir = path.join(__dirname, '../../..', 'backups');
+  if (!fs.existsSync(backupDir)) {
+    fs.mkdirSync(backupDir, { recursive: true });
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const backupPath = path.join(backupDir, `prompts_backup_${timestamp}.json`);
+
+  const backupData = {
+    exported_at: new Date().toISOString(),
+    total_count: prompts.length,
+    prompts: prompts.map(p => ({
+      prompt_key: p.prompt_key,
+      title: p.title,
+      prompt_text: p.prompt_text,
+      active: p.active,
+      is_default: p.is_default,
+      status: p.status
+    }))
+  };
+
+  fs.writeFileSync(backupPath, JSON.stringify(backupData, null, 2), 'utf8');
+  console.log(`  ✅ 백업 완료: ${backupPath}`);
+  console.log(`     (${prompts.length}개 프롬프트 저장됨)\n`);
+  return backupPath;
+}
+
+/**
+ * 기존 프롬프트를 버전 히스토리에 저장
+ */
+function saveVersionHistory(db, promptId, promptKey, promptText, reason) {
+  const latestVersion = db.prepare(
+    'SELECT MAX(version) as max_version FROM prompt_versions WHERE prompt_id = ?'
+  ).get(promptId);
+
+  const newVersion = (latestVersion?.max_version || 0) + 1;
+
+  db.prepare(`
+    INSERT INTO prompt_versions (prompt_id, prompt_key, version, prompt_text, change_reason)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(promptId, promptKey, newVersion, promptText, reason);
+
+  return newVersion;
+}
+
+// =============================================
 // 메인 시드 함수
 // =============================================
 async function seedAllPrompts() {
   try {
+    // 명령줄 인자 파싱
+    const args = process.argv.slice(2);
+    const forceMode = args.includes('--force') || args.includes('-f');
+    const noBackup = args.includes('--no-backup');
+    const customJsonArg = args.find(a => a.startsWith('--json='));
+    const customJsonPath = customJsonArg ? customJsonArg.split('=')[1] : null;
+
+    // 도움말 출력
+    if (args.includes('--help') || args.includes('-h')) {
+      console.log(`
+사용법: node seedAllPrompts.js [옵션]
+
+옵션:
+  --force, -f      확인 없이 바로 실행
+  --no-backup      백업 없이 실행 (주의!)
+  --json=<경로>    사용할 JSON 파일 경로 지정
+  --help, -h       이 도움말 표시
+
+예시:
+  node seedAllPrompts.js
+  node seedAllPrompts.js --force
+  node seedAllPrompts.js --json=../../../prompt_versions/prompts_v2026-01-19.json
+`);
+      process.exit(0);
+    }
+
     await initDatabase();
     const db = getDb();
+
+    // 현재 DB 상태 확인
+    const existingCount = db.prepare('SELECT COUNT(*) as cnt FROM prompts').get();
+    const modifiedCount = db.prepare(`
+      SELECT COUNT(*) as cnt FROM prompts
+      WHERE updated_at > created_at
+    `).get();
+
+    console.log('========================================');
+    console.log('⚠️  프롬프트 시드 스크립트');
+    console.log('========================================\n');
+
+    console.log('📊 현재 DB 상태:');
+    console.log(`   - 총 프롬프트 수: ${existingCount.cnt}개`);
+    console.log(`   - 수정된 프롬프트: ${modifiedCount.cnt}개`);
+    console.log('');
+
+    // 경고 메시지
+    if (existingCount.cnt > 0) {
+      console.log('⚠️  경고: 이 작업은 기존 프롬프트를 덮어씁니다!');
+      console.log('   - UI에서 수정한 내용이 JSON 파일 내용으로 대체됩니다.');
+      console.log('   - 백업이 자동 생성되며, 버전 히스토리도 저장됩니다.\n');
+
+      if (!forceMode) {
+        const confirmed = await askConfirmation('계속하시겠습니까? (y/N): ');
+        if (!confirmed) {
+          console.log('\n❌ 작업이 취소되었습니다.');
+          closeDatabase();
+          process.exit(0);
+        }
+        console.log('');
+      }
+    }
+
+    // 백업 수행
+    if (!noBackup && existingCount.cnt > 0) {
+      console.log('📦 기존 프롬프트 백업 중...');
+      backupCurrentPrompts(db);
+    }
 
     console.log('========================================');
     console.log('모든 기본 프롬프트 시드 시작...');
@@ -934,14 +1075,22 @@ async function seedAllPrompts() {
 
     // JSON 파일에서 상세 프롬프트 로드 시도
     let detailedPrompts = [];
-    const jsonPath = path.join(__dirname, '../../..', 'docs', 'updated_prompts_2026-01-14.json');
+    const defaultJsonPath = path.join(__dirname, '../../..', 'prompts_active.json');
+    const jsonPath = customJsonPath
+      ? path.resolve(__dirname, customJsonPath)
+      : defaultJsonPath;
+
+    console.log(`📄 JSON 파일: ${path.basename(jsonPath)}`);
 
     if (fs.existsSync(jsonPath)) {
       console.log('상세 프롬프트 JSON 파일 로드 중...');
-      detailedPrompts = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+      const jsonData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+      // JSON 구조가 { prompts: [...] } 또는 직접 배열 형태 지원
+      detailedPrompts = Array.isArray(jsonData) ? jsonData : (jsonData.prompts || []);
       console.log(`  ${detailedPrompts.length}개의 상세 프롬프트를 로드했습니다.\n`);
     } else {
-      console.log('상세 프롬프트 JSON 파일이 없습니다. 기본 프롬프트만 사용합니다.\n');
+      console.log('⚠️  상세 프롬프트 JSON 파일이 없습니다: ' + jsonPath);
+      console.log('   기본 프롬프트만 사용합니다.\n');
     }
 
     // 상세 프롬프트를 키로 매핑
@@ -954,11 +1103,22 @@ async function seedAllPrompts() {
     let updated = 0;
     let skipped = 0;
 
-    // 프롬프트 삽입/업데이트 헬퍼 함수
+    // 프롬프트 삽입/업데이트 헬퍼 함수 (버전 히스토리 저장 포함)
     function upsertPrompt(promptKey, title, promptText, active = 1) {
-      const existing = db.prepare('SELECT id FROM prompts WHERE prompt_key = ?').get(promptKey);
+      const existing = db.prepare('SELECT id, prompt_text FROM prompts WHERE prompt_key = ?').get(promptKey);
 
       if (existing) {
+        // 내용이 변경된 경우에만 버전 히스토리 저장
+        if (existing.prompt_text !== promptText) {
+          saveVersionHistory(
+            db,
+            existing.id,
+            promptKey,
+            existing.prompt_text,
+            'Seed 스크립트 실행 전 자동 백업'
+          );
+        }
+
         db.prepare(`
           UPDATE prompts
           SET title = ?, prompt_text = ?, active = ?, is_default = 1, updated_at = CURRENT_TIMESTAMP
@@ -1011,12 +1171,13 @@ async function seedAllPrompts() {
       }
     }
 
-    // 3. RC 프롬프트 시드 (RC18-RC45)
-    console.log('\n--- RC 프롬프트 (RC18-RC45) ---');
-    for (let i = 18; i <= 45; i++) {
+    // 3. RC 프롬프트 시드 (RC18-RC40)
+    // 주의: RC41-RC45는 세트 프롬프트(RC41_42, RC43_45)로 처리하므로 개별 생성하지 않음
+    console.log('\n--- RC 프롬프트 (RC18-RC40) ---');
+    for (let i = 18; i <= 40; i++) {
       const key = `RC${i}`;
 
-      // 상세 프롬프트 우선 사용
+      // 상세 프롬프트 우선 사용 (01_19 버전에서 로드)
       if (detailedMap[key]) {
         upsertPrompt(key, detailedMap[key].title, detailedMap[key].prompt_text, detailedMap[key].active || 1);
       } else if (RC_BASIC_PROMPTS[key]) {
@@ -1037,6 +1198,39 @@ async function seedAllPrompts() {
 }`
         };
         upsertPrompt(key, defaultPrompt.title, defaultPrompt.prompt_text, 1);
+      }
+    }
+
+    // RC41-RC45는 세트 프롬프트(RC41_42, RC43_45)만 사용
+    // 개별 프롬프트가 필요한 경우를 위해 참조용으로만 생성 (비활성화 상태)
+    console.log('\n--- RC41-RC45 참조용 프롬프트 (세트 프롬프트 사용 권장) ---');
+    for (let i = 41; i <= 45; i++) {
+      const key = `RC${i}`;
+
+      // 01_19 버전에 상세 프롬프트가 있으면 사용, 아니면 기본 참조 템플릿
+      if (detailedMap[key]) {
+        upsertPrompt(key, detailedMap[key].title, detailedMap[key].prompt_text, detailedMap[key].active || 1);
+      } else {
+        const referencePrompt = {
+          title: `읽기 RC${i} 문항 (세트 사용 권장)`,
+          prompt_text: `Create a CSAT Reading Item ${i} following KSAT specifications.
+
+## 주의사항
+이 문항은 세트 문항의 일부입니다:
+- RC41-42: RC41_42 세트 프롬프트 사용 권장
+- RC43-45: RC43_45 세트 프롬프트 사용 권장
+
+## Output Format
+{
+  "question": "[Korean question]",
+  "passage": "[English passage]",
+  "options": ["option1", "option2", "option3", "option4", "option5"],
+  "answer": [1-5],
+  "explanation": "[Korean explanation]"
+}`
+        };
+        // 참조용으로만 생성 (기본 사용은 세트 프롬프트)
+        upsertPrompt(key, referencePrompt.title, referencePrompt.prompt_text, 1);
       }
     }
 

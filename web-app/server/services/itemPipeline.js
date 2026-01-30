@@ -170,8 +170,9 @@ async function generateItemPipeline(req) {
       }
 
       // 8) 2차 LLM 기반 내용 품질 평가 (규칙 기반 통과 후)
-      // 설정에서 LLM 평가 활성화 여부 확인
-      const enableLLMEvaluation = config.ENABLE_LLM_EVALUATION !== 'false';
+      // 설정에서 LLM 평가 활성화 여부 확인 (기본값: 비활성화 - 성능 최적화)
+      // 활성화하려면 ENABLE_LLM_EVALUATION=true 설정
+      const enableLLMEvaluation = config.ENABLE_LLM_EVALUATION === 'true';
       let itemEvaluation = null;
       let shouldRetry = false;
 

@@ -723,6 +723,17 @@ tr:hover {
   color: var(--info-color);
 }
 
+.badge-passage-ready {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+  color: #667eea;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+}
+
+[data-theme="dark"] .badge-passage-ready {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.25) 0%, rgba(118, 75, 162, 0.25) 100%);
+  color: #9fa8da;
+}
+
 /* Badge sizes */
 .badge-sm {
   padding: 2px 6px;

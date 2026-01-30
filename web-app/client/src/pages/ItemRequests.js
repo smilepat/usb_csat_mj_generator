@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { itemsApi } from '../api';
 import { formatKST } from '../utils/dateUtils';
+import { STATUS_DISPLAY, getStatusDisplay, getItemType } from '../constants';
 
 function ItemRequests() {
   const [requests, setRequests] = useState([]);
@@ -73,14 +74,15 @@ function ItemRequests() {
   };
 
   const getStatusBadge = (status) => {
-    const statusMap = {
-      PENDING: { class: 'badge-pending', text: '대기 중' },
-      RUNNING: { class: 'badge-running', text: '실행 중' },
-      OK: { class: 'badge-ok', text: '성공' },
-      FAIL: { class: 'badge-fail', text: '실패' }
-    };
-    const info = statusMap[status] || { class: 'badge-pending', text: status };
-    return <span className={`badge ${info.class}`}>{info.text}</span>;
+    const info = getStatusDisplay(status);
+    return (
+      <span
+        className={`badge ${info.class}`}
+        title={info.description}
+      >
+        {info.label}
+      </span>
+    );
   };
 
   return (
@@ -109,7 +111,7 @@ function ItemRequests() {
 
       {/* 필터 */}
       <div className="card">
-        <div className="flex gap-2">
+        <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
           <button
             className={`btn ${filter === '' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
             onClick={() => setFilter('')}
@@ -119,18 +121,35 @@ function ItemRequests() {
           <button
             className={`btn ${filter === 'PENDING' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
             onClick={() => setFilter('PENDING')}
+            title="요청이 등록되어 생성 대기 중"
           >
-            대기 중
+            입력 완료
+          </button>
+          <button
+            className={`btn ${filter === 'PASSAGE_READY' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+            onClick={() => setFilter('PASSAGE_READY')}
+            title="2단계 모드: 지문 생성 완료, 검토 대기 중"
+          >
+            지문 검토 대기
+          </button>
+          <button
+            className={`btn ${filter === 'RUNNING' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+            onClick={() => setFilter('RUNNING')}
+            title="문항 생성 진행 중"
+          >
+            생성 중
           </button>
           <button
             className={`btn ${filter === 'OK' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
             onClick={() => setFilter('OK')}
+            title="문항 생성 및 검증 완료"
           >
-            성공
+            생성 완료
           </button>
           <button
             className={`btn ${filter === 'FAIL' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
             onClick={() => setFilter('FAIL')}
+            title="생성 또는 검증 실패"
           >
             실패
           </button>
@@ -168,7 +187,7 @@ function ItemRequests() {
                     <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
                       {req.request_id?.slice(0, 8)}...
                     </td>
-                    <td>RC{req.item_no}</td>
+                    <td>{getItemType(req.item_no)}{req.item_no}</td>
                     <td>{getStatusBadge(req.status)}</td>
                     <td>{req.level || '-'}</td>
                     <td>{req.set_id || '-'}</td>
@@ -220,7 +239,7 @@ function ItemRequests() {
               <h4 className="mb-2">요청 정보</h4>
               <div style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', marginBottom: '16px' }}>
                 <p><strong>요청 ID:</strong> {selectedItem.request?.request_id}</p>
-                <p><strong>문항 번호:</strong> RC{selectedItem.request?.item_no}</p>
+                <p><strong>문항 번호:</strong> {getItemType(selectedItem.request?.item_no)}{selectedItem.request?.item_no}</p>
                 <p><strong>상태:</strong> {selectedItem.request?.status}</p>
                 <p><strong>난이도:</strong> {selectedItem.request?.level || '-'}</p>
               </div>

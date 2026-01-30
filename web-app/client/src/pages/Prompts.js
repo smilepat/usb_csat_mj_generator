@@ -78,6 +78,13 @@ function Prompts() {
   const [libraryPrompts, setLibraryPrompts] = useState([]);
   const [loadingLibrary, setLoadingLibrary] = useState(false);
 
+  // Import/Export 관련 상태
+  const [showImportExport, setShowImportExport] = useState(false);
+  const [availableJsonFiles, setAvailableJsonFiles] = useState([]);
+  const [loadingJsonFiles, setLoadingJsonFiles] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [selectedJsonFile, setSelectedJsonFile] = useState(null);
+
   useEffect(() => {
     loadPrompts();
   }, []);
@@ -263,6 +270,57 @@ function Prompts() {
     } finally {
       setLoadingLibrary(false);
     }
+  };
+
+  // Import/Export 모달 표시
+  const handleShowImportExport = async () => {
+    if (showImportExport) {
+      setShowImportExport(false);
+      return;
+    }
+    try {
+      setLoadingJsonFiles(true);
+      const res = await promptsApi.getAvailableJsonFiles();
+      setAvailableJsonFiles(res.data || []);
+      setShowImportExport(true);
+    } catch (error) {
+      setMessage({ type: 'error', text: 'JSON 파일 목록 조회 실패: ' + error.message });
+    } finally {
+      setLoadingJsonFiles(false);
+    }
+  };
+
+  // JSON 파일에서 프롬프트 로드
+  const handleLoadFromFile = async (filePath, overwrite = false) => {
+    if (!window.confirm(
+      overwrite
+        ? `⚠️ "${filePath}"에서 프롬프트를 로드합니다.\n\n기존 프롬프트가 덮어쓰기됩니다. (버전 히스토리는 저장됨)\n\n계속하시겠습니까?`
+        : `"${filePath}"에서 프롬프트를 로드합니다.\n\n기존에 없는 프롬프트만 추가됩니다.\n\n계속하시겠습니까?`
+    )) {
+      return;
+    }
+
+    try {
+      setImporting(true);
+      const res = await promptsApi.loadFromFile(filePath, overwrite);
+      setMessage({
+        type: 'success',
+        text: `✅ ${res.data.file}에서 로드 완료! (신규: ${res.data.imported}, 업데이트: ${res.data.updated}, 건너뜀: ${res.data.skipped})`
+      });
+      loadPrompts();
+      setShowImportExport(false);
+    } catch (error) {
+      setMessage({ type: 'error', text: '파일 로드 실패: ' + error.message });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // 현재 프롬프트 Export (다운로드)
+  const handleExportPrompts = () => {
+    const downloadUrl = promptsApi.downloadPrompts(false);
+    window.open(downloadUrl, '_blank');
+    setMessage({ type: 'success', text: '📥 프롬프트 JSON 파일 다운로드가 시작됩니다.' });
   };
 
   // 라이브러리에서 프롬프트 적용
@@ -1070,6 +1128,13 @@ function Prompts() {
           </button>
           <button className="btn btn-secondary" onClick={handleLoadLibrary} disabled={loadingLibrary}>
             {loadingLibrary ? '🔄 로딩...' : '📚 라이브러리에서 불러오기'}
+          </button>
+          <button
+            className={`btn ${showImportExport ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={handleShowImportExport}
+            disabled={loadingJsonFiles}
+          >
+            {loadingJsonFiles ? '🔄 로딩...' : '📦 Import/Export'}
           </button>
           <button className="btn btn-primary" onClick={handleNew}>
             ➕ 새 프롬프트
@@ -2617,6 +2682,109 @@ function Prompts() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowLibrary(false)}>
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import/Export 모달 */}
+      {showImportExport && (
+        <div className="modal-overlay" onClick={() => setShowImportExport(false)}>
+          <div className="modal-content" style={{ maxWidth: '800px', maxHeight: '80vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📦 프롬프트 Import/Export</h3>
+              <button className="btn-close" onClick={() => setShowImportExport(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              {/* Export 섹션 */}
+              <div style={{ marginBottom: '24px', padding: '16px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                <h4 style={{ marginBottom: '12px', color: '#166534' }}>📤 현재 프롬프트 내보내기 (Export)</h4>
+                <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '12px' }}>
+                  현재 DB에 저장된 모든 프롬프트를 JSON 파일로 다운로드합니다.
+                </p>
+                <button className="btn btn-success" onClick={handleExportPrompts}>
+                  📥 JSON 파일 다운로드
+                </button>
+              </div>
+
+              {/* Import 섹션 */}
+              <div style={{ padding: '16px', background: '#fefce8', borderRadius: '8px', border: '1px solid #fef08a' }}>
+                <h4 style={{ marginBottom: '12px', color: '#854d0e' }}>📥 JSON 파일에서 가져오기 (Import)</h4>
+                <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '16px' }}>
+                  사용 가능한 JSON 파일 목록입니다. 선택하여 프롬프트를 로드할 수 있습니다.
+                </p>
+
+                {availableJsonFiles.length === 0 ? (
+                  <p style={{ color: '#666', fontStyle: 'italic' }}>사용 가능한 JSON 파일이 없습니다.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {availableJsonFiles.map((file, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          padding: '12px',
+                          background: file.isBackup ? '#f5f5f5' : 'white',
+                          borderRadius: '6px',
+                          border: selectedJsonFile === file.path ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => setSelectedJsonFile(selectedJsonFile === file.path ? null : file.path)}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <div style={{ fontWeight: 'bold', color: file.isBackup ? '#666' : '#333' }}>
+                              {file.isBackup && '🗄️ '}{file.name}
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: '#888' }}>
+                              경로: {file.path} | 프롬프트: {file.promptCount}개
+                              {file.error && <span style={{ color: '#ef4444' }}> ({file.error})</span>}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#aaa' }}>
+                              수정: {new Date(file.modified).toLocaleString('ko-KR')}
+                            </div>
+                          </div>
+                          {selectedJsonFile === file.path && (
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                className="btn btn-sm btn-secondary"
+                                onClick={(e) => { e.stopPropagation(); handleLoadFromFile(file.path, false); }}
+                                disabled={importing}
+                                title="기존에 없는 프롬프트만 추가"
+                              >
+                                {importing ? '로딩...' : '➕ 추가만'}
+                              </button>
+                              <button
+                                className="btn btn-sm btn-warning"
+                                onClick={(e) => { e.stopPropagation(); handleLoadFromFile(file.path, true); }}
+                                disabled={importing}
+                                title="기존 프롬프트도 덮어쓰기 (버전 히스토리 저장됨)"
+                                style={{ background: '#f59e0b', border: 'none', color: 'white' }}
+                              >
+                                {importing ? '로딩...' : '🔄 덮어쓰기'}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 경고 메시지 */}
+                <div style={{ marginTop: '16px', padding: '12px', background: '#fef2f2', borderRadius: '6px', border: '1px solid #fecaca' }}>
+                  <div style={{ fontWeight: 'bold', color: '#991b1b', marginBottom: '4px' }}>⚠️ 주의사항</div>
+                  <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '0.85rem', color: '#7f1d1d' }}>
+                    <li><strong>추가만</strong>: 기존에 없는 prompt_key만 새로 추가됩니다.</li>
+                    <li><strong>덮어쓰기</strong>: 기존 프롬프트 내용이 파일 내용으로 대체됩니다. (이전 버전은 히스토리에 저장됨)</li>
+                    <li>덮어쓰기 전 자동으로 백업 파일이 생성됩니다.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowImportExport(false)}>
                 닫기
               </button>
             </div>
