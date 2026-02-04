@@ -618,9 +618,9 @@ function Library() {
                       borderRadius: '8px',
                       lineHeight: '1.8',
                       whiteSpace: 'pre-wrap'
-                    }}>
-                      {detailItem.passage}
-                    </div>
+                    }}
+                      dangerouslySetInnerHTML={{ __html: detailItem.passage }}
+                    />
                   </div>
                 )}
 

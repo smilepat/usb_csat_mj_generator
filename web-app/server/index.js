@@ -170,4 +170,9 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-startServer();
+// Vercel 서버리스 환경에서는 app만 export, 로컬에서는 서버 시작
+if (process.env.VERCEL) {
+  module.exports = app;
+} else {
+  startServer();
+}

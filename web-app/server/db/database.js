@@ -7,7 +7,10 @@ const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
 
-const DB_PATH = path.join(__dirname, '../../data/csat.db');
+// Vercel 서버리스 환경에서는 /tmp 사용 (유일한 쓰기 가능 경로)
+const DB_PATH = process.env.VERCEL
+  ? path.join('/tmp', 'csat.db')
+  : path.join(__dirname, '../../data/csat.db');
 
 let db = null;
 let SQL = null;

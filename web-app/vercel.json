@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "client/build/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node",
+      "config": {
+        "maxDuration": 60,
+        "includeFiles": ["server/**", "node_modules/sql.js/dist/sql-wasm.wasm"]
+      }
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/index.js" },
+    { "src": "/static/(.*)", "dest": "/client/build/static/$1" },
+    { "src": "/asset-manifest.json", "dest": "/client/build/asset-manifest.json" },
+    { "src": "/manifest.json", "dest": "/client/build/manifest.json" },
+    { "src": "/favicon.ico", "dest": "/client/build/favicon.ico" },
+    { "src": "/(.*)", "dest": "/client/build/index.html" }
+  ]
+}

@@ -1278,9 +1278,9 @@ function ItemCreate() {
               fontSize: '1rem',
               whiteSpace: 'pre-wrap',
               border: '1px solid #e2e8f0'
-            }}>
-              {generatedPassage}
-            </div>
+            }}
+              dangerouslySetInnerHTML={{ __html: generatedPassage }}
+            />
           )}
 
           {!isEditingPassage && (
