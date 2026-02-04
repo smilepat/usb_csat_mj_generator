@@ -472,22 +472,38 @@ async function initDatabase() {
     db.run(`INSERT OR IGNORE INTO config (key, value, description) VALUES (?, ?, ?)`, [key, value, desc]);
   }
 
-  // 기본 프롬프트 삽입
-  const defaultPrompts = [
-    ['MASTER_PROMPT', '마스터 프롬프트', getMasterPromptTemplate(), 1],
-    ['PASSAGE_MASTER', '지문 생성 마스터', getPassageMasterTemplate(), 1],
-    ['29', 'RC29 어법 문항', getItemPromptTemplate(29), 1],
-    ['31', 'RC31 빈칸 문항', getItemPromptTemplate(31), 1],
-    ['33', 'RC33 빈칸 문항', getItemPromptTemplate(33), 1],
-    ['P29', 'RC29 지문 생성', getPassageItemTemplate(29), 1],
-    ['P31', 'RC31 지문 생성', getPassageItemTemplate(31), 1],
-    ['P33', 'RC33 지문 생성', getPassageItemTemplate(33), 1],
-    ['P41_45', 'RC41-45 세트 지문', getPassageItemTemplate('41_45'), 1]
-  ];
-
-  for (const [key, title, text, active] of defaultPrompts) {
-    db.run(`INSERT OR IGNORE INTO prompts (prompt_key, title, prompt_text, active) VALUES (?, ?, ?, ?)`,
-      [key, title, text, active]);
+  // 기본 프롬프트 삽입: seed_prompts.json에서 전체 프롬프트 로드
+  const seedPromptsPath = path.join(__dirname, 'seed_prompts.json');
+  if (fs.existsSync(seedPromptsPath)) {
+    try {
+      const seedData = JSON.parse(fs.readFileSync(seedPromptsPath, 'utf8'));
+      for (const p of seedData) {
+        db.run(
+          `INSERT OR IGNORE INTO prompts (prompt_key, title, prompt_text, active, is_default, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [p.prompt_key, p.title, p.prompt_text, p.active, p.is_default || 0, p.created_at, p.updated_at]
+        );
+      }
+      console.log(`[DB] seed_prompts.json에서 ${seedData.length}개 프롬프트 로드 완료`);
+    } catch (e) {
+      console.error('[DB] seed_prompts.json 로드 실패:', e.message);
+    }
+  } else {
+    // fallback: 기본 프롬프트만 삽입
+    const defaultPrompts = [
+      ['MASTER_PROMPT', '마스터 프롬프트', getMasterPromptTemplate(), 1],
+      ['PASSAGE_MASTER', '지문 생성 마스터', getPassageMasterTemplate(), 1],
+      ['29', 'RC29 어법 문항', getItemPromptTemplate(29), 1],
+      ['31', 'RC31 빈칸 문항', getItemPromptTemplate(31), 1],
+      ['33', 'RC33 빈칸 문항', getItemPromptTemplate(33), 1],
+      ['P29', 'RC29 지문 생성', getPassageItemTemplate(29), 1],
+      ['P31', 'RC31 지문 생성', getPassageItemTemplate(31), 1],
+      ['P33', 'RC33 지문 생성', getPassageItemTemplate(33), 1],
+      ['P41_45', 'RC41-45 세트 지문', getPassageItemTemplate('41_45'), 1]
+    ];
+    for (const [key, title, text, active] of defaultPrompts) {
+      db.run(`INSERT OR IGNORE INTO prompts (prompt_key, title, prompt_text, active) VALUES (?, ?, ?, ?)`,
+        [key, title, text, active]);
+    }
   }
 
   // DB 저장

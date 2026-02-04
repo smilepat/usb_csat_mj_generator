@@ -228,9 +228,17 @@ function validatePersona(promptText) {
     warnings.push('[F1] 역할(Persona) 미명시: "수능 영어 출제위원" 등 역할 명시 권장');
   }
 
-  // 부적절한 역할 체크
-  const inappropriateRoles = /학생|student|초보|beginner|아마추어/i;
-  if (inappropriateRoles.test(promptText)) {
+  // 부적절한 역할 체크 (역할 설정 문맥에서만 검사)
+  // "you are a student", "당신은 학생입니다" 등 역할 지정 패턴만 체크
+  // "student mistakes", "학생들에게" 등 일반 언급은 무시
+  const roleAssignmentPatterns = [
+    /you\s+are\s+(?:a\s+)?(?:학생|student|초보|beginner|아마추어)/i,
+    /역할.*(?:학생|초보|아마추어)/i,
+    /당신은\s*(?:학생|초보자|아마추어)/i,
+    /\[role\].*(?:학생|student|초보|beginner|아마추어)/i
+  ];
+  const hasInappropriateRole = roleAssignmentPatterns.some(p => p.test(promptText));
+  if (hasInappropriateRole) {
     errors.push('[F2] 부적절한 역할 설정: 출제위원/전문가 역할 사용 필요');
   }
 
@@ -901,23 +909,22 @@ function validatePromptBundle(req) {
       result.errors.push(`ITEM_PROMPT(${req.itemNo})를 읽을 수 없습니다: ` + e.message);
     }
 
-    // 4. 최종 번들 생성 시도
-    if (result.errors.length === 0) {
-      try {
-        const bundle = buildPromptBundle(req);
+    // 4. 최종 번들 생성 시도 (에러 여부와 무관하게 미리보기/통계는 항상 생성)
+    try {
+      const bundle = buildPromptBundle(req);
 
-        result.preview = {
-          system: bundle.system,
-          user: bundle.user,
-          systemPreview: truncateText(bundle.system, 500),
-          userPreview: truncateText(bundle.user, 1000)
-        };
+      result.preview = {
+        system: bundle.system,
+        user: bundle.user,
+        systemPreview: truncateText(bundle.system, 500),
+        userPreview: truncateText(bundle.user, 1000)
+      };
 
-        const totalChars = (bundle.system?.length || 0) + (bundle.user?.length || 0);
-        const estimatedTokens = Math.ceil(totalChars / 4);
+      const totalChars = (bundle.system?.length || 0) + (bundle.user?.length || 0);
+      const estimatedTokens = Math.ceil(totalChars / 4);
 
-        result.stats = {
-          systemLength: bundle.system?.length || 0,
+      result.stats = {
+        systemLength: bundle.system?.length || 0,
           userLength: bundle.user?.length || 0,
           totalLength: totalChars,
           estimatedTokens,
@@ -929,9 +936,8 @@ function validatePromptBundle(req) {
           result.warnings.push(`추정 토큰 수가 많습니다 (${estimatedTokens}). API 제한에 주의하세요.`);
         }
 
-      } catch (e) {
-        result.errors.push('프롬프트 번들 생성 실패: ' + e.message);
-      }
+    } catch (e) {
+      result.errors.push('프롬프트 번들 생성 실패: ' + e.message);
     }
 
     result.valid = result.errors.length === 0;

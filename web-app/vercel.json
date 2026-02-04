@@ -10,7 +10,7 @@
       "use": "@vercel/node",
       "config": {
         "maxDuration": 60,
-        "includeFiles": ["server/**", "node_modules/sql.js/dist/sql-wasm.wasm"]
+        "includeFiles": ["server/**", "node_modules/sql.js/dist/sql-wasm.wasm", "server/db/seed_prompts.json"]
       }
     }
   ],
