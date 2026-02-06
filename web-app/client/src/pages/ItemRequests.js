@@ -283,6 +283,25 @@ function ItemRequests() {
                 <>
                   <h4 className="mb-2">생성된 문항</h4>
                   <div className="item-preview">
+                    {/* RC38/39 문장 삽입 문항: given_sentence 표시 */}
+                    {(() => {
+                      const itemNo = selectedItem.request?.item_no;
+                      if (itemNo !== 38 && itemNo !== 39) return null;
+                      const finalJson = selectedItem.results?.[0]?.final_json;
+                      let givenSentence = null;
+                      if (finalJson) {
+                        try {
+                          const parsed = typeof finalJson === 'string' ? JSON.parse(finalJson) : finalJson;
+                          givenSentence = parsed.given_sentence;
+                        } catch (e) {}
+                      }
+                      return givenSentence ? (
+                        <div style={{ marginBottom: '16px', padding: '12px', background: 'var(--card-bg)', borderRadius: '8px', border: '2px solid var(--info-color)' }}>
+                          <strong style={{ color: 'var(--info-color)' }}>주어진 문장:</strong>
+                          <p style={{ marginTop: '8px', fontStyle: 'italic', lineHeight: '1.6' }}>{givenSentence}</p>
+                        </div>
+                      ) : null;
+                    })()}
                     {/* RC40 요약문 완성 문항: summary 표시 */}
                     {(() => {
                       // final_json에서 summary 추출
@@ -302,17 +321,37 @@ function ItemRequests() {
                       ) : null;
                     })()}
                     <div className="question">{selectedItem.output.question}</div>
-                    <ol className="options">
-                      {[1, 2, 3, 4, 5].map(i => (
-                        <li
-                          key={i}
-                          className={selectedItem.output.answer === String(i) ? 'correct' : ''}
-                        >
-                          {i}. {selectedItem.output[`option_${i}`]}
-                          {selectedItem.output.answer === String(i) && ' ✓'}
-                        </li>
-                      ))}
-                    </ol>
+                    {/* RC38/39 문장 삽입 문항: 옵션 대신 정답 위치만 표시 */}
+                    {(() => {
+                      const itemNo = selectedItem.request?.item_no;
+                      const isSentenceInsertion = (itemNo === 38 || itemNo === 39);
+                      if (isSentenceInsertion) {
+                        const circledNums = ['①', '②', '③', '④', '⑤'];
+                        const answerIdx = parseInt(selectedItem.output.answer) - 1;
+                        return (
+                          <div style={{ marginTop: '12px', padding: '10px', background: 'var(--card-bg)', borderRadius: '8px' }}>
+                            <strong>정답: </strong>
+                            <span style={{ fontSize: '1.2em', color: 'var(--success-color)', fontWeight: 'bold' }}>
+                              {circledNums[answerIdx] || selectedItem.output.answer}
+                            </span>
+                          </div>
+                        );
+                      }
+                      // 일반 문항: 기존 옵션 리스트
+                      return (
+                        <ol className="options">
+                          {[1, 2, 3, 4, 5].map(i => (
+                            <li
+                              key={i}
+                              className={selectedItem.output.answer === String(i) ? 'correct' : ''}
+                            >
+                              {i}. {selectedItem.output[`option_${i}`]}
+                              {selectedItem.output.answer === String(i) && ' ✓'}
+                            </li>
+                          ))}
+                        </ol>
+                      );
+                    })()}
                     {selectedItem.output.explanation && (
                       <div className="explanation">
                         <strong>해설:</strong> {selectedItem.output.explanation}

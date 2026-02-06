@@ -324,6 +324,16 @@ function normalizeItemJson(obj, targetItemNo = null) {
     out.chart_data = obj.chart_data;
   }
 
+  // RC38/39 문장 삽입 문항용 given_sentence 필드 보존
+  if (obj.given_sentence) {
+    out.given_sentence = obj.given_sentence;
+  }
+
+  // RC38/39 문장 삽입 문항용 distractor_rationales 필드 보존
+  if (obj.distractor_rationales) {
+    out.distractor_rationales = obj.distractor_rationales;
+  }
+
   // RC40 요약문 완성 문항용 summary 필드 보존
   if (obj.summary) {
     out.summary = obj.summary;

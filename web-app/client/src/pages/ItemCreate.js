@@ -709,8 +709,8 @@ function ItemCreate() {
           </div>
         </div>
 
-        {/* 공통 지문 (있는 경우) */}
-        {setDetail?.set?.common_passage && (
+        {/* 공통 지문 (DB 저장된 지문 또는 LLM 생성 지문) */}
+        {(setDetail?.set?.common_passage || setDetail?.generatedPassage) && (
           <div className="card" style={{ marginBottom: '16px' }}>
             <h3 style={{ marginBottom: '12px', color: '#1e40af' }}>📖 공통 지문</h3>
             <div style={{
@@ -720,7 +720,7 @@ function ItemCreate() {
               lineHeight: '1.8',
               whiteSpace: 'pre-wrap'
             }}>
-              {setDetail.set.common_passage}
+              {setDetail?.set?.common_passage || setDetail?.generatedPassage}
             </div>
           </div>
         )}
