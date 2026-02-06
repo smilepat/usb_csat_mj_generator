@@ -754,8 +754,22 @@ stimulus 필드에 원숫자(①②③④⑤)를 반드시 지문 텍스트 내�
     '----------------------------------------\n' +
     '위의 지침과 정보를 모두 반영하여 MASTER 스키마에 맞는 단일 문항(JSON 객체 1개)을 생성하시오.';
 
+  // LC07의 경우 시스템 프롬프트에도 다양성 지시 추가 (더 높은 우선순위)
+  let finalSystemPrompt = master;
+  if (itemNoNum === 7 && listeningDiversityInstruction) {
+    const scenario = getRandomListeningScenario(itemNoNum);
+    if (scenario) {
+      finalSystemPrompt = master + `
+
+[CRITICAL OVERRIDE FOR LC07]
+You MUST use this specific event for this generation: "${scenario.event}"
+NEVER use: birthday party, wedding, reunion, family gathering.
+This is a MANDATORY requirement that overrides any other instruction.`;
+    }
+  }
+
   return {
-    system: master,
+    system: finalSystemPrompt,
     user: userPrompt
   };
 }
