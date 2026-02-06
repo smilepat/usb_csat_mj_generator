@@ -50,13 +50,18 @@ const LC07_SCENARIOS = [
 
 /**
  * 듣기 문항용 랜덤 시나리오 선택
- * @param {number} itemNo - 문항 번호
+ * @param {number|string} itemNo - 문항 번호 (숫자 또는 문자열)
  * @returns {Object|null} 선택된 시나리오 또는 null
  */
 function getRandomListeningScenario(itemNo) {
-  if (itemNo === 7) {
+  // itemNo가 문자열일 수 있으므로 parseInt로 변환
+  const itemNoNum = parseInt(itemNo, 10);
+
+  if (itemNoNum === 7) {
     const idx = Math.floor(Math.random() * LC07_SCENARIOS.length);
-    return LC07_SCENARIOS[idx];
+    const selected = LC07_SCENARIOS[idx];
+    console.log(`[promptBuilder] LC07 시나리오 선택: ${selected.event} (index: ${idx})`);
+    return selected;
   }
   // 다른 LC 문항도 필요시 추가 가능
   return null;
