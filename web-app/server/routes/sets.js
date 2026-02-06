@@ -74,7 +74,19 @@ router.get('/:setId', (req, res) => {
       try {
         const parsed = JSON.parse(itemJsons[0].final_json);
         generatedPassage = parsed.passage || parsed.stimulus || parsed.lc_script || null;
-      } catch (e) {}
+        console.log('[sets.js] Extracted passage from final_json:', {
+          hasPassage: !!parsed.passage,
+          hasStimulus: !!parsed.stimulus,
+          generatedPassageLength: generatedPassage?.length || 0
+        });
+      } catch (e) {
+        console.error('[sets.js] Error parsing final_json:', e.message);
+      }
+    } else {
+      console.log('[sets.js] No itemJsons or final_json:', {
+        itemJsonsLength: itemJsons.length,
+        hasFinalJson: itemJsons[0]?.final_json ? 'yes' : 'no'
+      });
     }
 
     res.json({

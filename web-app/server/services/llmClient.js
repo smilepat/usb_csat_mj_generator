@@ -185,7 +185,9 @@ async function callGemini(systemText, userText, config) {
   }
 
   const modelId = config.GEMINI_MODEL || 'gemini-2.5-pro';
-  const temperature = parseFloat(config.TEMP_BASE || '0.4');
+  // 다양한 출력을 위해 temperature를 높임
+  const baseTemp = parseFloat(config.TEMP_BASE || '0.7');
+  const temperature = Math.min(1.0, Math.max(0.5, baseTemp + (Math.random() - 0.5) * 0.2));
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`;
 
@@ -200,7 +202,9 @@ async function callGemini(systemText, userText, config) {
       }
     ],
     generationConfig: {
-      temperature: temperature
+      temperature: temperature,
+      topP: 0.95,
+      topK: 40
     }
   };
 
@@ -230,13 +234,18 @@ async function callOpenAI(systemText, userText, config) {
   }
 
   const model = config.OPENAI_MODEL || 'gpt-4.1-mini';
-  const temperature = parseFloat(config.TEMP_BASE || '0.4');
+  // 다양한 출력을 위해 temperature를 높임
+  const baseTemp = parseFloat(config.TEMP_BASE || '0.7');
+  const temperature = Math.min(1.0, Math.max(0.5, baseTemp + (Math.random() - 0.5) * 0.2));
 
   const url = 'https://api.openai.com/v1/chat/completions';
 
   const payload = {
     model: model,
     temperature: temperature,
+    top_p: 0.95,
+    frequency_penalty: 0.3,
+    presence_penalty: 0.2,
     messages: [
       { role: 'system', content: systemText },
       { role: 'user', content: userText }
@@ -278,7 +287,11 @@ async function callAzureOpenAI(systemText, userText, config) {
     throw new Error('AZURE_OPENAI_DEPLOYMENT가 설정되지 않았습니다.');
   }
 
-  const temperature = parseFloat(config.TEMP_BASE || '0.4');
+  // 다양한 출력을 위해 temperature를 높임 (기본 0.4 → 0.7)
+  // 너무 낮은 temperature는 동일한 출력을 반복 생성함
+  const baseTemp = parseFloat(config.TEMP_BASE || '0.7');
+  // 약간의 랜덤성 추가 (±0.1 범위)
+  const temperature = Math.min(1.0, Math.max(0.5, baseTemp + (Math.random() - 0.5) * 0.2));
 
   // Azure OpenAI URL 형식: {endpoint}/openai/deployments/{deployment}/chat/completions?api-version={api-version}
   const baseUrl = endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint;
@@ -286,6 +299,12 @@ async function callAzureOpenAI(systemText, userText, config) {
 
   const payload = {
     temperature: temperature,
+    // top_p를 추가하여 다양성 증가
+    top_p: 0.95,
+    // frequency_penalty로 반복 감소
+    frequency_penalty: 0.3,
+    // presence_penalty로 새로운 주제 유도
+    presence_penalty: 0.2,
     messages: [
       { role: 'system', content: systemText },
       { role: 'user', content: userText }

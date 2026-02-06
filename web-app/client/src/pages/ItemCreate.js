@@ -336,6 +336,15 @@ function ItemCreate() {
       // 4. 세트 상세 조회
       const setDetail = await setsApi.get(setId);
 
+      // 디버깅: generatedPassage 확인
+      console.log('[ItemCreate] setDetail.data:', {
+        hasCommonPassage: !!setDetail.data?.set?.common_passage,
+        commonPassageLength: setDetail.data?.set?.common_passage?.length || 0,
+        hasGeneratedPassage: !!setDetail.data?.generatedPassage,
+        generatedPassageLength: setDetail.data?.generatedPassage?.length || 0,
+        itemJsonsCount: setDetail.data?.itemJsons?.length || 0
+      });
+
       // 5. 결과 표시
       setGenerationResult({
         isSet: true,
