@@ -20,16 +20,22 @@
     "pm2:logs": "pm2 logs",
     "pm2:status": "pm2 status"
   },
-  "keywords": ["csat", "ksat", "test-item-generator", "llm"],
+  "keywords": [
+    "csat",
+    "ksat",
+    "test-item-generator",
+    "llm"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "sql.js": "^1.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
+    "firebase-admin": "^12.7.0",
+    "sql.js": "^1.10.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

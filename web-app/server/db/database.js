@@ -1,11 +1,15 @@
 /**
  * server/db/database.js
  * SQL.js 데이터베이스 초기화 및 관리 (순수 JavaScript, 네이티브 모듈 불필요)
+ * Vercel 프로덕션 환경에서는 Firebase Firestore 사용
  */
 
 const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
+
+// Firebase 사용 여부 확인
+const USE_FIREBASE = process.env.FIREBASE_SERVICE_ACCOUNT && process.env.VERCEL;
 
 // Vercel 서버리스 환경에서는 /tmp 사용 (유일한 쓰기 가능 경로)
 const DB_PATH = process.env.VERCEL
@@ -16,6 +20,10 @@ let db = null;
 let SQL = null;
 let saveTimer = null;
 const SAVE_DELAY_MS = 1000; // 1초 디바운스
+
+// Firestore 관련
+let firestoreDb = null;
+let firestoreInitialized = false;
 
 /**
  * 디바운스된 DB 저장 (성능 최적화)
@@ -50,6 +58,28 @@ function saveDatabase() {
  * 데이터베이스 초기화
  */
 async function initDatabase() {
+  // Firebase 사용 시 Firestore 초기화
+  if (USE_FIREBASE) {
+    console.log('[DB] Firebase Firestore 모드로 초기화 중...');
+    try {
+      const { initFirestore, getFirestoreDb, seedFirestoreData } = require('./firestore');
+      initFirestore();
+      firestoreDb = getFirestoreDb();
+      firestoreInitialized = true;
+
+      // 시드 데이터 초기화
+      await seedFirestoreData();
+
+      console.log('[DB] Firebase Firestore 초기화 완료');
+      return firestoreDb;
+    } catch (error) {
+      console.error('[DB] Firebase 초기화 실패, SQLite 폴백:', error.message);
+      // Firebase 실패 시 SQLite로 폴백
+    }
+  }
+
+  console.log('[DB] SQLite 모드로 초기화 중...');
+
   // SQL.js 초기화
   SQL = await initSqlJs();
 
@@ -634,8 +664,15 @@ function closeDatabase() {
 
 /**
  * SQL.js용 래퍼 - better-sqlite3 호환 인터페이스 제공
+ * Firebase 모드에서는 Firestore 래퍼 반환
  */
 function getDb() {
+  // Firebase 모드
+  if (firestoreInitialized && firestoreDb) {
+    return firestoreDb;
+  }
+
+  // SQLite 모드
   if (!db) {
     throw new Error('데이터베이스가 초기화되지 않았습니다. initDatabase()를 먼저 호출하세요.');
   }
@@ -966,6 +1003,20 @@ function cleanOrphanRecords() {
   }
 }
 
+/**
+ * Firebase 모드 여부 확인
+ */
+function isFirebaseMode() {
+  return firestoreInitialized && firestoreDb !== null;
+}
+
+/**
+ * 현재 데이터베이스 타입 반환
+ */
+function getDatabaseType() {
+  return isFirebaseMode() ? 'firestore' : 'sqlite';
+}
+
 module.exports = {
   getDb,
   initDatabase,
@@ -974,5 +1025,7 @@ module.exports = {
   checkDependencies,
   cascadeDelete,
   checkIntegrity,
-  cleanOrphanRecords
+  cleanOrphanRecords,
+  isFirebaseMode,
+  getDatabaseType
 };

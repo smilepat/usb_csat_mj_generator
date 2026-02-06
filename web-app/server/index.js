@@ -9,7 +9,7 @@ const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
 
-const { initDatabase } = require('./db/database');
+const { initDatabase, getDatabaseType, isFirebaseMode } = require('./db/database');
 const logger = require('./services/logger');
 
 // 미들웨어
@@ -91,7 +91,9 @@ app.get('/api/health', (req, res) => {
     data: {
       status: 'ok',
       timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development'
+      environment: process.env.NODE_ENV || 'development',
+      database: getDatabaseType(),
+      firebase: isFirebaseMode()
     }
   });
 });
@@ -170,8 +172,34 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// Vercel 서버리스 환경에서는 app만 export, 로컬에서는 서버 시작
+// Vercel 서버리스 환경에서는 초기화 후 app export, 로컬에서는 서버 시작
 if (process.env.VERCEL) {
+  // Vercel 환경에서는 첫 요청 시 데이터베이스 초기화
+  let dbInitialized = false;
+
+  const originalUse = app.use.bind(app);
+  app.use = function(...args) {
+    return originalUse(...args);
+  };
+
+  // 모든 요청 전에 DB 초기화 확인
+  app.use(async (req, res, next) => {
+    if (!dbInitialized) {
+      try {
+        await initDatabase();
+        dbInitialized = true;
+        logger.info('SERVER', 'vercel', `데이터베이스 초기화 완료 (${getDatabaseType()})`);
+      } catch (error) {
+        logger.error('SERVER', 'vercel', `데이터베이스 초기화 실패: ${error.message}`);
+        return res.status(500).json({
+          success: false,
+          error: '데이터베이스 초기화 실패'
+        });
+      }
+    }
+    next();
+  });
+
   module.exports = app;
 } else {
   startServer();
