@@ -311,6 +311,17 @@ async function callAzureOpenAI(systemText, userText, config) {
     ]
   };
 
+  // 디버그: 다양성 지시가 포함되어 있는지 확인
+  const hasDiversityInstruction = userText.includes('다양성 필수 요구사항');
+  const hasEventInstruction = userText.includes('이벤트');
+  console.log('[Azure LLM] 호출 파라미터:', {
+    temperature: temperature.toFixed(3),
+    hasDiversityInstruction,
+    hasEventInstruction,
+    userTextLength: userText.length,
+    userTextPreview: userText.substring(0, 500)
+  });
+
   const response = await httpRequest(url, {
     method: 'POST',
     headers: {
