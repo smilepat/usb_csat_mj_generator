@@ -13,6 +13,55 @@ const promptCache = {
   lastClearTime: Date.now()
 };
 
+// =============================================
+// 듣기 문항 다양성 시나리오 (LC01-LC17)
+// =============================================
+
+/**
+ * LC07 (불참 이유) 시나리오 목록
+ * 매번 다른 상황/이벤트를 랜덤 선택하여 다양한 지문 생성
+ */
+const LC07_SCENARIOS = [
+  { event: 'a hiking trip', setting: 'outdoor adventure', refuser: 'man' },
+  { event: 'a book club meeting', setting: 'library or cafe', refuser: 'woman' },
+  { event: 'a charity marathon', setting: 'city park', refuser: 'man' },
+  { event: 'a cooking class', setting: 'community center', refuser: 'woman' },
+  { event: 'a photography workshop', setting: 'art studio', refuser: 'man' },
+  { event: 'a volunteer event at an animal shelter', setting: 'animal shelter', refuser: 'woman' },
+  { event: 'a beach cleanup day', setting: 'coastal area', refuser: 'man' },
+  { event: 'a movie premiere', setting: 'cinema', refuser: 'woman' },
+  { event: 'a science fair', setting: 'school auditorium', refuser: 'man' },
+  { event: 'a yoga retreat', setting: 'wellness center', refuser: 'woman' },
+  { event: 'a neighborhood garage sale', setting: 'residential area', refuser: 'man' },
+  { event: 'a pottery class', setting: 'craft studio', refuser: 'woman' },
+  { event: 'a camping trip', setting: 'national park', refuser: 'man' },
+  { event: 'a language exchange meetup', setting: 'cultural center', refuser: 'woman' },
+  { event: 'a basketball tournament', setting: 'sports complex', refuser: 'man' },
+  { event: 'a gardening workshop', setting: 'botanical garden', refuser: 'woman' },
+  { event: 'a music festival', setting: 'outdoor venue', refuser: 'man' },
+  { event: 'a chess competition', setting: 'community hall', refuser: 'woman' },
+  { event: 'a food truck festival', setting: 'downtown plaza', refuser: 'man' },
+  { event: 'a dance performance', setting: 'theater', refuser: 'woman' },
+  { event: 'an escape room challenge', setting: 'entertainment complex', refuser: 'man' },
+  { event: 'a museum exhibition opening', setting: 'art museum', refuser: 'woman' },
+  { event: 'a startup pitch event', setting: 'conference center', refuser: 'man' },
+  { event: 'a karaoke night', setting: 'entertainment venue', refuser: 'woman' }
+];
+
+/**
+ * 듣기 문항용 랜덤 시나리오 선택
+ * @param {number} itemNo - 문항 번호
+ * @returns {Object|null} 선택된 시나리오 또는 null
+ */
+function getRandomListeningScenario(itemNo) {
+  if (itemNo === 7) {
+    const idx = Math.floor(Math.random() * LC07_SCENARIOS.length);
+    return LC07_SCENARIOS[idx];
+  }
+  // 다른 LC 문항도 필요시 추가 가능
+  return null;
+}
+
 // 캐시 TTL: 5분 (프롬프트 수정 시 자동 무효화)
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -624,6 +673,26 @@ function buildPromptBundle(req, logger = null) {
     context += '[세트 정보]\nSET_ID=' + req.setId + ', ITEM_NO=' + req.itemNo + '\n\n';
   }
 
+  // 듣기 문항 다양성 지시 (LC01-LC17)
+  let listeningDiversityInstruction = '';
+  const itemNoNum = parseInt(req.itemNo, 10);
+  if (itemNoNum >= 1 && itemNoNum <= 17) {
+    const scenario = getRandomListeningScenario(itemNoNum);
+    if (scenario) {
+      listeningDiversityInstruction = `
+⚠️ [다양성 필수 요구사항 - 반드시 준수] ⚠️
+이번 생성에서는 반드시 아래 시나리오를 사용하세요:
+- **이벤트**: ${scenario.event}
+- **배경**: ${scenario.setting}
+- **불참자**: ${scenario.refuser}
+
+생일 파티, 동창회, 가족 모임 등 흔한 시나리오는 사용하지 마세요.
+위에서 지정된 이벤트와 배경을 창의적으로 활용하여 자연스러운 대화를 작성하세요.
+
+`;
+    }
+  }
+
   // RC29 어법 문항용 원숫자 강제 지시
   let rc29CircledNumberInstruction = '';
   if (req.itemNo === 29) {
@@ -648,6 +717,7 @@ stimulus 필드에 원숫자(①②③④⑤)를 반드시 지문 텍스트 내�
     '1) PASSAGE_GIVEN 블록이 있는 경우: 해당 지문을 절대 수정·삭제·요약하지 말고 그대로 사용하시오.\n' +
     '2) 지문 생성 지시만 있고 PASSAGE_GIVEN이 없는 경우: 먼저 지문을 직접 작성한 뒤, 그 지문을 기반으로 문항을 생성하시오.\n' +
     '3) 출력은 MASTER_PROMPT에서 정의한 JSON 스키마를 따르는 단일 JSON 객체 1개만 출력하고, 그 외 텍스트는 출력하지 마시오.\n\n' +
+    listeningDiversityInstruction +
     rc29CircledNumberInstruction +
     '----------------------------------------\n' +
     '[ITEM별 지침]\n' + itemPrompt + '\n\n' +
