@@ -391,7 +391,7 @@
     "title": "읽기 RC41 문항 (세트 사용 권장)",
     "prompt_text": "Create a CSAT Reading Item 41 following KSAT specifications.\n\n## 주의사항\n이 문항은 세트 문항의 일부입니다:\n- RC41-42: RC41_42 세트 프롬프트 사용 권장\n- RC43-45: RC43_45 세트 프롬프트 사용 권장\n\n## Output Format\n{\n  \"question\": \"[Korean question]\",\n  \"passage\": \"[English passage]\",\n  \"options\": [\"option1\", \"option2\", \"option3\", \"option4\", \"option5\"],\n  \"answer\": [1-5],\n  \"explanation\": \"[Korean explanation]\"\n}",
     "active": 1,
-    "is_default": 1,
+    "is_default": 0,
     "created_at": "2026-01-24 12:53:32",
     "updated_at": "2026-01-28 05:57:47"
   },
@@ -409,7 +409,7 @@
     "title": "읽기 RC42 문항 (세트 사용 권장)",
     "prompt_text": "Create a CSAT Reading Item 42 following KSAT specifications.\n\n## 주의사항\n이 문항은 세트 문항의 일부입니다:\n- RC41-42: RC41_42 세트 프롬프트 사용 권장\n- RC43-45: RC43_45 세트 프롬프트 사용 권장\n\n## Output Format\n{\n  \"question\": \"[Korean question]\",\n  \"passage\": \"[English passage]\",\n  \"options\": [\"option1\", \"option2\", \"option3\", \"option4\", \"option5\"],\n  \"answer\": [1-5],\n  \"explanation\": \"[Korean explanation]\"\n}",
     "active": 1,
-    "is_default": 1,
+    "is_default": 0,
     "created_at": "2026-01-24 12:53:32",
     "updated_at": "2026-01-28 05:57:47"
   },
@@ -418,7 +418,7 @@
     "title": "읽기 RC43 문항 (세트 사용 권장)",
     "prompt_text": "Create a CSAT Reading Item 43 following KSAT specifications.\n\n## 주의사항\n이 문항은 세트 문항의 일부입니다:\n- RC41-42: RC41_42 세트 프롬프트 사용 권장\n- RC43-45: RC43_45 세트 프롬프트 사용 권장\n\n## Output Format\n{\n  \"question\": \"[Korean question]\",\n  \"passage\": \"[English passage]\",\n  \"options\": [\"option1\", \"option2\", \"option3\", \"option4\", \"option5\"],\n  \"answer\": [1-5],\n  \"explanation\": \"[Korean explanation]\"\n}",
     "active": 1,
-    "is_default": 1,
+    "is_default": 0,
     "created_at": "2026-01-24 12:53:32",
     "updated_at": "2026-01-28 05:57:47"
   },
@@ -436,7 +436,7 @@
     "title": "읽기 RC44 문항 (세트 사용 권장)",
     "prompt_text": "Create a CSAT Reading Item 44 following KSAT specifications.\n\n## 주의사항\n이 문항은 세트 문항의 일부입니다:\n- RC41-42: RC41_42 세트 프롬프트 사용 권장\n- RC43-45: RC43_45 세트 프롬프트 사용 권장\n\n## Output Format\n{\n  \"question\": \"[Korean question]\",\n  \"passage\": \"[English passage]\",\n  \"options\": [\"option1\", \"option2\", \"option3\", \"option4\", \"option5\"],\n  \"answer\": [1-5],\n  \"explanation\": \"[Korean explanation]\"\n}",
     "active": 1,
-    "is_default": 1,
+    "is_default": 0,
     "created_at": "2026-01-24 12:53:32",
     "updated_at": "2026-01-28 05:57:47"
   },
@@ -445,7 +445,7 @@
     "title": "읽기 RC45 문항 (세트 사용 권장)",
     "prompt_text": "Create a CSAT Reading Item 45 following KSAT specifications.\n\n## 주의사항\n이 문항은 세트 문항의 일부입니다:\n- RC41-42: RC41_42 세트 프롬프트 사용 권장\n- RC43-45: RC43_45 세트 프롬프트 사용 권장\n\n## Output Format\n{\n  \"question\": \"[Korean question]\",\n  \"passage\": \"[English passage]\",\n  \"options\": [\"option1\", \"option2\", \"option3\", \"option4\", \"option5\"],\n  \"answer\": [1-5],\n  \"explanation\": \"[Korean explanation]\"\n}",
     "active": 1,
-    "is_default": 1,
+    "is_default": 0,
     "created_at": "2026-01-24 12:53:32",
     "updated_at": "2026-01-28 05:57:47"
   },
